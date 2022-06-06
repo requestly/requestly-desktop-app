@@ -1,0 +1,35 @@
+{
+  "name": "requestly",
+  "productName": "Requestly",
+  "version": "1.3.2",
+  "private": true,
+  "description": "Intercept & Modify HTTP Requests",
+  "main": "./dist/main/main.js",
+  "author": {
+    "name": "AWZ Technologies, Inc.",
+    "email": "contact@requestly.io",
+    "url": "https://requestly.io/"
+  },
+  "scripts": {
+    "electron-rebuild": "node -r ts-node/register ../../.erb/scripts/electron-rebuild.js",
+    "link-modules": "node -r ts-node/register ../../.erb/scripts/link-modules.js",
+    "preinstall": "npx npm-force-resolutions",
+    "postinstall": "patch-package && npm run electron-rebuild && npm run link-modules"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@httptoolkit/browser-launcher": "^2.0.0",
+    "@httptoolkit/osx-find-executable": "^2.0.1",
+    "brotli-wasm": "^1.1.0",
+    "mockttp": "^2.3.0",
+    "ws": "^8.2.3"
+  },
+  "devDependencies": {
+    "npm-force-resolutions": "0.0.10",
+    "patch-package": "^6.4.7"
+  },
+  "resolutions": {
+    "bufferutil": "4.0.3",
+    "utf-8-validate": "5.0.6"
+  }
+}

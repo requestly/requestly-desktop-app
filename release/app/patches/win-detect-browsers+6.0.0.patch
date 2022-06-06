@@ -1,0 +1,60 @@
+diff --git a/node_modules/win-detect-browsers/lib/version-info.js b/node_modules/win-detect-browsers/lib/version-info.js
+index 78e8242..1fd74a1 100644
+--- a/node_modules/win-detect-browsers/lib/version-info.js
++++ b/node_modules/win-detect-browsers/lib/version-info.js
+@@ -1,37 +1,19 @@
+-'use strict'
+-
+-const debug = require('debug')('win-detect-browsers')
+-const vi = process.platform === 'win32' ? require('win-version-info') : tryRequire()
+-
+-function tryRequire () {
+-  try {
+-    return require('win-version-info')
+-  } catch (err) {
+-    debug(err)
+-
+-    return function noop () {
+-      return {}
+-    }
+-  }
+-}
+-
+-module.exports = function annotate (b) {
+-  try {
+-    var info = vi(b.path)
+-  } catch (err) {
+-    debug('%s: win-version-info failed for %s', b.name, b.path, err)
+-    return
+-  }
+-
+-  const version = info.FileVersion || info.ProductVersion
+-
+-  if (!version) {
+-    debug('%s: no version for %s', b.name, b.path)
+-    return
+-  }
+-
+-  b.version = version
+-  b.info = info
+-
++// https://github.com/vweevers/win-version-info/issues/17
++
++module.exports = function annotate(b) {
++  b.version = "1";
++  b.info = {
++    FileVersion: "1",
++    LegalCopyright: "© Browser",
++    CompanyName: "Browser Company",
++    FileDescription: "Found Browser",
++    ProductVersion: "1",
++    InternalName: "Browser",
++    LegalTrademarks: "Browser",
++    OriginalFilename: "browser.exe",
++    ProductName: "Browser",
++    BuildID: "1",
++  };
++  b.arch = b.arch ? b.arch : "amd64";
+   return b
+-}
++};

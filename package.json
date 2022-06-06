@@ -1,0 +1,300 @@
+{
+  "name": "requestly",
+  "productName": "Requestly",
+  "version": "1.4.0",
+  "private": true,
+  "description": "Intercept & Modify HTTP Requests",
+  "scripts": {
+    "build": "ts-node ./.erb/scripts/clean.js dist && concurrently \"npm run build:main\" \"npm run build:renderer\"",
+    "build:main": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.main.prod.ts",
+    "build:renderer": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.prod.ts",
+    "rebuild": "electron-rebuild --parallel --types prod,dev,optional --module-dir src",
+    "lint": "cross-env NODE_ENV=development eslint . --cache --ext .js,.jsx,.ts,.tsx",
+    "package": "npm run build && electron-builder build --publish never",
+    "deploy": "npm run build && electron-builder build --publish always",
+    "postinstall": "ts-node .erb/scripts/check-native-dep.js && electron-builder install-app-deps && cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.dev.dll.ts && opencollective-postinstall",
+    "start": "ts-node ./.erb/scripts/check-port-in-use.js && npm run start:renderer",
+    "start:main": "cross-env NODE_ENV=development electron -r ts-node/register/transpile-only ./src/main/main.ts --trace-warnings",
+    "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
+    "test": "jest",
+    "debug-prod-build": "cross-env DEBUG_PROD=true && npm run build",
+    "debug-prod-start": "cross-env DEBUG_PROD=true && npm start"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "cross-env NODE_ENV=development eslint --cache"
+    ],
+    "*.json,.{eslintrc,prettierrc}": [
+      "prettier --ignore-path .eslintignore --parser json --write"
+    ],
+    "*.{css,scss}": [
+      "prettier --ignore-path .eslintignore --single-quote --write"
+    ],
+    "*.{html,md,yml}": [
+      "prettier --ignore-path .eslintignore --single-quote --write"
+    ]
+  },
+  "build": {
+    "productName": "Requestly",
+    "appId": "io.requestly.beta",
+    "asar": true,
+    "asarUnpack": "**\\*.{node,dll}",
+    "files": [
+      "dist",
+      "node_modules",
+      "package.json",
+      "static"
+    ],
+    "afterSign": ".erb/scripts/notarize.js",
+    "mac": {
+      "type": "distribution",
+      "hardenedRuntime": true,
+      "entitlements": "assets/entitlements.mac.plist",
+      "entitlementsInherit": "assets/entitlements.mac.plist",
+      "gatekeeperAssess": false,
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Development"
+    },
+    "directories": {
+      "app": "release/app",
+      "buildResources": "assets",
+      "output": "release/build"
+    },
+    "extraResources": [
+      "./assets/**",
+      {
+        "from": "./release/app",
+        "filter": "static/**"
+      }
+    ],
+    "publish": {
+      "provider": "github",
+      "releaseType": "release",
+      "owner": "requestly",
+      "repo": "requestly"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/requestly/requestly.git"
+  },
+  "author": {
+    "name": "AWZ Technologies, Inc.",
+    "email": "contact@requestly.io",
+    "url": "https://requestly.io/"
+  },
+  "contributors": [
+    {
+      "name": "AWZ Technologies, Inc.",
+      "email": "contact@requestly.io",
+      "url": "https://requestly.io/"
+    }
+  ],
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/requestly/requestly/issues"
+  },
+  "keywords": [
+    "http intercept",
+    "http",
+    "intercept",
+    "proxy",
+    "modify http",
+    "redirect request",
+    "mock api"
+  ],
+  "homepage": "https://requestly.io/",
+  "jest": {
+    "testURL": "http://localhost/",
+    "testEnvironment": "jsdom",
+    "transform": {
+      "\\.(ts|tsx|js|jsx)$": "ts-jest"
+    },
+    "moduleNameMapper": {
+      "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$": "<rootDir>/.erb/mocks/fileMock.js",
+      "\\.(css|less|sass|scss)$": "identity-obj-proxy"
+    },
+    "moduleFileExtensions": [
+      "js",
+      "jsx",
+      "ts",
+      "tsx",
+      "json"
+    ],
+    "moduleDirectories": [
+      "node_modules",
+      "release/app/node_modules"
+    ],
+    "testPathIgnorePatterns": [
+      "release/app/dist"
+    ],
+    "setupFiles": [
+      "./.erb/scripts/check-build-exists.ts"
+    ]
+  },
+  "devDependencies": {
+    "@pmmmwh/react-refresh-webpack-plugin": "0.5.1",
+    "@teamsupercell/typings-for-css-modules-loader": "^2.5.1",
+    "@testing-library/jest-dom": "^5.14.1",
+    "@types/enzyme": "^3.10.9",
+    "@types/history": "4.7.9",
+    "@types/jest": "^27.0.2",
+    "@types/node": "16.10.8",
+    "@types/terser-webpack-plugin": "^5.0.4",
+    "@types/webpack-env": "^1.16.3",
+    "browserslist-config-erb": "^0.0.3",
+    "chalk": "^4.1.2",
+    "concurrently": "^6.3.0",
+    "core-js": "^3.18.3",
+    "cross-env": "^7.0.3",
+    "css-loader": "^6.4.0",
+    "css-minimizer-webpack-plugin": "^3.1.1",
+    "detect-port": "^1.3.0",
+    "electron": "^15.1.2",
+    "electron-builder": "^23.0.2",
+    "electron-devtools-installer": "^3.2.0",
+    "electron-notarize": "^1.1.1",
+    "electron-rebuild": "^3.2.3",
+    "enzyme": "^3.11.0",
+    "enzyme-to-json": "^3.6.2",
+    "eslint": "^8.0.0",
+    "eslint-config-erb": "^4.0.3",
+    "file-loader": "^6.2.0",
+    "html-webpack-plugin": "^5.3.2",
+    "husky": "7.0.2",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^27.2.5",
+    "lint-staged": "^11.2.3",
+    "mini-css-extract-plugin": "^2.4.2",
+    "opencollective-postinstall": "^2.0.3",
+    "prettier": "^2.4.1",
+    "rimraf": "^3.0.2",
+    "sass": "^1.42.1",
+    "sass-loader": "^12.2.0",
+    "style-loader": "^3.3.0",
+    "terser-webpack-plugin": "^5.2.4",
+    "ts-jest": "^27.0.5",
+    "ts-loader": "^9.2.6",
+    "ts-node": "^10.3.0",
+    "typescript": "^4.4.4",
+    "url-loader": "^4.1.1",
+    "webpack": "^5.58.2",
+    "webpack-bundle-analyzer": "^4.5.0",
+    "webpack-cli": "^4.9.0",
+    "webpack-dev-server": "^4.3.1",
+    "webpack-merge": "^5.8.0"
+  },
+  "dependencies": {
+    "@electron/remote": "^2.0.1",
+    "@sentry/browser": "^6.13.3",
+    "@sentry/electron": "^2.5.4",
+    "assert": "^2.0.0",
+    "async": "^3.2.1",
+    "axios": "^0.23.0",
+    "browserify-zlib": "^0.2.0",
+    "charset": "^1.0.1",
+    "chrome-remote-interface": "^0.31.0",
+    "command-exists": "^1.2.9",
+    "core-js": "^3.18.3",
+    "crypto-browserify": "^3.12.0",
+    "debug": "^4.3.2",
+    "dotenv": "^10.0.0",
+    "electron-debug": "^3.2.0",
+    "electron-log": "^4.4.1",
+    "electron-squirrel-startup": "^1.0.0",
+    "electron-store": "^8.0.1",
+    "electron-updater": "^4.3.9",
+    "es6-promisify": "^7.0.0",
+    "fs-extra": "^10.0.0",
+    "headless": "^1.2.0",
+    "history": "5.x.x",
+    "https-browserify": "^1.0.0",
+    "httpsnippet": "^2.0.0",
+    "lodash": "^4.17.21",
+    "mime-types": "^2.1.34",
+    "mkdirp": "^1.0.4",
+    "node-forge": "^0.10.0",
+    "node-gsettings-wrapper": "^0.5.0",
+    "os-browserify": "^0.3.0",
+    "path-browserify": "^1.0.1",
+    "portfinder": "^1.0.28",
+    "regenerator-runtime": "^0.13.9",
+    "requestly-master": "github:requestly/requestly-master-npm.git",
+    "rimraf": "^3.0.2",
+    "rmfr": "^2.0.0",
+    "rq-proxy": "github:requestly/rq-proxy.git",
+    "semaphore": "^1.1.0",
+    "stream-browserify": "^3.0.0",
+    "stream-http": "^3.2.0",
+    "tmp": "^0.2.1",
+    "ua-parser-js": "^1.0.2",
+    "util": "^0.12.4",
+    "uuid": "^8.3.2",
+    "ws": "^8.2.3",
+    "yargs": "^17.2.1"
+  },
+  "devEngines": {
+    "node": ">=14.x",
+    "npm": ">=7.x"
+  },
+  "collective": {
+    "url": "https://requestly.io"
+  },
+  "browserslist": [],
+  "prettier": {
+    "overrides": [
+      {
+        "files": [
+          ".prettierrc",
+          ".eslintrc"
+        ],
+        "options": {
+          "parser": "json"
+        }
+      }
+    ],
+    "singleQuote": false
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  }
+}
