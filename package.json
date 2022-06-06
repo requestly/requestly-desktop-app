@@ -108,12 +108,12 @@
       "provider": "github",
       "releaseType": "release",
       "owner": "requestly",
-      "repo": "requestly"
+      "repo": "requestly-desktop-app"
     }
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/requestly/requestly.git"
+    "url": "git+https://github.com/requestly/requestly-desktop-app.git"
   },
   "author": {
     "name": "AWZ Technologies, Inc.",
