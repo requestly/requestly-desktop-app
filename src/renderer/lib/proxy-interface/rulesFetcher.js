@@ -7,7 +7,6 @@ class RulesDataSource {
   };
 
   getGroups = async (requestHeaders) => {
-    console.log("Interface getGroups");
     let groups = getState("groupsCache") || [];
     return groups;
   };
