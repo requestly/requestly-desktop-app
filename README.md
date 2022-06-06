@@ -1,13 +1,12 @@
-### Project Structure
+### Requestly Desktop App
 
-# Installation
+Requestly Desktop App.
+Debug your network request across all apps (Safari, Chrome, Firefox, Brave...) using a single app.
 
-```
-./install.sh
-```
 
+## Directory Structure
 - src
-  - ## main : Electron Main Process
+  - main : Electron Main Process
   - renderer : RQ Background Renderer Process
     - types : Typescript types
     - lib : Libraries/helpers that can be reused within renderer
