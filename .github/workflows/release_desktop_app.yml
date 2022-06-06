@@ -1,0 +1,60 @@
+name: Release Desktop App
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: "Build Type"
+        required: true
+        type: choice
+        options:
+          - ubuntu-latest
+          - windows-2019
+          - macos-11
+        default: ubuntu-latest
+
+jobs:
+  release:
+    env:
+      EP_GH_IGNORE_TIME: true
+      APPLE_ID: ${{ secrets.apple_id }}
+      APPLE_ID_PASS: ${{ secrets.apple_id_pass }}
+
+    if: github.ref == 'refs/heads/master'|| github.ref == 'refs/heads/production'
+    runs-on: ${{ github.event.inputs.build_type }}
+
+    steps:
+      - name: EOL autocrlf input
+        if: ${{ github.event.inputs.build_type != 'windows-2019' }}
+        run: git config --global core.autocrlf input
+      - name: EOL autocrlf true
+        if: ${{ github.event.inputs.build_type == 'windows-2019' }}
+        run: git config --global core.autocrlf true
+      - name: Check out Git repository
+        uses: actions/checkout@v2
+
+      - name: Install Node.js, NPM and Yarn
+        uses: actions/setup-node@v2
+        with:
+          node-version: 14.18
+
+      - name: Install desktop app dependencies
+        run: bash ./install.sh
+
+      - name: Build/release Electron app
+        uses: samuelmeuli/action-electron-builder@v1.6.0
+        with:
+          # GitHub token, automatically provided to the action
+          # (No need to define this secret in the repo settings)
+          github_token: ${{ secrets.publish_token }}
+          package_root: "."
+
+          mac_certs: ${{ secrets.mac_certs }}
+          mac_certs_password: ${{ secrets.mac_certs_password }}
+
+          windows_certs: ${{ secrets.windows_certs }}
+          windows_certs_password: ${{ secrets.windows_certs_password }}
+
+          # If the commit is tagged with a version (e.g. "v1.0.0"),
+          # release the app after building
+          release: false
