@@ -2,7 +2,6 @@ import { getState } from "../../actions/stateManagement";
 
 class RulesDataSource {
   getRules = async (requestHeaders) => {
-    console.log("Interface getRules");
     let rules = getState("rulesCache") || [];
     return rules;
   };
