@@ -256,7 +256,7 @@
     "path-browserify": "^1.0.1",
     "portfinder": "^1.0.28",
     "regenerator-runtime": "^0.13.9",
-    "requestly-master": "github:requestly/requestly-master-npm.git",
+    "@requestly/requestly-core": "^1.0.0",
     "rimraf": "^3.0.2",
     "rmfr": "^2.0.0",
     "rq-proxy": "github:requestly/rq-proxy.git",

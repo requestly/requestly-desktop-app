@@ -2,7 +2,7 @@ import * as PrimaryStorageService from "./primaryStorage";
 /** UTILS */
 import { filterSuperObjectByType } from "../../utils/storage";
 /** CONSTANTS */
-import { CONSTANTS as GLOBAL_CONSTANTS } from "requestly-master";
+import { CONSTANTS as GLOBAL_CONSTANTS } from "@requestly/requestly-core";
 // SENTRY
 import * as Sentry from "@sentry/browser";
 
