@@ -116,13 +116,13 @@
     "url": "git+https://github.com/requestly/requestly-desktop-app.git"
   },
   "author": {
-    "name": "AWZ Technologies, Inc.",
+    "name": "RQ Labs, Inc.",
     "email": "contact@requestly.io",
     "url": "https://requestly.io/"
   },
   "contributors": [
     {
-      "name": "AWZ Technologies, Inc.",
+      "name": "RQ Labs, Inc.",
       "email": "contact@requestly.io",
       "url": "https://requestly.io/"
     }
