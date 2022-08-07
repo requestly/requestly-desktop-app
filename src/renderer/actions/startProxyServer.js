@@ -1,7 +1,7 @@
 // UTILS
 const ip = require("ip");
 
-import { RQProxyProvider } from "rq-proxy";
+import { RQProxyProvider } from "@requestly/requestly-proxy";
 import RulesDataSource from "../lib/proxy-interface/rulesFetcher";
 import LoggerService from "../lib/proxy-interface/loggerService";
 

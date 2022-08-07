@@ -14,7 +14,7 @@ import "regenerator-runtime/runtime";
 import path from "path";
 import { app, BrowserWindow, shell, dialog } from "electron";
 // @ts-expect-error
-import { CONSTANTS as GLOBAL_CONSTANTS } from "requestly-master";
+import { CONSTANTS as GLOBAL_CONSTANTS } from "@requestly/requestly-core";
 import MenuBuilder from "./menu";
 import {
   registerMainProcessCommonEvents,
@@ -89,7 +89,7 @@ const createWindow = async () => {
   new AutoUpdate(webAppWindow);
   remote.enable(webAppWindow.webContents);
 
-  // TODO @sahil: Prod and Local Urls should be supplied by requestly-master-npm package.
+  // TODO @sahil: Prod and Local Urls should be supplied by @requestly/requestly-core-npm package.
   const DESKTOP_APP_URL = isDevelopment
     ? "http://localhost:3000"
     : GLOBAL_CONSTANTS.DESKTOP_APP_URL;
