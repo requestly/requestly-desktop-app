@@ -8,7 +8,7 @@ import * as Sentry from "@sentry/browser";
 
 var options = {
   title: "Save root certificate",
-  defaultPath: path.join(app.getPath("desktop"), "RequestlyCA.pem"),
+  defaultPath: path.join(app.getPath("desktop"), "RQProxyCA.pem"),
   buttonLabel: "Save certificate",
 
   filters: [{ name: "pem", extensions: ["pem"] }],

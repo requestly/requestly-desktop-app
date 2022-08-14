@@ -5,10 +5,10 @@ export const isCertificateInstalled = () => {
   let command;
   switch (process.platform) {
     case "darwin":
-      command = `security find-certificate -c RequestlyCA $HOME/Library/Keychains/login.keychain`;
+      command = `security find-certificate -c RQProxyCA $HOME/Library/Keychains/login.keychain`;
       break;
     case "win32":
-      command = `certutil -user -verifystore Root RequestlyCA`;
+      command = `certutil -user -verifystore Root RQProxyCA`;
       break;
     default:
       console.log(`${process.platform} is not supported for systemwide proxy`);
@@ -27,7 +27,7 @@ export const isCertificateInstalled = () => {
 };
 
 const is_rq_cert_trusted = (trust_settings_str) => {
-  let re = /(Cert \d+: RequestlyCA[\s\S]*?(?=Cert))|(Cert \d+: RequestlyCA[\s\S]*)/gm;
+  let re = /(Cert \d+: RQProxyCA[\s\S]*?(?=Cert))|(Cert \d+: RQProxyCA[\s\S]*)/gm;
   const rq_cert_settings = re.exec(trust_settings_str);
 
   if (

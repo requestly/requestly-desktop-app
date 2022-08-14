@@ -26,7 +26,7 @@ const staticConfig = {
     "certs",
     "ca.pem"
   ),
-  CERT_NAME: "RequestlyCA",
+  CERT_NAME: "RQProxyCA",
   CERT_VALIDITY: {
     // Number of days - before the current date - Keep minimum 1 to avoid 12am date change issues
     START_BEFORE: 1,
