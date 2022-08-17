@@ -17,12 +17,12 @@ const staticConfig = {
   CERTS_PATH: path.resolve(
     unescape(app.getPath("appData")),
     "Requestly",
-    ".requestly-certs"
+    ".tmp"
   ),
   ROOT_CERT_PATH: path.resolve(
     unescape(app.getPath("appData")),
     "Requestly",
-    ".requestly-certs",
+    ".tmp",
     "certs",
     "ca.pem"
   ),
