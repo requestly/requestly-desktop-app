@@ -1,4 +1,5 @@
 import { SystemWideProxy } from "../os/system-wide";
+import { launchBrowser } from "./browser-handler";
 
 class SafariInterceptor {
   constructor(config, variantName) {
@@ -37,6 +38,17 @@ export class FreshSafari extends SystemWideProxy {
   }
   async isActivable() {
     return process.platform === "darwin";
+  }
+
+  async activate(proxyPort) {
+    await super.activate(proxyPort)
+    const browser = await launchBrowser(
+      null,
+      {
+        browser: "safari",
+      },
+      this.config.configPath
+    );
   }
 }
 
