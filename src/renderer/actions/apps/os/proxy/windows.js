@@ -1,4 +1,4 @@
-const { exec, execSync } = require("child_process");
+const { spawn, execSync } = require("child_process");
 
 const getProxyAndPort = () => {
   const command = `reg query "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyServer`;
@@ -51,14 +51,24 @@ const getCurrentProxySetup = () => {
 };
 
 // Hacky trick to refresh proxy settings
-const openAndCloseIE = (close) => {
-  const command_start_ie = `start /w /b iexplore.exe "https://amiusing.requestly.io/"`;
-  const command_kill_ie = `taskkill /f /im iexplore.exe`;
-  exec(command_start_ie);
-  if (close) {
-    setTimeout(() => exec(command_kill_ie), 500);
-  }
-};
+// Not needed in windows 11 and above
+const openAndCloseIE = () => {
+  const command_start_ie = `start /w /b iexplore.exe`
+  const command_kill_ie = `taskkill /f /im iexplore.exe`
+  const ieStartProc = spawn(command_start_ie)
+  ieStartProc.on("error", function(err) {
+      console.log("Expected error while trying to launch internet explorer on windows 11");
+      console.warn("Error when trying to launch internet explorer.");
+      console.warn(err);
+  })
+  setTimeout(() =>{
+      const ieKillProc = spawn(command_kill_ie)
+      ieKillProc.on("error", function(err) {
+          console.log("Expected followup error while trying to kill internet explorer on windows 11");
+          console.warn(err);
+      })
+  }, 500)
+}
 
 const applyProxyWindows = (host, port) => {
   const command_activate_proxy = `reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyEnable /t REG_DWORD /d 1 /f`;
