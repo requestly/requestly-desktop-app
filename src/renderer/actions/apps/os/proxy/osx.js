@@ -120,35 +120,35 @@ const executeCommand = (command) => {
 const applyProxyOsx = (HOST, PORT) => {
   proxyNames = ["http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY"];
   desktopProxyNames = ["webproxy", "securewebproxy"];
+  toggleProxy(proxyCommands.SET_BYPASS, HOST, PORT);
   toggleProxy(proxyCommands.SET_DESKTOP, HOST, PORT);
   toggleProxy(proxyCommands.SET_TERMINAL, HOST, PORT);
-  toggleProxy(proxyCommands.SET_BYPASS, HOST, PORT);
 };
 
 // unused
 const applyHttpProxyOsx = (HOST, PORT) => {
   proxyNames = ["http_proxy", "HTTP_PROXY"];
   desktopProxyNames = ["webproxy"];
+  toggleProxy(proxyCommands.SET_BYPASS, HOST, PORT);
   toggleProxy(proxyCommands.SET_DESKTOP, HOST, PORT);
   toggleProxy(proxyCommands.SET_TERMINAL, HOST, PORT);
-  toggleProxy(proxyCommands.SET_BYPASS, HOST, PORT);
 };
 
 // unused
 const applyHttpsProxyOsx = (HOST, PORT) => {
   proxyNames = ["https_proxy", "HTTPS_PROXY"];
   desktopProxyNames = ["securewebproxy"];
+  toggleProxy(proxyCommands.SET_BYPASS, HOST, PORT);
   toggleProxy(proxyCommands.SET_DESKTOP, HOST, PORT);
   toggleProxy(proxyCommands.SET_TERMINAL, HOST, PORT);
-  toggleProxy(proxyCommands.SET_BYPASS, HOST, PORT);
 };
 
 const removeProxyOsx = () => {
   proxyNames = ["http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY"];
   desktopProxyNames = ["webproxy", "securewebproxy"];
+  toggleProxy(proxyCommands.UNSET_BYPASS);
   toggleProxy(proxyCommands.UNSET_DESKTOP);
   toggleProxy(proxyCommands.UNSET_TERMINAL);
-  toggleProxy(proxyCommands.UNSET_BYPASS);
 };
 
 export { applyProxyOsx, applyHttpProxyOsx, applyHttpsProxyOsx, removeProxyOsx };
