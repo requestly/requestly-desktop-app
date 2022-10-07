@@ -12,6 +12,7 @@ import {
   editShellStartupScripts,
   resetShellStartupScripts,
 } from "./terminal-scripts";
+import { appLaunchErrorTypes, createError } from "../../../lib/errors";
 
 const DEFAULT_GIT_BASH_PATH = "C:/Program Files/git/git-bash.exe";
 
@@ -204,7 +205,7 @@ export class FreshTerminal {
   async activate(proxyPort) {
     const terminalSpawnArgs = await getTerminalCommand();
     if (!terminalSpawnArgs)
-      throw new Error("Could not find a suitable terminal");
+      throw createError("Could not find a suitable terminal", appLaunchErrorTypes.APP_ACTIVATION_FAILED);
     const { command, args, options, skipStartupScripts } = terminalSpawnArgs;
     // Our PATH override below may not work, e.g. because OSX's path_helper always prepends
     // the real paths over the top, and git-bash ignore env var paths overrides. To fix this,

@@ -8,6 +8,7 @@ import { staticConfig } from "../../config";
 // SENTRY
 import * as Sentry from "@sentry/browser";
 import { getLauncher } from "./browsers/browser-handler";
+import { appLaunchErrorTypes, createError } from "../../lib/errors";
 
 const config = {
   appName: staticConfig.APP_NAME,
@@ -28,7 +29,7 @@ export const activateApp = async ({ id, proxyPort, options }) => {
   console.log(`Activating ${id}`, { category: "app", data: { id, options } });
 
   const app = apps[id];
-  if (!app) throw new Error(`Unknown app ${id}`);
+  if (!app) throw createError(`Unknown app ${id}`,appLaunchErrorTypes.MISC);
 
   // After 30s, don't stop activating, but report an error if we're not done yet
   let activationDone = false; // Flag to keep track
@@ -57,7 +58,7 @@ export const activateApp = async ({ id, proxyPort, options }) => {
 
 export const deactivateApp = async ({ id, proxyPort }) => {
   const app = apps[id];
-  if (!app) throw new Error(`Unknown app ${id}`);
+  if (!app) throw createError(`Unknown app ${id}`, appLaunchErrorTypes.APP_DEACTIVATE_FAILED);
 
   await app.deactivate(proxyPort).catch((e) => {
     Sentry.captureException(e);
