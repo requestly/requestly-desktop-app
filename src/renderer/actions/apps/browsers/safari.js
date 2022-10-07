@@ -42,13 +42,16 @@ export class FreshSafari extends SystemWideProxy {
 
   async activate(proxyPort) {
     await super.activate(proxyPort)
-    const browser = await launchBrowser(
-      null,
-      {
-        browser: "safari",
-      },
-      this.config.configPath
-    );
+    // @nsr uncomment once launchBrowser gets fixed and finds executable for safari
+    // const browser = await launchBrowser(
+    //   null,
+    //   {
+    //     browser: "safari",
+    //   },
+    //   this.config.configPath
+    // );
+
+    execSync("open -b com.apple.Safari")
   }
 }
 
