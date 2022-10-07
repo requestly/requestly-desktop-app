@@ -1,6 +1,6 @@
 import { SystemWideProxy } from "../os/system-wide";
 import { launchBrowser } from "./browser-handler";
-
+import { exec } from "child_process";
 class SafariInterceptor {
   constructor(config, variantName) {
     this.config = config;
@@ -51,7 +51,7 @@ export class FreshSafari extends SystemWideProxy {
     //   this.config.configPath
     // );
 
-    execSync("open -b com.apple.Safari")
+    exec("open -b com.apple.Safari")
   }
 }
 
