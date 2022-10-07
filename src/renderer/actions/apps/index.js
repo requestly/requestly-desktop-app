@@ -1,4 +1,3 @@
-import * as _ from "lodash";
 // ACTIONS
 import { buildApps } from "./appManager";
 // UTILS
@@ -22,8 +21,6 @@ let apps = buildApps(config);
 
 const APP_TIMEOUT = 15000;
 
-const isActivationError = (value) => _.isError(value);
-
 export const activateApp = async ({ id, proxyPort, options }) => {
   // Log
   console.log(`Activating ${id}`, { category: "app", data: { id, options } });
@@ -38,22 +35,46 @@ export const activateApp = async ({ id, proxyPort, options }) => {
     if (!activationDone) console.error(`Timeout activating ${id}`);
   });
 
-  const result = await app.activate(proxyPort, options).catch((err) => {
-    Sentry.captureException(err);
-    console.error(err.message);
-    return err;
+  const result = { success: true, metadata: null, err: null }
+
+  await app.activate(proxyPort, options)
+  .then(metadata => {
+    result.metadata = metadata
+    console.log(`Successfully activated ${id}`, { category: "app" });
+  })
+  .catch((err) => {
+    // apps like safari activate system proxy and fail on launch
+    // hence they need to be deactivated
+    deactivateApp({id, proxyPort})
+
+    result.success = false
+
+    if(err.metadata) {
+      result.metadata = err.metadata
+    }
+
+    // for cases when `err` is just the stderr output string
+    // happens in case when unable to launch safari
+    if (!(err instanceof Error)) {
+      const errMsg = err?.toString() ? err?.toString() :  "Unexpected behaviour";
+      result.err = createError(errMsg, appLaunchErrorTypes.APP_ACTIVATION_FAILED)
+    } else {
+      result.err = err
+    }
+
+    // Because chromium render process sanitizes the errors when recieved from IPC
+    // only allows name, message, selected types, and stack trace
+    // https://github.com/electron/electron/issues/24427
+    result.metadata = {...result.metadata, cause: result.err.cause}
+
+    Sentry.captureException(result.err);
+    console.error(result.err);
   });
 
   // Set flag
   activationDone = true;
 
-  if (isActivationError(result)) {
-    if (result.reportable !== false) console.error(result);
-    return { success: false, metadata: result.metadata };
-  } else {
-    console.log(`Successfully activated ${id}`, { category: "app" });
-    return { success: true, metadata: result };
-  }
+  return result
 };
 
 export const deactivateApp = async ({ id, proxyPort }) => {
