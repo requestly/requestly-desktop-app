@@ -6,9 +6,3 @@ export const appLaunchErrorTypes = {
   CLOSE_CONFIRM_DENIED: "CLOSE_CONFIRM_DENIED",
   MISC: "MISCELLANEOUS",
 }
-export const createError = (msg, cause) => {
-  return new Error(
-    msg,
-    {cause}
-  )
-}

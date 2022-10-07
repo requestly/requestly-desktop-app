@@ -7,7 +7,7 @@ import { staticConfig } from "../../config";
 // SENTRY
 import * as Sentry from "@sentry/browser";
 import { getLauncher } from "./browsers/browser-handler";
-import { appLaunchErrorTypes, createError } from "../../lib/errors";
+import { appLaunchErrorTypes } from "../../lib/errors";
 
 const config = {
   appName: staticConfig.APP_NAME,
@@ -26,7 +26,7 @@ export const activateApp = async ({ id, proxyPort, options }) => {
   console.log(`Activating ${id}`, { category: "app", data: { id, options } });
 
   const app = apps[id];
-  if (!app) throw createError(`Unknown app ${id}`,appLaunchErrorTypes.MISC);
+  if (!app) throw new Error(`Unknown app ${id}`,{cause: appLaunchErrorTypes.MISC});
 
   // After 30s, don't stop activating, but report an error if we're not done yet
   let activationDone = false; // Flag to keep track
@@ -35,7 +35,7 @@ export const activateApp = async ({ id, proxyPort, options }) => {
     if (!activationDone) console.error(`Timeout activating ${id}`);
   });
 
-  const result = { success: true, metadata: null, err: null }
+  const result = { success: true }
 
   await app.activate(proxyPort, options)
   .then(metadata => {
@@ -43,29 +43,23 @@ export const activateApp = async ({ id, proxyPort, options }) => {
     console.log(`Successfully activated ${id}`, { category: "app" });
   })
   .catch((err) => {
-    // apps like safari activate system proxy and fail on launch
+    // apps like safari activate system proxy and may fail on launch
     // hence they need to be deactivated
     deactivateApp({id, proxyPort})
 
     result.success = false
-
-    if(err.metadata) {
+    if (err.metadata) {
       result.metadata = err.metadata
     }
 
-    // for cases when `err` is just the stderr output string
-    // happens in case when unable to launch safari
-    if (!(err instanceof Error)) {
-      const errMsg = err?.toString() ? err?.toString() :  "Unexpected behaviour";
-      result.err = createError(errMsg, appLaunchErrorTypes.APP_ACTIVATION_FAILED)
-    } else {
-      result.err = err
-    }
-
-    // Because chromium render process sanitizes the errors when recieved from IPC
-    // only allows name, message, selected types, and stack trace
+    // Can't send complete Error object via IPC because it seems unecessary
+    // Also because chromium render process sanitizes the errors when recieved from IPC
+    // It only allows name, message, selected types, and stack trace
     // https://github.com/electron/electron/issues/24427
-    result.metadata = {...result.metadata, cause: result.err.cause}
+    result.metadata = {
+      ...result.metadata,
+      cause: err.cause || appLaunchErrorTypes.APP_ACTIVATION_FAILED
+    }
 
     Sentry.captureException(result.err);
     console.error(result.err);
@@ -79,7 +73,7 @@ export const activateApp = async ({ id, proxyPort, options }) => {
 
 export const deactivateApp = async ({ id, proxyPort }) => {
   const app = apps[id];
-  if (!app) throw createError(`Unknown app ${id}`, appLaunchErrorTypes.APP_DEACTIVATE_FAILED);
+  if (!app) throw new Error(`Unknown app ${id}`, {cause: appLaunchErrorTypes.APP_DEACTIVATE_FAILED});
 
   await app.deactivate(proxyPort).catch((e) => {
     Sentry.captureException(e);

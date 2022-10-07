@@ -15,7 +15,7 @@ import {
   getTerminalEnvVars,
   OVERRIDES_DIR,
 } from "../terminal/terminal-env-overrides";
-import { appLaunchErrorTypes, createError } from "../../../lib/errors";
+import { appLaunchErrorTypes } from "renderer/lib/errors";
 
 const isAppBundle = (path) => {
   return process.platform === "darwin" && path.endsWith(".app");
@@ -88,7 +88,7 @@ export class Electron {
         await delay(500);
       }
     }
-    if (!debugClient) throw createError("Could not initialize CDP client", appLaunchErrorTypes.MISC);
+    if (!debugClient) throw new Error("Could not initialize CDP client", {cause: appLaunchErrorTypes.MISC});
     this.debugClients[proxyPort] = this.debugClients[proxyPort] || [];
     this.debugClients[proxyPort].push(debugClient);
     debugClient.once("disconnect", () => {
@@ -130,7 +130,7 @@ export class Electron {
         message: exception && exception.description,
         data: injectionResult.exceptionDetails,
       });
-      throw createError("Failed to inject into Electron app", appLaunchErrorTypes.MISC);
+      throw new Error("Failed to inject into Electron app", {cause: appLaunchErrorTypes.MISC});
     }
     console.log("App intercepted, resuming...");
     await debugClient.Debugger.resume();

@@ -1,4 +1,4 @@
-import { appLaunchErrorTypes, createError } from "../../../lib/errors";
+import { appLaunchErrorTypes } from "renderer/lib/errors";
 import * as _ from "lodash";
 import { installCert } from "./ca";
 
@@ -27,7 +27,10 @@ export class SystemWideProxy {
   async activate(proxyPort) {
     const cert_status = await installCert(this.config.https.certPath);
     if (!cert_status) {
-      throw createError(`Certificate not installed`, appLaunchErrorTypes.CERTIFICATE_INSTALL_FAILED);
+      throw new Error(
+        `Certificate not installed`,
+        {cause : appLaunchErrorTypes.CERTIFICATE_INSTALL_FAILED}
+      );
     }
 
     applyProxy(proxyPort);

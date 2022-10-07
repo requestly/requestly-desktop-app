@@ -12,7 +12,7 @@ import { windowsKill, spawnToResult } from "../../processManagement";
 // SENTRY
 import * as Sentry from "@sentry/browser";
 import { ipcRenderer } from "electron";
-import { appLaunchErrorTypes, createError } from "../../../lib/errors";
+import { appLaunchErrorTypes } from "renderer/lib/errors";
 const FIREFOX_PREF_REGEX = /\w+_pref\("([^"]+)", (.*)\);/;
 let profileSetupBrowser;
 let browsers = {};
@@ -47,7 +47,10 @@ const getCertutilCommand = _.memoize(async () => {
     if (await testCertutil(bundledCertUtil)) {
       return { command: bundledCertUtil };
     } else {
-      throw createError("No certutil available",  appLaunchErrorTypes.CERTUTIL_NOT_FOUND);
+      throw new Error(
+        "No certutil available",
+        {cause: appLaunchErrorTypes.CERTUTIL_NOT_FOUND}
+      );
     }
   }
 
@@ -62,7 +65,10 @@ const getCertutilCommand = _.memoize(async () => {
   if (await testCertutil(bundledCertUtil, { env: certutilEnv })) {
     return { command: bundledCertUtil, options: { env: certutilEnv } };
   } else {
-    throw createError("No certutil available",  appLaunchErrorTypes.CERTUTIL_NOT_FOUND);
+    throw new Error(
+      "No certutil available",
+      {cause: appLaunchErrorTypes.CERTUTIL_NOT_FOUND}
+    );
   }
 });
 

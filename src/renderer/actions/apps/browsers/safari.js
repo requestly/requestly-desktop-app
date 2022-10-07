@@ -1,4 +1,4 @@
-import { appLaunchErrorTypes, createError } from "../../../lib/errors";
+import { appLaunchErrorTypes } from "renderer/lib/errors";
 import { SystemWideProxy } from "../os/system-wide";
 import { launchBrowser } from "./browser-handler";
 
@@ -18,7 +18,10 @@ class SafariInterceptor {
   }
 
   async activate(proxyPort) {
-    return createError("Not supported", appLaunchErrorTypes.MISC);
+    return new Error(
+      "Not supported",
+      {cause:appLaunchErrorTypes.MISC}
+    );
   }
 
   async deactivate(proxyPort) {
