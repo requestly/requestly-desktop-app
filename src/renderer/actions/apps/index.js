@@ -7,7 +7,7 @@ import { staticConfig } from "../../config";
 // SENTRY
 import * as Sentry from "@sentry/browser";
 import { getLauncher } from "./browsers/browser-handler";
-import { appLaunchErrorTypes } from "../../lib/errors";
+import { appLaunchErrorTypes } from "renderer/lib/errors";
 
 const config = {
   appName: staticConfig.APP_NAME,
@@ -62,7 +62,7 @@ export const activateApp = async ({ id, proxyPort, options }) => {
     }
 
     Sentry.captureException(result.err);
-    console.error(result.err);
+    console.error(err);
   });
 
   // Set flag
@@ -75,9 +75,10 @@ export const deactivateApp = async ({ id, proxyPort }) => {
   const app = apps[id];
   if (!app) throw new Error(`Unknown app ${id}`, {cause: appLaunchErrorTypes.APP_DEACTIVATE_FAILED});
 
-  await app.deactivate(proxyPort).catch((e) => {
+  await app.deactivate(proxyPort)
+  .catch((e) => {
     Sentry.captureException(e);
-    console.error(e.message);
+    console.error(e);
   });
 
   return { success: !(await app.isActive(proxyPort)) };

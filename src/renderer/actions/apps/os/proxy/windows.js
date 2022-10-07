@@ -1,3 +1,5 @@
+import { appLaunchErrorTypes } from "renderer/lib/errors";
+import * as Sentry from "@sentry/browser";
 const { spawn, execSync } = require("child_process");
 
 const getProxyAndPort = () => {
@@ -38,6 +40,7 @@ const isProxyEnabled = () => {
     const [result] = re.exec(output_string)[0].split(":");
     return Boolean(parseInt(result.split("x")[1]));
   } catch (error) {
+    Sentry.captureException(error)
     console.log(error);
     return undefined;
   }
@@ -77,9 +80,11 @@ const applyProxyWindows = (host, port) => {
   try {
     execSync(command_set_proxy);
     execSync(command_activate_proxy);
-    openAndCloseIE(false);
+    openAndCloseIE();
   } catch (error) {
-    console.log(error);
+    error.cause = appLaunchErrorTypes.TOGGLE_SYSTEM_WIDE_PROXY_FAILED
+    Sentry.captureException(error)
+    console.error(error);
   }
 };
 
@@ -88,9 +93,11 @@ const removeProxyWindows = () => {
     const command_disable_proxy = `reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyEnable /t REG_DWORD /d 0 /f`;
     try {
       execSync(command_disable_proxy);
-      openAndCloseIE(true);
+      openAndCloseIE();
     } catch (error) {
-      console.log(error);
+      error.cause = appLaunchErrorTypes.TOGGLE_SYSTEM_WIDE_PROXY_FAILED
+      Sentry.captureException(error)
+      console.error(error);
     }
   }
 };

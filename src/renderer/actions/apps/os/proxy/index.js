@@ -1,3 +1,5 @@
+import { appLaunchErrorTypes } from "renderer/lib/errors";
+
 const { applyProxyOsx, removeProxyOsx } = require("./osx");
 const { applyProxyWindows, removeProxyWindows } = require("./windows");
 
@@ -12,8 +14,10 @@ const applyProxy = (port) => {
       applyProxyWindows(host, port);
       break;
     default:
-      console.log(`${process.platform} is not supported for systemwide proxy`);
-      return false;
+      throw new Error(
+        `${process.platform} is not supported for systemwide proxy`,
+        {cause: appLaunchErrorTypes.SYSTEM_WIDE_PROXY_NOT_SUPPORTED}
+      )
   }
 };
 
@@ -26,8 +30,10 @@ const removeProxy = () => {
       removeProxyWindows();
       break;
     default:
-      console.log(`${process.platform} is not supported for systemwide proxy`);
-      return false;
+      throw new Error(
+        `${process.platform} is not supported for systemwide proxy`,
+        {cause: appLaunchErrorTypes.SYSTEM_WIDE_PROXY_NOT_SUPPORTED}
+      )
   }
 };
 

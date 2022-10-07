@@ -1,5 +1,7 @@
 import { promisify } from "util";
 import * as _ from "lodash";
+import * as Sentry from "@sentry/browser";
+import { appLaunchErrorTypes } from "renderer/lib/errors";
 const { exec } = require("child_process");
 const promisifiedExec = promisify(exec)
 
@@ -111,7 +113,9 @@ const toggleProxy = (proxyCommand, HOST, PORT) => {
 const executeCommand = (command) => {
   exec(command, (error) => {
     if (error) {
-      console.log(error);
+      error.cause = appLaunchErrorTypes.TOGGLE_SYSTEM_WIDE_PROXY_FAILED
+      Sentry.captureException(error)
+      console.error(error);
       return;
     }
   });
