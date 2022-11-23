@@ -10,16 +10,14 @@ class UserPreferenceActionProcessor extends BaseActionProcessor {
   process = ({ type, payload }: StorageAction) => {
     switch(type) {
       case USER_PREFERENCE.GET_ALL:
-        this.store.getAll()
-        break;
+        return this.store.getAll()
       case USER_PREFERENCE.GET_DEFAULT_PORT:
-        this.store.get("defaultPort")
-        break;
+        return this.store.get("defaultPort")
       case USER_PREFERENCE.UPDATE_DEFAULT_PORT:
-        this.store.set({"defaultPort": payload})
+        this.store.set({"defaultPort": payload?.data})
         break;
       default:
-        console.log("unexpected update preference action", type, payload)
+        console.log("unexpected user preference action", type, payload)
     }
   };
 }
