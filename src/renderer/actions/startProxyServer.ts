@@ -27,13 +27,18 @@ interface IStartProxyResult {
 
 const { CERTS_PATH, ROOT_CERT_PATH } = staticConfig;
 
-// Load user preferences
-const userPreferences = new UserPreferenceFetcher();
-const DEFAULT_PROXY_PORT = userPreferences.getConfig().defaultPort;
 const DEFAULT_HELPER_SERVER_PORT = 7040;
 
 // this automatically stops the old server before starting the new one
-export default async function startProxyServer (proxyPort?: number, shouldStartHelperServer=true) : Promise<IStartProxyResult> {
+export default async function startProxyServer (
+  proxyPort?: number,
+  shouldStartHelperServer=true
+) : Promise<IStartProxyResult> {
+
+  // Load user preferences
+  const userPreferences = new UserPreferenceFetcher();
+  const DEFAULT_PROXY_PORT = userPreferences.getConfig().defaultPort;
+
   // Check if proxy is already listening. If so, close it
   try {
     window.proxy.close();
