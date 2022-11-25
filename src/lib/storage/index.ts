@@ -1,13 +1,19 @@
 import BaseActionProcessor from "./action-processors/base";
 import SSLProxyingActionProcessor from "./action-processors/ssl-proxying";
+import UserPreferenceActionProcessor from "./action-processors/user-preference";
 import { STORE_NAME } from "./constants";
+import { userPreferenceSchema } from "./schemas/userPreferenceSchema";
 import StoreWrapper from "./store-wrapper";
 import { StorageAction } from "./types/storage-action";
 
 class StorageService {
   actionProcessors: BaseActionProcessor[];
+
   sslProxyingStore!: StoreWrapper;
+  userPreferenceStore!: StoreWrapper;
+
   sslProxyingActionProcessor!: BaseActionProcessor;
+  userPreferenceActionProcessor!: BaseActionProcessor;
 
   constructor() {
     this.actionProcessors = [];
@@ -16,6 +22,7 @@ class StorageService {
 
   init = () => {
     this.initSSLProxying();
+    this.initUserPreferences()
   };
 
   initSSLProxying = () => {
@@ -26,6 +33,13 @@ class StorageService {
     );
     this.actionProcessors.push(this.sslProxyingActionProcessor);
   };
+
+  initUserPreferences = () => {
+    const storeName = STORE_NAME.USER_PREFERENCE;
+    this.userPreferenceStore = new StoreWrapper(storeName, userPreferenceSchema);
+    this.userPreferenceActionProcessor = new UserPreferenceActionProcessor(this.userPreferenceStore)
+    this.actionProcessors.push(this.userPreferenceActionProcessor);
+  }
 
   /**
    *

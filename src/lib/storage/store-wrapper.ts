@@ -3,19 +3,23 @@ const Store = require("electron-store");
 class StoreWrapper {
   storeName: string;
   store: typeof Store;
-
-  constructor(storeName: string) {
+  constructor(storeName: string, schema?: any) {
     if (!storeName) {
       // throw Error("No store name given");
       console.log("No store Name given");
     }
 
     this.storeName = storeName;
-    this.store = new Store({
+    const storeProperties = {
       name: storeName,
       cwd: "storage",
       watch: true,
-    });
+    }
+    if(schema) {
+      // @ts-ignore
+      storeProperties.schema = schema
+    }
+    this.store = new Store(storeProperties);
 
     this.initListener();
   }
