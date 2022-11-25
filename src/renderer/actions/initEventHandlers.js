@@ -30,6 +30,7 @@ import { shutdown } from "./shutdown";
 import storageService from "lib/storage";
 import ACTION_TYPES from "lib/storage/types/action-types";
 import storageCacheService from "renderer/services/storage-cache";
+import { STORE_NAME } from "lib/storage/constants";
 
 const initEventHandlers = () => {
   ipcRenderer.on("start-proxy-server", async () => {
