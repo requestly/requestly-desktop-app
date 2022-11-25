@@ -1,3 +1,7 @@
 export interface UserPreferenceObj {
-  defaultPort: string | number
+  defaultPort: number
+}
+
+export interface ISource {
+  defaultPort: number;
 }

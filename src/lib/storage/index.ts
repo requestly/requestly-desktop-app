@@ -2,7 +2,7 @@ import BaseActionProcessor from "./action-processors/base";
 import SSLProxyingActionProcessor from "./action-processors/ssl-proxying";
 import UserPreferenceActionProcessor from "./action-processors/user-preference";
 import { STORE_NAME } from "./constants";
-import { UserPreferenceSchema } from "./schemas/userPreferenceSchema";
+import { userPreferenceSchema } from "./schemas/userPreferenceSchema";
 import StoreWrapper from "./store-wrapper";
 import { StorageAction } from "./types/storage-action";
 
@@ -36,7 +36,7 @@ class StorageService {
 
   initUserPreferences = () => {
     const storeName = STORE_NAME.USER_PREFERENCE;
-    this.userPreferenceStore = new StoreWrapper(storeName, UserPreferenceSchema);
+    this.userPreferenceStore = new StoreWrapper(storeName, userPreferenceSchema);
     this.userPreferenceActionProcessor = new UserPreferenceActionProcessor(this.userPreferenceStore)
     this.actionProcessors.push(this.userPreferenceActionProcessor);
   }

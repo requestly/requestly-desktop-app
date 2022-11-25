@@ -3,4 +3,4 @@ export enum STORE_NAME {
   USER_PREFERENCE = "UserPreference",
 }
 
-export const DEFAULT_PROXY_PORT = "8080"
+export const DEFAULT_PROXY_PORT = 8080

@@ -1,8 +1,8 @@
 import { DEFAULT_PROXY_PORT } from "../constants";
 
-export const UserPreferenceSchema = {
+export const userPreferenceSchema = {
   defaultPort: {
-    type: "string",
+    type: "number",
     default: DEFAULT_PROXY_PORT
   }
 }
