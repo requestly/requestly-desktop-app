@@ -18,9 +18,9 @@ class SSLProxyingActionProcessor extends BaseActionProcessor {
         this.store.set({ enabledAll: false });
         break;
       case ACTION_TYPES.SSL_PROXYING.UPSERT_INCLUSION_LIST_SOURCE:
-        if (payload && payload.data && (payload.data as ISource).id) {
+        if (payload && payload.data && payload.data.id) {
           this.store.set({
-            [`inclusionList.${(payload.data as ISource).id}`]: payload.data,
+            [`inclusionList.${payload.data.id}`]: payload.data,
           });
         }
         break;
@@ -31,7 +31,7 @@ class SSLProxyingActionProcessor extends BaseActionProcessor {
         break;
       case ACTION_TYPES.SSL_PROXYING.UPDATE_INCLUSION_LIST:
         if (payload && payload.data && payload.data) {
-          const sourcesList = (payload.data || []) as ISource[];
+          const sourcesList = payload.data || [];
           const inclusionListMap: { [id: string]: ISource } = {};
           sourcesList.forEach((source) => {
             inclusionListMap[source.id] = source;
@@ -43,9 +43,9 @@ class SSLProxyingActionProcessor extends BaseActionProcessor {
         this.store.set({ inclusionList: {} });
         break;
       case ACTION_TYPES.SSL_PROXYING.UPSERT_EXCLUSION_LIST_SOURCE:
-        if (payload && payload.data && (payload.data as ISource).id) {
+        if (payload && payload.data && payload.data.id) {
           this.store.set({
-            [`exclusionList.${(payload.data as ISource).id}`]: payload.data,
+            [`exclusionList.${payload.data.id}`]: payload.data,
           });
         }
         break;
@@ -56,7 +56,7 @@ class SSLProxyingActionProcessor extends BaseActionProcessor {
         break;
       case ACTION_TYPES.SSL_PROXYING.UPDATE_EXCLUSION_LIST:
         if (payload && payload.data && payload.data) {
-          const sourcesList = (payload.data || []) as ISource[];
+          const sourcesList = payload.data || [];
           const exclusionListMap: { [id: string]: ISource } = {};
           sourcesList.forEach((source) => {
             exclusionListMap[source.id] = source;
