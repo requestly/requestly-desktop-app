@@ -37,6 +37,7 @@ class StorageCacheService {
         global.rq.userPreferences = newUserPreferences
         console.log(`Updated ${storeName} cache`);
 
+        // might not be necessary when other user preference attributes are added
         this.restartProxyServer(newUserPreferences?.defaultPort)
         break;
       default:

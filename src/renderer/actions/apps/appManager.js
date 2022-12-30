@@ -20,6 +20,7 @@ import { Electron } from "./electron";
 import { FreshFirefox } from "./browsers/fresh-firefox";
 import { FreshSafari } from "./browsers/safari";
 import { SystemWideProxy } from "./os/system-wide";
+import { ipcRenderer } from "electron";
 
 export const buildApps = (config) => {
   const apps = [
@@ -51,9 +52,23 @@ export const buildApps = (config) => {
     throw new Error("Duplicate app id");
   }
 
+  /*
+  * Extra IPC for now
+  *
+  * TODO in proxy : lib/proxy/lib/proxy.js -> Proxy.prototype.close
+  * a cleaner way would be to directly add
+  * shutdown/close handler inside the proxy
+  * so no IPC call, every proxy restart would trigger
+  * all added `closeHandlers`
+  */
+  ipcRenderer.on("deactivate-traffic-sources", async () => {
+    await shutdownApps(apps);
+    ipcRenderer.send("reply-deactivate-traffic-sources");
+  });
+
   return appIndex;
 };
 
-const shutdownApps = (apps) => {
+export const shutdownApps = (apps) => {
   return Promise.all(apps.map((i) => i.deactivateAll()));
 };
