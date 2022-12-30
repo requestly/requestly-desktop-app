@@ -56,6 +56,11 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
   ipcMain.handle("browser-closed", async (event, payload) => {
     webAppWindow.send("browser-closed", payload);
   });
+
+  // Open handle for async browser close
+  ipcMain.handle("proxy-restarted", async (event, payload) => {
+    webAppWindow.send("proxy-restarted", payload);
+  });
 };
 
 export const registerMainProcessCommonEvents = () => {

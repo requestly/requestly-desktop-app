@@ -4,8 +4,8 @@ import storageCacheService from "renderer/services/storage-cache";
 import BaseConfigFetcher from "./base";
 
 class SSLProxyingConfigFetcher implements BaseConfigFetcher {
-  getConfig = (): SSLProxyingJsonObj | undefined => {
-    return storageCacheService.getCache(STORE_NAME.SSL_PROXYING);
+  getConfig = (): SSLProxyingJsonObj => {
+    return storageCacheService.getCache(STORE_NAME.SSL_PROXYING) as SSLProxyingJsonObj
   };
 }
 

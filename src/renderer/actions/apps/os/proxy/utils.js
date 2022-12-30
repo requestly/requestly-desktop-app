@@ -1,4 +1,4 @@
-import userPreferenceManager from "../../../../utils/userPreferencesManager";
+import UserPreferenceFetcher from "renderer/lib/proxy-interface/userPreferenceFetcher";
 import { isWindowsProxyRunning } from "./windows";
 const { exec, execSync } = require("child_process");
 
@@ -34,7 +34,8 @@ const isHttpsProxyRunning = (port) => {
 };
 
 export const getProxyStatus = (port) => {
-  const DEFAULT_PROXY_PORT = userPreferenceManager.getProxyDefaultPort();
+  const userPreferences = new UserPreferenceFetcher();
+  const DEFAULT_PROXY_PORT = userPreferences.getConfig().defaultPort;
   port = port || DEFAULT_PROXY_PORT;
 
   if (process.platform === "darwin") {
