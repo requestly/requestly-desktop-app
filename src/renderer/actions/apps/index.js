@@ -8,6 +8,7 @@ import { staticConfig } from "../../config";
 // SENTRY
 import * as Sentry from "@sentry/browser";
 import { getLauncher } from "./browsers/browser-handler";
+import { getCurrentProxyPort } from "../storage/cacheUtils";
 
 const config = {
   appName: staticConfig.APP_NAME,
@@ -30,6 +31,8 @@ export const activateApp = async ({ id, proxyPort, options }) => {
   const app = apps[id];
   if (!app) throw new Error(`Unknown app ${id}`);
 
+  const targetPort = proxyPort ? proxyPort : getCurrentProxyPort()
+
   // After 30s, don't stop activating, but report an error if we're not done yet
   let activationDone = false; // Flag to keep track
 
@@ -37,7 +40,7 @@ export const activateApp = async ({ id, proxyPort, options }) => {
     if (!activationDone) console.error(`Timeout activating ${id}`);
   });
 
-  const result = await app.activate(proxyPort, options).catch((err) => {
+  const result = await app.activate(targetPort, options).catch((err) => {
     Sentry.captureException(err);
     console.error(err.message);
     return err;
@@ -59,12 +62,14 @@ export const deactivateApp = async ({ id, proxyPort }) => {
   const app = apps[id];
   if (!app) throw new Error(`Unknown app ${id}`);
 
-  await app.deactivate(proxyPort).catch((e) => {
+  const targetPort = proxyPort ? proxyPort : getCurrentProxyPort()
+
+  await app.deactivate(targetPort).catch((e) => {
     Sentry.captureException(e);
     console.error(e.message);
   });
 
-  return { success: !(await app.isActive(proxyPort)) };
+  return { success: !(await app.isActive(targetPort)) };
 };
 
 export const isAppActivatable = ({ id }) => {

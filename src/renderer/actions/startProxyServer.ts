@@ -5,7 +5,6 @@ import { RQProxyProvider } from "@requestly/requestly-proxy";
 import RulesDataSource from "../lib/proxy-interface/rulesFetcher";
 import LoggerService from "../lib/proxy-interface/loggerService";
 
-import UserPreferenceFetcher from "renderer/lib/proxy-interface/userPreferenceFetcher";
 import getNextAvailablePort from "./getNextAvailablePort";
 // CONFIG
 import { staticConfig } from "../config";
@@ -13,6 +12,7 @@ import { staticConfig } from "../config";
 import * as Sentry from "@sentry/browser";
 import startHelperServer from "./startHelperServer";
 import logger from "utils/logger";
+import { getDefaultProxyPort } from "./storage/cacheUtils";
 
 declare global {
   interface Window { proxy: any }
@@ -35,10 +35,6 @@ export default async function startProxyServer (
   shouldStartHelperServer=true
 ) : Promise<IStartProxyResult> {
 
-  // Load user preferences
-  const userPreferences = new UserPreferenceFetcher();
-  const DEFAULT_PROXY_PORT = userPreferences.getConfig().defaultPort;
-
   // Check if proxy is already listening. If so, close it
   try {
     window.proxy.close();
@@ -48,7 +44,7 @@ export default async function startProxyServer (
     logger.log("A proxy server close req was made but no proxy was up");
   }
   const proxyIp = ip.address();
-  const targetPort = proxyPort ? proxyPort : DEFAULT_PROXY_PORT
+  const targetPort = proxyPort ? proxyPort : getDefaultProxyPort();
 
   const result: IStartProxyResult = {
     success: true,
@@ -65,6 +61,7 @@ export default async function startProxyServer (
     result.port = FINAL_PROXY_PORT
   }
 
+  global.rq.proxyServerStatus = {port: FINAL_PROXY_PORT}
   startProxyFromModule(result.port);
 
   // start the helper server if not already running
