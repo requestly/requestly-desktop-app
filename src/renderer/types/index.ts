@@ -6,9 +6,17 @@ declare global {
 }
 
 interface RQBgGlobalNamespace {
+  // cache of main storge
   sslProxyingStorage?: SSLProxyingJsonObj;
   sslTunnelingSocketsMap?: SSLTunnelingSocketsMap;
-  userPreferences?: UserPreferenceObj
+  userPreferences?: UserPreferenceObj;
+
+  // local cache for background process
+  proxyServerStatus?: ProxyServerObject
+}
+
+interface ProxyServerObject {
+  port: number
 }
 
 interface SSLTunnelingSocketsMap {

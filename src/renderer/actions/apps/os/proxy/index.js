@@ -1,15 +1,18 @@
+import { getCurrentProxyPort } from "renderer/actions/storage/cacheUtils";
+
 const { applyProxyOsx, removeProxyOsx } = require("./osx");
 const { applyProxyWindows, removeProxyWindows } = require("./windows");
 
 const applyProxy = (port) => {
+  const targetPort = port ? port : getCurrentProxyPort()
   const host = "127.0.0.1";
 
   switch (process.platform) {
     case "darwin":
-      applyProxyOsx(host, port);
+      applyProxyOsx(host, targetPort);
       break;
     case "win32":
-      applyProxyWindows(host, port);
+      applyProxyWindows(host, targetPort);
       break;
     default:
       console.log(`${process.platform} is not supported for systemwide proxy`);

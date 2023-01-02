@@ -47,7 +47,7 @@ module.exports.staticConfig = staticConfig;
 const userPreferences = {
   DEFAULT_PROXY_PORT: {
     key: "proxy_port",
-    defaultValue: 8080,
+    defaultValue: 8281,
   },
   START_APP_ON_SYSTEM_STARTUP: {
     key: "start_app_on_system_startup",

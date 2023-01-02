@@ -9,7 +9,6 @@ import {
   areAppsActivatable,
   activateApp,
   deactivateApp,
-  areAppsActivatableAsync,
   isAppActivatable,
 } from "./apps";
 import saveRootCert from "./saveRootCert";
@@ -58,11 +57,11 @@ const initEventHandlers = () => {
   });
 
   ipcRenderer.on("activate-app", async (event, payload) => {
-    const { id, options, proxyPort } = payload;
+    const { id, options } = payload;
     let res = { success: false };
 
     try {
-      res = await activateApp({ id, options, proxyPort });
+      res = await activateApp({ id, options });
     } catch (err) {
       Sentry.captureException(err);
       console.error(err.message);
@@ -71,10 +70,10 @@ const initEventHandlers = () => {
   });
 
   ipcRenderer.on("deactivate-app", async (event, payload) => {
-    const { id, proxyPort } = payload;
+    const { id } = payload;
     let res = { success: false };
     try {
-      res = await deactivateApp({ id, proxyPort });
+      res = await deactivateApp({ id });
     } catch (err) {
       Sentry.captureException(err);
       console.error(err.message);
@@ -104,14 +103,12 @@ const initEventHandlers = () => {
   });
 
   ipcRenderer.on("system-wide-proxy-status", async (event, payload) => {
-    const port = payload.port;
-    const res = getProxyStatus(port);
+    const res = getProxyStatus();
     ipcRenderer.send("reply-system-wide-proxy-status", res);
   });
 
   ipcRenderer.on("system-wide-proxy-start", async (event, payload) => {
-    const port = payload.port;
-    const res = applyProxy(port);
+    const res = applyProxy();
     ipcRenderer.send("reply-system-wide-proxy-start", res);
   });
 
