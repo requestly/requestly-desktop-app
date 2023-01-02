@@ -97,13 +97,17 @@ const createWindow = async () => {
     extraHeaders: "pragma: no-cache\n",
   });
 
-  webAppWindow.webContents.once("did-fail-load", () => {
-    if (webAppWindow) webAppWindow.hide();
-    dialog.showErrorBox(
-      "No internet",
-      "Unable to connect to Requestly servers. Make sure you're connected to the internet or try removing any active proxy."
-    );
-    app.quit();
+  // @ts-ignore
+  webAppWindow.webContents.once("did-fail-load", (event, errorCode, errorDescription, validatedUrl, isMainFrame, frameProcessId, frameRoutingId) => {
+    if(isMainFrame) {
+      console.error(`did-fail-load errorCode=${errorCode} url=${validatedUrl}`);
+      if (webAppWindow) webAppWindow.hide();
+      dialog.showErrorBox(
+        "No internet",
+        "Unable to connect to Requestly servers. Make sure you're connected to the internet or try removing any active proxy."
+      );
+      app.quit();
+    }
   });
 
   webAppWindow.once("ready-to-show", () => {
