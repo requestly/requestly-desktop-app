@@ -1,18 +1,18 @@
-import { SSL_PROXYING } from "./action-types";
-import { ISource } from "./ssl-proxying";
-
+import { SSL_PROXYING, USER_PREFERENCE } from "./action-types";
+import { ISource as SSLSource } from "./ssl-proxying";
+import { ISource as UserPrefereceSource } from "./user-preference"
 type Payload = SourcePayload & SourcesPayload & DeletePayload;
 
 export interface StorageAction {
-  type: SSL_PROXYING;
+  type: SSL_PROXYING | USER_PREFERENCE;
   payload?: Payload;
 }
 export interface SourcePayload {
-  data: ISource;
+  data: SSLSource | UserPrefereceSource;
 }
 
 export interface SourcesPayload {
-  data: ISource[];
+  data: SSLSource[] | UserPrefereceSource[];
 }
 
 export interface DeletePayload {
