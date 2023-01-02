@@ -2,9 +2,7 @@
 import UserPreferenceFetcher from "renderer/lib/proxy-interface/userPreferenceFetcher";
 
 export const getCurrentProxyPort = () => {
-  console.log("global.rq.proxyServerStatus?.port", global.rq.proxyServerStatus?.port)
   return global.rq.proxyServerStatus?.port || null
-
 }
 
 
