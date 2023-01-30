@@ -1,7 +1,7 @@
 {
   "name": "requestly",
   "productName": "Requestly",
-  "version": "1.4.21",
+  "version": "1.4.22",
   "private": true,
   "description": "Intercept & Modify HTTP Requests",
   "scripts": {
@@ -52,6 +52,8 @@
       "entitlements": "assets/entitlements.mac.plist",
       "entitlementsInherit": "assets/entitlements.mac.plist",
       "gatekeeperAssess": false,
+      "requirements": "assets/requirement.rqset",
+      "identity": "Sachin Jain (AFBT5Z9V94)",
       "target": [
         {
           "target": "dmg",

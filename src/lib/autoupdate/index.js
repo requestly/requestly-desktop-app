@@ -28,7 +28,7 @@ class AutoUpdate {
   constructor(webAppWindow) {
     this.webAppWindow = webAppWindow;
 
-    log.transports.file.level = "info";
+    log.transports.file.level = 'verbose';
     autoUpdater.logger = log;
     // Now this is triggered after rendering UI
     // autoUpdater.checkForUpdatesAndNotify();
@@ -42,6 +42,7 @@ class AutoUpdate {
 
   init_events = () => {
     autoUpdater.on("update-available", (updateInfo) => {
+      log.info("update available", updateInfo);
       this.updateAvailable = true;
       this.availableUpdateDetails = updateInfo;
 
@@ -50,11 +51,11 @@ class AutoUpdate {
     });
 
     autoUpdater.on("checking-for-update", () => {
-      console.log("checking-for-update");
+      log.info("checking-for-update");
     });
 
     autoUpdater.on("update-not-available", () => {
-      console.log("update-not-available");
+      log.info("update-not-available");
     });
 
     autoUpdater.on("download-progress", (progressObj) => {
@@ -64,6 +65,7 @@ class AutoUpdate {
     });
 
     autoUpdater.on("update-downloaded", (updateInfo) => {
+      log.info("update downloaded", updateInfo)
       this.updateDownloaded = true;
       this.downloadedUpdateDetails = updateInfo;
 
@@ -72,13 +74,27 @@ class AutoUpdate {
       }
     });
 
+    autoUpdater.on("err", (err)=> {
+      log.error("error received on autoupdater", err);
+    })
+
+    autoUpdater.on("before-quit-for-update", (info) => {
+      log.info("before-quit-for-update event triggered", info)
+    });
+
+    autoUpdater.on("before-quit", (info) => {
+      log.info("before-quit event triggered", info)
+    });
+
     ipcMain.handle("check-for-updates-and-notify", () => {
       autoUpdater.checkForUpdatesAndNotify();
     });
 
     ipcMain.handle("quit-and-install", () => {
+      log.info("recieved quit and install")
       global.quitAndInstall = true;
-      autoUpdater.quitAndInstall();
+      let res = autoUpdater.quitAndInstall();
+      log.info("finished quit and install", res)
     });
   };
 }
