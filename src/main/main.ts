@@ -81,8 +81,7 @@ const createWindow = async () => {
     icon: getAssetPath("icon.png"),
     webPreferences: {
       nodeIntegration: false,
-      contextIsolation: true,
-      // nativeWindowOpen: false, // deprecated after electron v18
+      sandbox: false,
       preload: path.join(__dirname, "preload.js"),
     },
   });
