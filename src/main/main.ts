@@ -80,8 +80,7 @@ const createWindow = async () => {
     icon: getAssetPath("icon.png"),
     webPreferences: {
       nodeIntegration: false,
-      contextIsolation: true,
-      nativeWindowOpen: false,
+      sandbox: false,
       preload: path.join(__dirname, "preload.js"),
     },
   });
@@ -209,9 +208,10 @@ const createWindow = async () => {
   menuBuilder.buildMenu();
 
   // Open urls in the user's browser
-  webAppWindow.webContents.on("new-window", (event, url) => {
-    event.preventDefault();
-    shell.openExternal(url);
+  // webAppWindow.webContents.on("new-window", (event, url) => { // deprecated after electron v22
+  webAppWindow.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url);
+    return { action: 'deny' }
   });
 
   // Remove this if your app does not use auto updates

@@ -1,7 +1,7 @@
 {
   "name": "requestly",
   "productName": "Requestly",
-  "version": "1.4.22",
+  "version": "1.4.23",
   "private": true,
   "description": "Intercept & Modify HTTP Requests",
   "main": "./dist/main/main.js",
@@ -14,7 +14,7 @@
     "electron-rebuild": "node -r ts-node/register ../../.erb/scripts/electron-rebuild.js",
     "link-modules": "node -r ts-node/register ../../.erb/scripts/link-modules.js",
     "preinstall": "npx npm-force-resolutions",
-    "postinstall": "patch-package && npm run electron-rebuild && npm run link-modules"
+    "postinstall": "npm run electron-rebuild && npm run link-modules"
   },
   "license": "UNLICENSED",
   "dependencies": {
@@ -25,8 +25,8 @@
     "ws": "^8.2.3"
   },
   "devDependencies": {
-    "npm-force-resolutions": "0.0.10",
-    "patch-package": "^6.4.7"
+    "electron":"23.0.0",
+    "npm-force-resolutions": "0.0.10"
   },
   "resolutions": {
     "bufferutil": "4.0.3",
