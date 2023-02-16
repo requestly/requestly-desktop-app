@@ -13,8 +13,7 @@ import "core-js/stable";
 import "regenerator-runtime/runtime";
 import path from "path";
 import { app, BrowserWindow, shell, dialog } from "electron";
-// @ts-expect-error
-import { CONSTANTS as GLOBAL_CONSTANTS } from "@requestly/requestly-core";
+
 import MenuBuilder from "./menu";
 import {
   registerMainProcessCommonEvents,
@@ -91,7 +90,7 @@ const createWindow = async () => {
   // TODO @sahil: Prod and Local Urls should be supplied by @requestly/requestly-core-npm package.
   const DESKTOP_APP_URL = isDevelopment
     ? "http://localhost:3000"
-    : GLOBAL_CONSTANTS.DESKTOP_APP_URL;
+    : "https://app.requestly.io";
   webAppWindow.loadURL(DESKTOP_APP_URL, {
     extraHeaders: "pragma: no-cache\n",
   });
