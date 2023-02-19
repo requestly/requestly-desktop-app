@@ -45,13 +45,24 @@ Npm (Version: 8.5.5)
 
 ## Development
 ### Setup
-1. Clone the repo into a public GitHub repository (or [fork](https://github.com/requestly/requestly-desktop-app/fork)). If you plan to distribute the code, keep the source code public to comply with AGPLv3.
+1. Clone the repo
 
 ```
 git clone https://github.com/requestly/requestly-desktop-app.git
 ```
 
-2. Go to the project folder & Install packages with npm
+2. Clone requestly-proxy. (Should be cloned in the same folder for development)
+
+```
+git clone https://github.com/requestly/requestly-proxy.git
+```
+
+3. Go to the requestly-proxy folder & Install packages with npm
+```
+npm i
+```
+
+4. Go to the requestly-desktop-app folder & Install packages with npm
 ```
 npm i
 ```
@@ -60,7 +71,13 @@ npm i
 
 1. Start Requestly WebApp server locally. Here are the [steps](https://github.com/requestly/requestly-master/blob/master/app/README.md).
 
-2. Start Requestly Desktop App
+2. [Optional] Start watching requestly-proxy. (You can skip this step if you don't want to make any changes in requestly-proxy)
+```
+sh ./watch.sh
+```
+> After every change to **requestly-proxy**, Press `cmd + r` on background window for changes to apply
+
+3. Start Requestly Desktop App
 ```
 npm start
 ```
