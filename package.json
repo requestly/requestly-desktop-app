@@ -12,7 +12,7 @@
     "lint": "cross-env NODE_ENV=development eslint . --cache --ext .js,.jsx,.ts,.tsx",
     "package": "npm run build && electron-builder build --publish never",
     "deploy": "npm run build && electron-builder build --publish always",
-    "postinstall": "ts-node .erb/scripts/check-native-dep.js && electron-builder install-app-deps && cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.dev.dll.ts && opencollective-postinstall",
+    "postinstall": "ts-node .erb/scripts/check-native-dep.js && electron-builder install-app-deps && cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.dev.dll.ts",
     "start": "ts-node ./.erb/scripts/check-port-in-use.js && npm run start:renderer",
     "start:main": "cross-env NODE_ENV=development electron -r ts-node/register/transpile-only ./src/main/main.ts --trace-warnings",
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
@@ -207,7 +207,6 @@
     "jest": "^27.2.5",
     "lint-staged": "^11.2.3",
     "mini-css-extract-plugin": "^2.4.2",
-    "opencollective-postinstall": "^2.0.3",
     "prettier": "^2.4.1",
     "react-refresh": "^0.14.0",
     "rimraf": "^3.0.2",
@@ -278,9 +277,6 @@
   "devEngines": {
     "node": ">=14.x",
     "npm": ">=7.x"
-  },
-  "collective": {
-    "url": "https://requestly.io"
   },
   "browserslist": [],
   "prettier": {
