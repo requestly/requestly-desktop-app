@@ -1,7 +1,7 @@
 {
   "name": "requestly",
   "productName": "Requestly",
-  "version": "1.4.23",
+  "version": "1.4.24",
   "private": true,
   "description": "Intercept & Modify HTTP Requests",
   "scripts": {
@@ -228,7 +228,7 @@
   "dependencies": {
     "@electron/remote": "^2.0.9",
     "@requestly/requestly-core": "^1.0.2",
-    "@requestly/requestly-proxy": "^1.1.15",
+    "@requestly/requestly-proxy": "^1.1.16",
     "@sentry/browser": "^6.13.3",
     "@sentry/electron": "^2.5.4",
     "assert": "^2.0.0",
