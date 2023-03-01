@@ -18,14 +18,14 @@
   },
   "license": "UNLICENSED",
   "dependencies": {
-    "@httptoolkit/browser-launcher": "^2.0.0",
+    "@httptoolkit/browser-launcher": "^2.1.0",
     "@httptoolkit/osx-find-executable": "^2.0.1",
     "brotli-wasm": "^1.1.0",
     "mockttp": "^2.3.0",
     "ws": "^8.2.3"
   },
   "devDependencies": {
-    "electron":"23.0.0",
+    "electron": "23.0.0",
     "npm-force-resolutions": "0.0.10"
   },
   "resolutions": {
