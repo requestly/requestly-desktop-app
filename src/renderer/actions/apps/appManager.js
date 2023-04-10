@@ -14,6 +14,9 @@ import {
   FreshEdgeCanary,
   FreshBrave,
   FreshOpera,
+  ExistingChromeBeta,
+  ExistingChromeDev,
+  ExistingEdge,
 } from "./browsers/chromium-based-browsers";
 import { addShutdownHandler } from "../shutdown";
 import { Electron } from "./electron";
@@ -27,11 +30,14 @@ export const buildApps = (config) => {
     new FreshChrome(config),
     new ExistingChrome(config),
     new FreshChromeBeta(config),
+    new ExistingChromeBeta(config),
     new FreshChromeDev(config),
+    new ExistingChromeDev(config),
     new FreshChromeCanary(config),
     new FreshChromium(config),
     new FreshChromiumDev(config),
     new FreshEdge(config),
+    new ExistingEdge(config),
     new FreshEdgeBeta(config),
     new FreshEdgeDev(config),
     new FreshEdgeCanary(config),

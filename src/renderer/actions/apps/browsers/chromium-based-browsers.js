@@ -368,10 +368,26 @@ export class FreshChromeBeta extends FreshChromiumBasedInterceptor {
   }
 }
 
+export class ExistingChromeBeta extends ExistingChromiumBasedInterceptor {
+  constructor(config) {
+    super(config, "chrome-beta");
+    this.id = "existing-chrome-beta";
+    this.version = "1.0.0";
+  }
+}
+
 export class FreshChromeDev extends FreshChromiumBasedInterceptor {
   constructor(config) {
     super(config, "chrome-dev");
     this.id = "fresh-chrome-dev";
+    this.version = "1.0.0";
+  }
+}
+
+export class ExistingChromeDev extends ExistingChromiumBasedInterceptor {
+  constructor(config) {
+    super(config, "chrome-dev");
+    this.id = "existing-chrome-dev";
     this.version = "1.0.0";
   }
 }
@@ -404,6 +420,14 @@ export class FreshEdge extends FreshChromiumBasedInterceptor {
   constructor(config) {
     super(config, "msedge");
     this.id = "fresh-edge";
+    this.version = "1.0.0";
+  }
+}
+
+export class ExistingEdge extends ExistingChromiumBasedInterceptor {
+  constructor(config) {
+    super(config, "msedge");
+    this.id = "existing-edge";
     this.version = "1.0.0";
   }
 }
