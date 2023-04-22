@@ -268,6 +268,13 @@ app.on("window-all-closed", () => {
   app.quit();
 });
 
+app.setAsDefaultProtocolClient('requestly');
+
+app.on('open-url', function (event, url) {
+  event.preventDefault();
+  console.log(`Opened from deeplink ${url}`);
+});
+
 app
   .whenReady()
   .then(() => {

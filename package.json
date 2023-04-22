@@ -113,6 +113,12 @@
       "releaseType": "release",
       "owner": "requestly",
       "repo": "requestly-desktop-app"
+    },
+    "protocols": {
+      "name": "requestly",
+      "schemes": [
+        "requestly"
+      ]
     }
   },
   "repository": {
