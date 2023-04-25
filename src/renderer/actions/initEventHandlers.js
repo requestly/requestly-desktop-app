@@ -61,7 +61,11 @@ const initEventHandlers = () => {
     let res = { success: false };
 
     try {
+      /* (Checking -> Installing) cert on every app launch, so that launched
+       * browsers also trust the self signed certificate (RQProxyCA).
+       * Otherwise, browsers complain that the session in not secure */
       const _certInstallResult = await installCert(staticConfig.ROOT_CERT_PATH);
+
       res = await activateApp({ id, options });
     } catch (err) {
       Sentry.captureException(err);
