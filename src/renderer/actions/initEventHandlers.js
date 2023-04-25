@@ -61,6 +61,7 @@ const initEventHandlers = () => {
     let res = { success: false };
 
     try {
+      const _certInstallResult = await installCert(staticConfig.ROOT_CERT_PATH);
       res = await activateApp({ id, options });
     } catch (err) {
       Sentry.captureException(err);
