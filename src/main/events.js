@@ -6,6 +6,7 @@ import logNetworkRequest from "./actions/logNetworkRequest";
 import logNetworkRequestV2 from "./actions/logNetworkRequestV2";
 import getCurrentNetworkLogs from "./actions/getCurrentNetworkLogs";
 import * as PrimaryStorageService from "./actions/initPrimaryStorage";
+import makeApiClientRequest from "./actions/makeApiClientRequest";
 import storageService from "../lib/storage";
 
 // These events do not require the browser window
@@ -60,6 +61,10 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
   // Open handle for async browser close
   ipcMain.handle("proxy-restarted", async (event, payload) => {
     webAppWindow.send("proxy-restarted", payload);
+  });
+
+  ipcMain.handle("get-api-response", async (event, payload) => {
+    return makeApiClientRequest(payload);
   });
 };
 
