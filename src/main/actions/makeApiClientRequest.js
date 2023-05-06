@@ -1,11 +1,11 @@
 import axiosProxied from "../../utils/axiosProxied";
 
 const makeApiClientRequest = async ({ apiRequest }) => {
-  const { method } = apiRequest;
+  const { method = "GET" } = apiRequest;
   const headers = {};
   let { body, url } = apiRequest;
 
-  if (apiRequest.queryParams.length) {
+  if (apiRequest?.queryParams.length) {
     const urlObj = new URL(apiRequest.url);
     const searchParams = new URLSearchParams(urlObj.search);
     apiRequest.queryParams.forEach(({ key, value }) => {
@@ -15,7 +15,7 @@ const makeApiClientRequest = async ({ apiRequest }) => {
     url = urlObj.toString();
   }
 
-  apiRequest.headers.forEach(({ key, value }) => {
+  apiRequest?.headers.forEach(({ key, value }) => {
     headers[key] = value;
   });
 
@@ -71,6 +71,7 @@ const makeApiClientRequest = async ({ apiRequest }) => {
       redirectedUrl: responseURL !== url ? responseURL : "",
     };
   } catch (e) {
+    console.log("### Error", e.message);
     return null;
   }
 };
