@@ -1,38 +1,39 @@
-import axiosProxied from "../../utils/axiosProxied";
+import getProxiedAxios from "./getProxiedAxios";
 
 const makeApiClientRequest = async ({ apiRequest }) => {
-  const { method = "GET" } = apiRequest;
-  const headers = {};
-  let { body, url } = apiRequest;
-
-  if (apiRequest?.queryParams.length) {
-    const urlObj = new URL(apiRequest.url);
-    const searchParams = new URLSearchParams(urlObj.search);
-    apiRequest.queryParams.forEach(({ key, value }) => {
-      searchParams.append(key, value);
-    });
-    urlObj.search = searchParams.toString();
-    url = urlObj.toString();
-  }
-
-  apiRequest?.headers.forEach(({ key, value }) => {
-    headers[key] = value;
-  });
-
-  if (
-    !["GET", "HEAD"].includes(method) &&
-    apiRequest.contentType === "application/x-www-form-urlencoded"
-  ) {
-    const formData = new FormData();
-    body?.forEach(({ key, value }) => {
-      formData.append(key, value);
-    });
-    body = new URLSearchParams(formData);
-  }
-
   try {
+    const { method = "GET" } = apiRequest;
+    const headers = {};
+    let { body, url } = apiRequest;
+
+    if (apiRequest?.queryParams.length) {
+      const urlObj = new URL(apiRequest.url);
+      const searchParams = new URLSearchParams(urlObj.search);
+      apiRequest.queryParams.forEach(({ key, value }) => {
+        searchParams.append(key, value);
+      });
+      urlObj.search = searchParams.toString();
+      url = urlObj.toString();
+    }
+
+    apiRequest?.headers.forEach(({ key, value }) => {
+      headers[key] = value;
+    });
+
+    if (
+      !["GET", "HEAD"].includes(method) &&
+      apiRequest.contentType === "application/x-www-form-urlencoded"
+    ) {
+      const formData = new FormData();
+      body?.forEach(({ key, value }) => {
+        formData.append(key, value);
+      });
+      body = new URLSearchParams(formData);
+    }
+
     const requestStartTime = performance.now();
-    const response = await axiosProxied({
+    const axios = getProxiedAxios();
+    const response = await axios({
       url,
       method,
       headers,
@@ -71,7 +72,6 @@ const makeApiClientRequest = async ({ apiRequest }) => {
       redirectedUrl: responseURL !== url ? responseURL : "",
     };
   } catch (e) {
-    console.log("### Error", e.message);
     return null;
   }
 };

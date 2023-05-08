@@ -4,7 +4,8 @@ import "regenerator-runtime/runtime";
 // CORE
 import { ipcMain, ipcRenderer, shell } from "electron";
 // ACTION
-import startProxyServer from "./startProxyServer";
+import startProxyServer from "./proxy/startProxyServer";
+import getProxyConfig from "./proxy/getProxyConfig";
 import {
   areAppsActivatable,
   activateApp,
@@ -34,6 +35,7 @@ const initEventHandlers = () => {
   ipcRenderer.on("start-proxy-server", async () => {
     const PROXY_RESULT = await startProxyServer();
     ipcRenderer.send("reply-start-proxy-server", PROXY_RESULT);
+    ipcRenderer.send("proxy-config-updated", getProxyConfig());
   });
 
   ipcRenderer.on("detect-available-apps", async (event, payload) => {
