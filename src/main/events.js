@@ -6,7 +6,9 @@ import logNetworkRequest from "./actions/logNetworkRequest";
 import logNetworkRequestV2 from "./actions/logNetworkRequestV2";
 import getCurrentNetworkLogs from "./actions/getCurrentNetworkLogs";
 import * as PrimaryStorageService from "./actions/initPrimaryStorage";
+import makeApiClientRequest from "./actions/makeApiClientRequest";
 import storageService from "../lib/storage";
+import { createOrUpdateAxiosInstance } from "./actions/getProxiedAxios";
 
 // These events do not require the browser window
 export const registerMainProcessEvents = () => {
@@ -59,7 +61,16 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
 
   // Open handle for async browser close
   ipcMain.handle("proxy-restarted", async (event, payload) => {
+    createOrUpdateAxiosInstance(payload);
     webAppWindow.send("proxy-restarted", payload);
+  });
+
+  ipcMain.on("proxy-config-updated", (_, payload) => {
+    createOrUpdateAxiosInstance(payload);
+  });
+
+  ipcMain.handle("get-api-response", async (event, payload) => {
+    return makeApiClientRequest(payload);
   });
 };
 
