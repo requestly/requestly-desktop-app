@@ -86,14 +86,12 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
 
   ipcMain.handle("delete-network-session", async (event, payload) => {
     const { id } = payload;
-    await deleteNetworkRecording(id);
-    resendAllNetworkLogs();
+    return deleteNetworkRecording(id);
   });
 
   ipcMain.handle("save-network-session", async (event, payload) => {
     const { har, name } = payload;
     const id = await storeSessionRecording(har, name);
-    resendAllNetworkLogs();
     return id;
   });
 };
