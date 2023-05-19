@@ -2,17 +2,17 @@
 const ip = require("ip");
 
 import { RQProxyProvider } from "@requestly/requestly-proxy";
-import RulesDataSource from "../lib/proxy-interface/rulesFetcher";
-import LoggerService from "../lib/proxy-interface/loggerService";
+import RulesDataSource from "../../lib/proxy-interface/rulesFetcher";
+import LoggerService from "../../lib/proxy-interface/loggerService";
 
-import getNextAvailablePort from "./getNextAvailablePort";
+import getNextAvailablePort from "../getNextAvailablePort";
 // CONFIG
-import { staticConfig } from "../config";
+import { staticConfig } from "../../config";
 // SENTRY
 import * as Sentry from "@sentry/browser";
-import startHelperServer from "./startHelperServer";
+import startHelperServer from "../startHelperServer";
 import logger from "utils/logger";
-import { getDefaultProxyPort } from "./storage/cacheUtils";
+import { getDefaultProxyPort } from "../storage/cacheUtils";
 
 declare global {
   interface Window { proxy: any }
