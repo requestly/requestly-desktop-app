@@ -8,6 +8,12 @@ import getCurrentNetworkLogs from "./actions/getCurrentNetworkLogs";
 import * as PrimaryStorageService from "./actions/initPrimaryStorage";
 import makeApiClientRequest from "./actions/makeApiClientRequest";
 import storageService from "../lib/storage";
+import {
+  deleteNetworkRecording,
+  getAllNetworkSessions,
+  getSessionRecording,
+  storeSessionRecording,
+} from "./actions/networkSessionStorage";
 import { createOrUpdateAxiosInstance } from "./actions/getProxiedAxios";
 
 // These events do not require the browser window
@@ -63,6 +69,35 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
   ipcMain.handle("proxy-restarted", async (event, payload) => {
     createOrUpdateAxiosInstance(payload);
     webAppWindow.send("proxy-restarted", payload);
+  });
+
+  // hacky implementation for syncing addition and deletion
+  const resendAllNetworkLogs = async () => {
+    const res = await getAllNetworkSessions();
+    webAppWindow.send("network-sessions-updated", res);
+  };
+
+  ipcMain.handle("get-all-network-sessions", async () => {
+    const networkSessions = await getAllNetworkSessions();
+    return networkSessions;
+  });
+
+  ipcMain.handle("get-network-session", async (event, payload) => {
+    const { id } = payload;
+    const result = await getSessionRecording(id);
+    return result;
+  });
+
+  ipcMain.handle("delete-network-session", async (event, payload) => {
+    const { id } = payload;
+    await deleteNetworkRecording(id);
+    return resendAllNetworkLogs();
+  });
+
+  ipcMain.handle("save-network-session", async (event, payload) => {
+    const { har, name } = payload;
+    const id = await storeSessionRecording(har, name);
+    return id;
   });
 
   ipcMain.on("proxy-config-updated", (_, payload) => {
