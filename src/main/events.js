@@ -74,11 +74,12 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
   // hacky implementation for syncing addition and deletion
   const resendAllNetworkLogs = async () => {
     const res = await getAllNetworkSessions();
-    webAppWindow.send("all-network-sessions", res);
+    webAppWindow.send("network-sessions-updated", res);
   };
 
   ipcMain.handle("get-all-network-sessions", async () => {
-    resendAllNetworkLogs();
+    const networkSessions = await getAllNetworkSessions();
+    return networkSessions;
   });
 
   ipcMain.handle("get-network-session", async (event, payload) => {
@@ -89,7 +90,8 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
 
   ipcMain.handle("delete-network-session", async (event, payload) => {
     const { id } = payload;
-    return deleteNetworkRecording(id);
+    await deleteNetworkRecording(id);
+    return resendAllNetworkLogs();
   });
 
   ipcMain.handle("save-network-session", async (event, payload) => {
