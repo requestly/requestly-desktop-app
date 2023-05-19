@@ -12,7 +12,7 @@ function getSessionStorageFolderPath() {
   );
 
   if (!fs.existsSync(folderPath)) {
-    fs.mkdir(folderPath, console.log);
+    fs.mkdir(folderPath);
   }
   return folderPath;
 }
@@ -21,12 +21,18 @@ export async function getAllNetworkSessions() {
   let finalFilesList = [];
   const folderPath = getSessionStorageFolderPath();
 
+  const sessionsFileRegexPattern = /(.+)_(.+)_(\d+).har/;
+
   const files = await fs.promises.readdir(folderPath);
   finalFilesList = files
-    .filter((file) => file.endsWith(".har"))
+    .filter((file) => {
+      return sessionsFileRegexPattern.test(file);
+    })
     .map((file) => {
-      const [id, name, createdTs] = file.slice(0, file.length - 4).split("_"); // removing .har and getting name and id
-      return { id, name, ts: parseInt(createdTs, 10), fileName: file };
+      const [fileName, id, name, createdTs] = file.match(
+        sessionsFileRegexPattern
+      );
+      return { id, name, ts: parseInt(createdTs, 10), fileName };
     });
   return finalFilesList;
 }
