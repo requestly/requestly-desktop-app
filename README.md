@@ -69,7 +69,7 @@ npm i
 
 ### Run
 
-1. Start Requestly WebApp server locally. Here are the [steps](https://github.com/requestly/requestly-master/blob/master/app/README.md).
+1. Start Requestly WebApp server locally. Here are the [steps](https://github.com/requestly/requestly/tree/master/app#readme).
 
 2. [Optional] Start watching requestly-proxy. (You can skip this step if you don't want to make any changes in requestly-proxy)
 ```
