@@ -12,7 +12,7 @@ function getSessionStorageFolderPath() {
   );
 
   if (!fs.existsSync(folderPath)) {
-    fs.mkdir(folderPath);
+    fs.mkdirSync(folderPath);
   }
   return folderPath;
 }
