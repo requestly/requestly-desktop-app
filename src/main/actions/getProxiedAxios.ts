@@ -33,17 +33,21 @@ export const createOrUpdateAxiosInstance = (
     ...newProxyConfig,
   };
 
-  axiosInstance = axios.create({
-    proxy: false,
-    httpAgent: new HttpsProxyAgent(
-      `http://${proxyConfig.ip}:${proxyConfig.port}`
-    ),
-    httpsAgent: new PatchedHttpsProxyAgent({
-      host: proxyConfig.ip,
-      port: proxyConfig.port,
-      ca: readFileSync(proxyConfig.rootCertPath),
-    }),
-  });
+  try {
+    axiosInstance = axios.create({
+      proxy: false,
+      httpAgent: new HttpsProxyAgent(
+        `http://${proxyConfig.ip}:${proxyConfig.port}`
+      ),
+      httpsAgent: new PatchedHttpsProxyAgent({
+        host: proxyConfig.ip,
+        port: proxyConfig.port,
+        ca: readFileSync(proxyConfig.rootCertPath),
+      }),
+    });
+  } catch {
+    /* Do nothing */
+  }
 
   return axiosInstance;
 };
