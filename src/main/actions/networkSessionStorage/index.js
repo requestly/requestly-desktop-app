@@ -70,13 +70,13 @@ export async function storeSessionRecording(har, name) {
   const id = randomUUID();
   const createdTs = Date.now();
   const sessionPath = await getSessionPath(id, name, createdTs);
-  fs.writeFileSync(sessionPath, JSON.stringify(har), console.log);
+  fs.writeFileSync(sessionPath, JSON.stringify(har));
   return id;
 }
 
 export async function deleteNetworkRecording(id) {
   const sessionPath = await getSessionPath(id);
-  fs.unlink(sessionPath, console.log);
+  return fs.unlink(sessionPath, () => {});
 }
 
 async function readSessionFile(sessionPath, id, metadata) {

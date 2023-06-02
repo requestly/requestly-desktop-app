@@ -90,7 +90,12 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
 
   ipcMain.handle("delete-network-session", async (event, payload) => {
     const { id } = payload;
-    await deleteNetworkRecording(id);
+    try {
+      await deleteNetworkRecording(id);
+    } catch(e) {
+      console.info("Error while deleting ", id)
+      console.info(e)
+    }
     return resendAllNetworkLogs();
   });
 
