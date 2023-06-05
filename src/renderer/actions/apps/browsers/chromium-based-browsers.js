@@ -470,3 +470,11 @@ export class FreshOpera extends FreshChromiumBasedInterceptor {
     this.version = "1.0.3";
   }
 }
+
+export class ExistingArc extends ExistingChromiumBasedInterceptor {
+  constructor(config) {
+    super(config, "arc");
+    this.id = "existing-arc";
+    this.version = "1.0.0";
+  }
+}
