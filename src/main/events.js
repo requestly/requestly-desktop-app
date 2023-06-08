@@ -15,6 +15,7 @@ import {
   storeSessionRecording,
 } from "./actions/networkSessionStorage";
 import { createOrUpdateAxiosInstance } from "./actions/getProxiedAxios";
+import createTrayMenu from "./main";
 
 // These events do not require the browser window
 export const registerMainProcessEvents = () => {
@@ -106,6 +107,7 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
   });
 
   ipcMain.on("proxy-config-updated", (_, payload) => {
+    createTrayMenu(payload?.ip, payload?.port)
     createOrUpdateAxiosInstance(payload);
   });
 

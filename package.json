@@ -181,6 +181,7 @@
     "@testing-library/jest-dom": "^5.14.1",
     "@types/enzyme": "^3.10.9",
     "@types/history": "4.7.9",
+    "@types/ip": "^1.1.0",
     "@types/jest": "^27.0.2",
     "@types/node": "16.10.8",
     "@types/terser-webpack-plugin": "^5.0.4",
