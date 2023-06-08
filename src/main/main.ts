@@ -12,7 +12,6 @@
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 import path from "path";
-import os from "os";
 import { app, BrowserWindow, shell, dialog, Tray, Menu, clipboard } from "electron";
 
 import MenuBuilder from "./menu";
@@ -155,7 +154,7 @@ export default function createTrayMenu(ip?: string, port?: number) {
   }
   const trayMenu = Menu.buildFromTemplate(menuOptions);
 
-  if(os.platform() === "win32") {
+  if(process.platform === "win32") {
     tray = new Tray(getAssetPath("iconTemplate@2x.ico"));
   } else {
     tray = new Tray(getAssetPath("iconTemplate.png"));
