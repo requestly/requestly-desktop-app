@@ -47,6 +47,12 @@
       "static"
     ],
     "afterSign": ".erb/scripts/notarize.js",
+    "protocols": {
+      "name": "requestly-internal-protocol",
+      "schemes": [
+        "requestly"
+      ]
+    },
     "mac": {
       "type": "distribution",
       "hardenedRuntime": true,

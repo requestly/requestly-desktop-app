@@ -243,6 +243,15 @@ app.on("ready", () => {
     // Register Remaining IPC Events that involve browser windows
     registerMainProcessEventsForWebAppWindow(webAppWindow);
     registerMainProcessCommonEvents();
+
+    if (process.platform === 'win32') {
+      // Set the path of electron.exe and your app.
+      // These two additional parameters are only available on windows.
+      // Setting this is required to get this working in dev mode.
+      app.setAsDefaultProtocolClient('requestly', process.execPath, [path.resolve(process.argv[1])]);
+    } else {
+      app.setAsDefaultProtocolClient('requestly');
+    }
   });
   loadingScreenWindow.loadURL(
     `file://${path.resolve(__dirname, "../loadingScreen/", "index.html")}`
