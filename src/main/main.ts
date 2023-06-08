@@ -208,15 +208,20 @@ const createWindow = async () => {
   menuBuilder.buildMenu();
 
   // Open urls in the user's browser
-  // webAppWindow.webContents.on("new-window", (event, url) => { // deprecated after electron v22
   webAppWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url);
     return { action: 'deny' }
   });
-
-  // Remove this if your app does not use auto updates
-  // eslint-disable-next-line
 };
+
+// custom protocol (requestly) handler
+app.on("open-url", (_event, rqUrl) => {
+  const url = new URL(rqUrl);
+  if(url.searchParams.has("route")) {
+    const route = url.searchParams.get("route")
+    webAppWindow?.webContents.send("redirect-from-web-app", route)
+  }
+})
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
