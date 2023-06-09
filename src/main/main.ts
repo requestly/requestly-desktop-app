@@ -216,10 +216,13 @@ const createWindow = async () => {
 
 // custom protocol (requestly) handler
 app.on("open-url", (_event, rqUrl) => {
+  webAppWindow?.show();
+  webAppWindow?.focus();
   const url = new URL(rqUrl);
+  // note: currently action agnostic, because it is only meant for redirection for now
   if(url.searchParams.has("route")) {
     const route = url.searchParams.get("route")
-    webAppWindow?.webContents.send("redirect-from-web-app", route)
+    webAppWindow?.webContents.send("deeplink-handler", route)
   }
 })
 
