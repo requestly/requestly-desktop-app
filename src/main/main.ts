@@ -12,7 +12,7 @@
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 import path from "path";
-import { app, BrowserWindow, shell, dialog } from "electron";
+import { app, BrowserWindow, shell, dialog, Tray, Menu, clipboard } from "electron";
 
 import MenuBuilder from "./menu";
 import {
@@ -32,6 +32,16 @@ remote.initialize();
 // Browser windows
 let webAppWindow: BrowserWindow | null = null;
 let loadingScreenWindow: BrowserWindow | null = null;
+
+let tray: Tray | null = null;
+
+const RESOURCES_PATH = app.isPackaged
+  ? path.join(process.resourcesPath, "assets")
+  : path.join(__dirname, "../../assets");
+
+const getAssetPath = (...paths: string[]): string => {
+  return path.join(RESOURCES_PATH, ...paths);
+};
 
 const isDevelopment =
   process.env.NODE_ENV === "development" || process.env.DEBUG_PROD === "true";
@@ -57,6 +67,102 @@ const installExtensions = async () => {
     )
     .catch(console.log);
 };
+
+export default function createTrayMenu(ip?: string, port?: number) {
+  if(tray) { // tray is recreated when proxy parameters are ready
+    tray.destroy();
+    tray = null
+  }
+  const proxyAddress = `${ip}:${port}`;
+  const menuOptions: Electron.MenuItemConstructorOptions[] = [
+    {
+      label: "Show Requestly",
+      click: () => {
+        if(webAppWindow) {
+          if(webAppWindow.isMinimized()) {
+            webAppWindow.restore()
+          }
+          webAppWindow.show();
+          webAppWindow.focus();
+        }
+      },
+    },
+    {
+      type: "separator",
+    },
+    {
+      label: `Listening On ${proxyAddress}`, // todo: get actual ip and port
+      submenu: [
+        {
+          label: "Copy",
+          click: () => {
+            clipboard.writeText(proxyAddress);
+          },
+        },
+        {
+          label: "Copy IP",
+          click: () => {
+            clipboard.writeText(ip ?? "");
+          },
+        },
+        {
+          label: "Copy Port",
+          click: () => {
+            clipboard.writeText(port?.toString() ?? "");
+          },
+        },
+      ],
+    },
+    {
+      type: "separator",
+    },
+    {
+      label: "📖 Documentation",
+      click: () => {
+        // todo: get link from constants
+        const documentationURL = "https://docs.requestly.io";
+        shell.openExternal(documentationURL);
+      },
+    },
+    {
+      label: "🐞 Report an Issue",
+      click: () => {
+        const issueURL = "https://github.com/requestly/requestly/issues/new/choose";
+        shell.openExternal(issueURL);
+      },
+    },
+    {
+      label: "⭐ Give us a Star",
+      click: () => {
+        const repoURL = "https://github.com/requestly/requestly/";
+        shell.openExternal(repoURL);
+      },
+    },
+    {
+      type: "separator",
+    },
+    {
+      label: "Quit",
+      click: () => {
+        app.quit();
+      },
+    },
+  ]
+
+  if(!ip || !port) { // for case when proxy is not ready
+    menuOptions.splice(1,2)
+  }
+  const trayMenu = Menu.buildFromTemplate(menuOptions);
+
+  if(process.platform === "win32") {
+    tray = new Tray(getAssetPath("iconTemplate@2x.ico"));
+  } else {
+    tray = new Tray(getAssetPath("iconTemplate.png"));
+  }
+  tray.setToolTip("Requestly App");
+  tray.setContextMenu(trayMenu);
+}
+
 
 const createWindow = async () => {
   if (isDevelopment) {
@@ -206,6 +312,7 @@ const createWindow = async () => {
 
   const menuBuilder = new MenuBuilder(webAppWindow, enableBGWindowDebug);
   menuBuilder.buildMenu();
+  createTrayMenu();
 
   // Open urls in the user's browser
   // webAppWindow.webContents.on("new-window", (event, url) => { // deprecated after electron v22

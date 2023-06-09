@@ -1,3 +1,5 @@
+import ip from "ip";
+
 import { staticConfig } from "../../config";
 import { getCurrentProxyPort } from "../storage/cacheUtils";
 
@@ -8,8 +10,10 @@ interface ProxyConfig {
 }
 
 const getProxyConfig = (): ProxyConfig | null => {
+  const proxyIp = ip.address();
+
   return {
-    ip: staticConfig.PROXY_HOST,
+    ip: proxyIp,
     port: getCurrentProxyPort(),
     rootCertPath: staticConfig.ROOT_CERT_PATH,
   };
