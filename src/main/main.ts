@@ -73,7 +73,7 @@ export default function createTrayMenu(ip?: string, port?: number) {
     tray.destroy();
     tray = null
   }
-  const addr = `${ip}:${port}`;
+  const proxyAddress = `${ip}:${port}`;
   const menuOptions: Electron.MenuItemConstructorOptions[] = [
     {
       label: "Show Requestly",
@@ -91,12 +91,12 @@ export default function createTrayMenu(ip?: string, port?: number) {
       type: "separator",
     },
     {
-      label: `Listening On ${addr}`, // todo: get actual ip and port
+      label: `Listening On ${proxyAddress}`, // todo: get actual ip and port
       submenu: [
         {
           label: "Copy",
           click: () => {
-            clipboard.writeText(addr);
+            clipboard.writeText(proxyAddress);
           },
         },
         {
@@ -127,7 +127,7 @@ export default function createTrayMenu(ip?: string, port?: number) {
     {
       label: "🐞 Report an Issue",
       click: () => {
-        const issueURL = "https://github.com/requestly/requestly/issues/new";
+        const issueURL = "https://github.com/requestly/requestly/issues/new/choose";
         shell.openExternal(issueURL);
       },
     },
