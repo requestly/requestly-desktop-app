@@ -24,6 +24,8 @@ import {
 import "./actions/initGlobalState";
 import AutoUpdate from "../lib/autoupdate";
 import { cleanupAndQuit } from "./actions/cleanup";
+import { trackEventViaWebApp } from "./actions/events";
+import EVENTS from "./actions/events/constants";
 
 // Init remote so that it could be consumed in renderer
 const remote = require("@electron/remote/main");
@@ -163,6 +165,7 @@ const createWindow = async () => {
         // If Quit is clicked
         case 0:
           // Set flag to check next iteration
+          trackEventViaWebApp(webAppWindow, EVENTS.QUIT_APP)
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-expect-error
           global.isQuitActionConfirmed = true;
