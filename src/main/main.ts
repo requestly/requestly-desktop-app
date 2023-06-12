@@ -315,15 +315,23 @@ const createWindow = async () => {
   createTrayMenu();
 
   // Open urls in the user's browser
-  // webAppWindow.webContents.on("new-window", (event, url) => { // deprecated after electron v22
   webAppWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url);
     return { action: 'deny' }
   });
-
-  // Remove this if your app does not use auto updates
-  // eslint-disable-next-line
 };
+
+// custom protocol (requestly) handler
+app.on("open-url", (_event, rqUrl) => {
+  webAppWindow?.show();
+  webAppWindow?.focus();
+  const url = new URL(rqUrl);
+  // note: currently action agnostic, because it is only meant for redirection for now
+  if(url.searchParams.has("route")) {
+    const route = url.searchParams.get("route")
+    webAppWindow?.webContents.send("deeplink-handler", route)
+  }
+})
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -350,6 +358,15 @@ app.on("ready", () => {
     // Register Remaining IPC Events that involve browser windows
     registerMainProcessEventsForWebAppWindow(webAppWindow);
     registerMainProcessCommonEvents();
+
+    if (process.platform === 'win32') {
+      // Set the path of electron.exe and your app.
+      // These two additional parameters are only available on windows.
+      // Setting this is required to get this working in dev mode.
+      app.setAsDefaultProtocolClient('requestly', process.execPath, [path.resolve(process.argv[1])]);
+    } else {
+      app.setAsDefaultProtocolClient('requestly');
+    }
   });
   loadingScreenWindow.loadURL(
     `file://${path.resolve(__dirname, "../loadingScreen/", "index.html")}`
