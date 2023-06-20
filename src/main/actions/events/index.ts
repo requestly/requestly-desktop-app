@@ -6,7 +6,7 @@ export const trackEventViaWebApp = (
   eventName: string,
   eventParams: Record<any, any> = {}
 ) => {
-  webAppWindow.webContents.send("desktop-event", {
+  webAppWindow.webContents.send("analytics-event", {
     name: eventName,
     params: eventParams,
     origin: "main",
