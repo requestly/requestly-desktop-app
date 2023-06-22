@@ -46,7 +46,6 @@
       "package.json",
       "static"
     ],
-    "afterSign": ".erb/scripts/notarize.js",
     "protocols": {
       "name": "requestly-internal-protocol",
       "schemes": [
@@ -61,6 +60,9 @@
       "gatekeeperAssess": false,
       "requirements": "assets/requirement.rqset",
       "identity": "RQ LABS, INC. (B7SH28MF39)",
+      "notarize" : {
+        "teamId" : "B7SH28MF39"
+      },
       "target": [
         {
           "target": "dmg",
