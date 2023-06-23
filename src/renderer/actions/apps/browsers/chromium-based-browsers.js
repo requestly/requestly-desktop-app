@@ -471,6 +471,22 @@ export class FreshOpera extends FreshChromiumBasedInterceptor {
   }
 }
 
+export class FreshOperaGX extends FreshChromiumBasedInterceptor {
+  constructor(config) {
+    super(config, "opera-gx");
+    this.id = "fresh-opera-gx";
+    this.version = "1.0.3";
+  }
+}
+
+export class FreshOperaCrypto extends FreshChromiumBasedInterceptor {
+  constructor(config) {
+    super(config, "opera-crypto");
+    this.id = "fresh-opera-crypto";
+    this.version = "1.0.3";
+  }
+}
+
 export class ExistingArc extends ExistingChromiumBasedInterceptor {
   constructor(config) {
     super(config, "arc");
