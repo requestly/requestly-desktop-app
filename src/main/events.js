@@ -57,6 +57,12 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
     logNetworkRequestV2(event, message, webAppWindow)
   );
 
+  ipcMain.on("log-network-request-v3", (event, message) => {
+    if (webAppWindow) {
+      webAppWindow.send("log-network-request-v3", message);
+    }
+  });
+
   // Open handle for async source detection
   ipcMain.handle("app-detected", async (event, payload) => {
     webAppWindow.send("app-detected", payload);
