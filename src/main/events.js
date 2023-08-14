@@ -101,8 +101,8 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
   });
 
   ipcMain.handle("save-network-session", async (event, payload) => {
-    const { har, name } = payload;
-    const id = await storeSessionRecording(har, name);
+    const { har, name, originalFilePath } = payload;
+    const id = await storeSessionRecording(har, name, originalFilePath);
     return id;
   });
 
