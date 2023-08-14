@@ -362,7 +362,7 @@ async function handleFileOpen(filePath: string) {
   webAppWindow?.show();
   webAppWindow?.focus();
   try {
-    const fileContents = await readFile(filePath);
+    const fileContents = await fs.promises.readFile(filePath, "utf8");
     const fileExtension = path.extname(filePath);
     const fileName = path.basename(filePath, fileExtension);
 
@@ -370,23 +370,12 @@ async function handleFileOpen(filePath: string) {
       name: fileName,
       extension: fileExtension,
       contents: fileContents,
+      path: filePath,
     };
 
     webAppWindow?.webContents.send("open-file", fileObject)
   } catch (error) {
     webAppWindow?.webContents.send("open-file", {filePath})
-  }
-
-  function readFile(filePath: string) {
-    return new Promise((resolve, reject) => {
-      fs.readFile(filePath, 'utf8', (err, data) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(data);
-        }
-      });
-    });
   }
 }
 
