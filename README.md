@@ -83,14 +83,14 @@ npm start
 ```
 
 ### Packaging
-This app uses electron-builder to package and sign the app. Run this command to build the packaged version of Requestly Deskto App.
+This app uses electron-builder to package and sign the app. Run this command to build the packaged version of Requestly Desktop App.
 ```
 npm run package
 ```
 
 ## Contributing
 
-Read our [contributing guide](./CONTRIBUTING.md) to learn about how to propose bugfixes and improvements, and how the development process works. 
+Read our [contributing guide](https://github.com/requestly/requestly/blob/master/CONTRIBUTING.md) to learn about how to propose bugfixes and improvements, and how the development process works. 
 
 ## Links
 
