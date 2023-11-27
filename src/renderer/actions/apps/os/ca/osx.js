@@ -1,6 +1,6 @@
-const { exec, execSync } = require("child_process");
+const { execSync } = require("child_process");
 
-const installOsxCert = async (cert_path) => {
+const installOsxCert = async (certPath) => {
   // const command = `security add-trusted-cert \
   // -d -r trustRoot \
   // -k $HOME/Library/Keychains/login.keychain "${cert_path}"\
@@ -18,7 +18,7 @@ const installOsxCert = async (cert_path) => {
     'do shell script \
     "security add-trusted-cert \
     -r trustRoot \
-    -k $HOME/Library/Keychains/login.keychain \\"${cert_path}\\"\
+    -k $HOME/Library/Keychains/login.keychain \\"${certPath}\\"\
     " with prompt "Requestly wants to store SSL certificate to keychain."'`;
 
   try {
@@ -31,4 +31,19 @@ const installOsxCert = async (cert_path) => {
   }
 };
 
-export { installOsxCert };
+const deleteOsxCert = async (caName) => {
+  const command = `osascript -e \
+    'do shell script \
+    "security delete-certificate -c \\"${caName}\\" $HOME/Library/Keychains/login.keychain \
+    " with prompt "Requestly wants to remove SSL certificate from keychain."'`;
+  try {
+    execSync(command);
+    console.log(`${command} executed succesfully`);
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+};
+
+export { installOsxCert, deleteOsxCert };
