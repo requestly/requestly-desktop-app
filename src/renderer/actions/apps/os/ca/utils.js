@@ -1,4 +1,5 @@
 import { deleteOsxCert } from "./osx";
+import { deleteWindowsCert } from "./windows";
 
 const { execSync } = require("child_process");
 
@@ -67,6 +68,10 @@ export const handleCARegeneration = (pathToNewCA) => {
   switch (process.platform) {
     case "darwin": {
       deleteOsxCert("RQProxyCA");
+      break;
+    }
+    case "win32": {
+      deleteWindowsCert("RQProxyCA");
       break;
     }
     default: {
