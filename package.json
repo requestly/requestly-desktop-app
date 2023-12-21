@@ -96,9 +96,9 @@
       ]
     },
     "win": {
-      "target": [
-        "nsis"
-      ]
+      "certificateSubjectName" : "RQ Labs, Inc.",
+      "rfc3161TimeStampServer":"http://sha256timestamp.ws.symantec.com/sha256/timestamp",
+      "target": ["nsis"]
     },
     "linux": {
       "target": [
