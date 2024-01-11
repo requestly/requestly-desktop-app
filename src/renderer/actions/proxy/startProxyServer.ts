@@ -13,6 +13,7 @@ import * as Sentry from "@sentry/browser";
 import startHelperServer from "../startHelperServer";
 import logger from "utils/logger";
 import { getDefaultProxyPort } from "../storage/cacheUtils";
+import { handleCARegeneration} from "../apps/os/ca/utils";
 
 declare global {
   interface Window { proxy: any }
@@ -87,6 +88,7 @@ function startProxyFromModule(PROXY_PORT: number) {
     // @ts-ignore
     certPath: CERTS_PATH,
     rootCertPath: ROOT_CERT_PATH,
+    onCARegenerated: handleCARegeneration,
   };
   RQProxyProvider.createInstance(
     proxyConfig,

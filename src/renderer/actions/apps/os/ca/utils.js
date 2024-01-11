@@ -1,4 +1,7 @@
-const { exec, execSync } = require("child_process");
+import { deleteOsxCert } from "./osx";
+import { deleteWindowsCert } from "./windows";
+
+const { execSync } = require("child_process");
 
 export const isCertificateInstalled = () => {
   let status = false;
@@ -27,7 +30,8 @@ export const isCertificateInstalled = () => {
 };
 
 const is_rq_cert_trusted = (trust_settings_str) => {
-  let re = /(Cert \d+: RQProxyCA[\s\S]*?(?=Cert))|(Cert \d+: RQProxyCA[\s\S]*)/gm;
+  let re =
+    /(Cert \d+: RQProxyCA[\s\S]*?(?=Cert))|(Cert \d+: RQProxyCA[\s\S]*)/gm;
   const rq_cert_settings = re.exec(trust_settings_str);
 
   if (
@@ -56,6 +60,23 @@ export const isCertificateTrusted = () => {
     default:
       console.log(`${process.platform} is not supported for systemwide proxy`);
       return false;
+  }
+};
+
+export const handleCARegeneration = (pathToNewCA) => {
+  console.log("new CA generated at", pathToNewCA);
+  switch (process.platform) {
+    case "darwin": {
+      deleteOsxCert("RQProxyCA");
+      break;
+    }
+    case "win32": {
+      deleteWindowsCert("RQProxyCA");
+      break;
+    }
+    default: {
+      console.log("No extra steps after CA regeneration");
+    }
   }
 };
 

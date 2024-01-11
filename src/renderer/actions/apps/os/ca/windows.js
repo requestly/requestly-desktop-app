@@ -12,4 +12,17 @@ const installWindowsCert = async (certPath) => {
   }
 };
 
-export { installWindowsCert };
+const deleteWindowsCert = async(caName) => {
+  console.log("Deleting Windows Cert")
+  const command = `certutil -delstore -user Root ${caName}`;
+  try {
+    execSync(command);
+    console.log(`${command} executed succesfully`);
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
+
+export { installWindowsCert, deleteWindowsCert };

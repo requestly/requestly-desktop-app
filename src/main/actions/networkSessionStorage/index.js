@@ -1,3 +1,4 @@
+/* eslint-disable no-use-before-define */
 import path from "path";
 import fs from "fs";
 import { randomUUID } from "crypto";
@@ -66,11 +67,28 @@ export function getMetadataFromPath(pathString) {
   return { id, name, createdTs, fileName: parsedFilePath.base };
 }
 
-export async function storeSessionRecording(har, name) {
+export async function storeSessionRecording(har, name, originalFilePath) {
   const id = randomUUID();
   const createdTs = Date.now();
   const sessionPath = await getSessionPath(id, name, createdTs);
-  fs.writeFileSync(sessionPath, JSON.stringify(har));
+
+  if (originalFilePath) linkHarSessionToOriginalFile();
+  else createHarSessionFile();
+
+  function createHarSessionFile() {
+    fs.writeFileSync(sessionPath, JSON.stringify(har));
+  }
+
+  function linkHarSessionToOriginalFile() {
+    fs.symlink(originalFilePath, sessionPath, (err) => {
+      if (err) {
+        console.error("Error creating symlink to original file: ", err);
+        console.log("creating copy instead");
+        createHarSessionFile();
+      }
+    });
+  }
+
   return id;
 }
 

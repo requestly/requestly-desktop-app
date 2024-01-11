@@ -1,4 +1,7 @@
-import { dialog, ipcMain } from "electron";
+import path from "path";
+import { unescape } from "querystring";
+import fs from "fs";
+import { app, dialog, ipcMain } from "electron";
 /** ACTIONS */
 import startBackgroundProcess from "./actions/startBackgroundProcess";
 import { getState, setState } from "./actions/stateManagement";
@@ -101,8 +104,8 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
   });
 
   ipcMain.handle("save-network-session", async (event, payload) => {
-    const { har, name } = payload;
-    const id = await storeSessionRecording(har, name);
+    const { har, name, originalFilePath } = payload;
+    const id = await storeSessionRecording(har, name, originalFilePath);
     return id;
   });
 
@@ -114,6 +117,19 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
   ipcMain.handle("get-api-response", async (event, payload) => {
     return makeApiClientRequest(payload);
   });
+
+/* HACKY: Forces regeneration by deleting old cert and closes app */
+  ipcMain.handle("renew-ssl-certificates", async () => {
+    const pathToCurrentCA = path.resolve(
+      unescape(app.getPath("appData")),
+      "Requestly",
+      ".tmp",
+      "certs",
+      "ca.pem"
+    );
+    fs.unlinkSync(pathToCurrentCA);
+    webAppWindow?.close();
+  })
 };
 
 export const registerMainProcessCommonEvents = () => {
