@@ -19,6 +19,7 @@ import {
   registerMainProcessCommonEvents,
   registerMainProcessEvents,
   registerMainProcessEventsForWebAppWindow,
+  trackRecentlyAccessedFile,
 } from "./events";
 /** Storage - State */
 import "./actions/initGlobalState";
@@ -357,7 +358,8 @@ app.on("open-url", (_event, rqUrl) => {
   }
 })
 
-async function handleFileOpen(filePath: string) {
+async function handleFileOpen(filePath: string, webAppWindow?: BrowserWindow) {
+  trackRecentlyAccessedFile(filePath);
   log.info("filepath opened", filePath)
   webAppWindow?.show();
   webAppWindow?.focus();
@@ -382,7 +384,7 @@ async function handleFileOpen(filePath: string) {
 app.on('open-file', async (event, filePath) => {
   event.preventDefault();
   if(webAppWindow) {
-    handleFileOpen(filePath);
+    handleFileOpen(filePath, webAppWindow);
   } else {
     onWebAppReadyHandlers.push(() => handleFileOpen(filePath))
   }

@@ -20,6 +20,49 @@ import {
 import { createOrUpdateAxiosInstance } from "./actions/getProxiedAxios";
 import createTrayMenu from "./main";
 
+const getFileCategory = (fileExtension) =>  {
+  switch(fileExtension) {
+    case ".har":
+      return "har";
+    case ".rqly":
+      // in future we can also store rules here...
+      return "web-session";
+    default:
+      return "unknown";
+  }
+}
+
+export async function trackRecentlyAccessedFile(filePath) {
+  const fileExtension = path.extname(filePath);
+  
+  const fileName = path.basename(filePath, fileExtension);
+  const fileCategory = getFileCategory(fileExtension);
+  const accessTs = Date.now();
+
+  const fileRecord = {
+    category: fileCategory,
+    filePath,
+    name: fileName,
+    lastAccessedTs: accessTs,
+  }
+
+  storageService.processAction({
+    type: "ACCESSED_FILES:ADD", 
+    payload: {
+      data: fileRecord
+    }
+  });
+}
+
+function removeFileFromAccessRecords(filePath) {
+  storageService.processAction({
+    type: "ACCESSED_FILES:REMOVE", 
+    payload: {
+      data: filePath
+    }
+  });
+}
+
 // These events do not require the browser window
 export const registerMainProcessEvents = () => {
   ipcMain.handle("start-background-process", startBackgroundProcess);
@@ -130,6 +173,63 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
     fs.unlinkSync(pathToCurrentCA);
     webAppWindow?.close();
   })
+
+  ipcMain.handle("browse-and-load-file", (event, payload) => {
+    console.log("browse-and-load-file payload", payload)
+    const category = payload?.category || 'unknown';
+    const getCategoryFilter = (category) => {
+      switch(category) {
+        case "har":
+          return [{name: "HAR Files", extensions: ['.har']}]
+        case "web-session":
+          return [{name: "Requestly Files", extensions: ['.rqly']}]
+        default:
+          return [
+            {name: "Requestly Files", extensions: ['.rqly']},
+            {name: "HAR Files", extensions: ['.har']}
+          ]
+      }
+    }
+
+    let dialogOptions = {};
+    dialogOptions["properties"] = ["openFile"];
+    dialogOptions["filters"] = [
+      ...getCategoryFilter(category),
+      { name: "All Files", extensions: ["*"] },
+    ]
+    return dialog.showOpenDialog((dialogOptions)).then((result) => {
+      const { canceled, filePaths } = result;
+      if(canceled || !filePaths?.length) {
+        return null;
+      }
+      
+      const filePath = filePaths[0];
+      trackRecentlyAccessedFile(filePath);
+      const fileName = path.basename(filePath);
+      const category = getFileCategory(path.extname(filePath));
+      const contents = fs.readFileSync(filePath, "utf-8");
+      return { filePath, name: fileName, category, contents };
+    }).catch((err) => {
+      console.log(err);
+      return null;
+    })
+  })
+
+  ipcMain.handle("get-file-contents", async (event, payload) => {
+    try {
+      const fileContents = fs.readFileSync(payload.filePath, "utf-8");
+      if(!fileContents) {
+        throw new Error("File is empty");
+      }
+      return fileContents;
+    } catch(e) {
+      console.log("sdfdsfsdfsdf")
+      console.log(e);
+      // delete file from recently accessed
+      removeFileFromAccessRecords(payload.filePath);
+      return "err:NOT FOUND";
+    }
+  });
 };
 
 export const registerMainProcessCommonEvents = () => {
