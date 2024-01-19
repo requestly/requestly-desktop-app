@@ -28,6 +28,7 @@ import { cleanupAndQuit } from "./actions/cleanup";
 import { trackEventViaWebApp } from "./actions/events";
 import EVENTS from "./actions/events/constants";
 import fs from "fs";
+import logger from "../utils/logger";
 
 // Init remote so that it could be consumed in renderer
 const remote = require("@electron/remote/main");
@@ -47,7 +48,7 @@ const getAssetPath = (...paths: string[]): string => {
   return path.join(RESOURCES_PATH, ...paths);
 };
 
-const isDevelopment =
+const isDevelopment = true ||
   process.env.NODE_ENV === "development" || process.env.DEBUG_PROD === "true";
 
 if (isDevelopment) {
@@ -377,7 +378,8 @@ async function handleFileOpen(filePath: string, webAppWindow?: BrowserWindow) {
 
     webAppWindow?.webContents.send("open-file", fileObject)
   } catch (error) {
-    webAppWindow?.webContents.send("open-file", {filePath})
+    logger.error(`Error while reading file ${filePath}`, error)
+    onWebAppReadyHandlers.push(() => handleFileOpen(filePath))
   }
 }
 
@@ -386,6 +388,7 @@ app.on('open-file', async (event, filePath) => {
   if(webAppWindow) {
     handleFileOpen(filePath, webAppWindow);
   } else {
+    logger.log("webAppWindow not ready")
     onWebAppReadyHandlers.push(() => handleFileOpen(filePath))
   }
   return
