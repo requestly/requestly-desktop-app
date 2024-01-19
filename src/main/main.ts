@@ -13,12 +13,13 @@ import "core-js/stable";
 import "regenerator-runtime/runtime";
 import path from "path";
 import { app, BrowserWindow, shell, dialog, Tray, Menu, clipboard } from "electron";
-
+import log from "electron-log";
 import MenuBuilder from "./menu";
 import {
   registerMainProcessCommonEvents,
   registerMainProcessEvents,
   registerMainProcessEventsForWebAppWindow,
+  trackRecentlyAccessedFile,
 } from "./events";
 /** Storage - State */
 import "./actions/initGlobalState";
@@ -26,6 +27,8 @@ import AutoUpdate from "../lib/autoupdate";
 import { cleanupAndQuit } from "./actions/cleanup";
 import { trackEventViaWebApp } from "./actions/events";
 import EVENTS from "./actions/events/constants";
+import fs from "fs";
+import logger from "../utils/logger";
 
 // Init remote so that it could be consumed in renderer
 const remote = require("@electron/remote/main");
@@ -45,7 +48,7 @@ const getAssetPath = (...paths: string[]): string => {
   return path.join(RESOURCES_PATH, ...paths);
 };
 
-const isDevelopment =
+const isDevelopment = true ||
   process.env.NODE_ENV === "development" || process.env.DEBUG_PROD === "true";
 
 if (isDevelopment) {
@@ -228,6 +231,8 @@ const createWindow = async () => {
       // webAppWindow.setResizable(false);
       webAppWindow.show();
       webAppWindow.focus();
+
+     executeOnWebAppReadyHandlers();
     }
 
     // Close loading splash screen
@@ -324,17 +329,70 @@ const createWindow = async () => {
   });
 };
 
-// custom protocol (requestly) handler
-app.on("open-url", (_event, rqUrl) => {
+let onWebAppReadyHandlers: (() => void)[] = [];
+function executeOnWebAppReadyHandlers() {
+  if(onWebAppReadyHandlers.length > 0) {
+    onWebAppReadyHandlers.forEach(callback => {
+      callback();
+    })
+    onWebAppReadyHandlers = []
+  }
+}
+
+function handleCustomProtocolURL(urlString: string) {
   webAppWindow?.show();
   webAppWindow?.focus();
-  const url = new URL(rqUrl);
+  const url = new URL(urlString);
   // note: currently action agnostic, because it is only meant for redirection for now
   if(url.searchParams.has("route")) {
     const route = url.searchParams.get("route")
     webAppWindow?.webContents.send("deeplink-handler", route)
   }
+}
+
+// custom protocol (requestly) handler
+app.on("open-url", (_event, rqUrl) => {
+  if(webAppWindow) {
+    handleCustomProtocolURL(rqUrl)
+  } else {
+    onWebAppReadyHandlers.push(() => handleCustomProtocolURL(rqUrl))
+  }
 })
+
+async function handleFileOpen(filePath: string, webAppWindow?: BrowserWindow) {
+  trackRecentlyAccessedFile(filePath);
+  log.info("filepath opened", filePath)
+  webAppWindow?.show();
+  webAppWindow?.focus();
+  try {
+    const fileContents = await fs.promises.readFile(filePath, "utf8");
+    const fileExtension = path.extname(filePath);
+    const fileName = path.basename(filePath, fileExtension);
+
+    const fileObject = {
+      name: fileName,
+      extension: fileExtension,
+      contents: fileContents,
+      path: filePath,
+    };
+
+    webAppWindow?.webContents.send("open-file", fileObject)
+  } catch (error) {
+    logger.error(`Error while reading file ${filePath}`, error)
+    onWebAppReadyHandlers.push(() => handleFileOpen(filePath))
+  }
+}
+
+app.on('open-file', async (event, filePath) => {
+  event.preventDefault();
+  if(webAppWindow) {
+    handleFileOpen(filePath, webAppWindow);
+  } else {
+    logger.log("webAppWindow not ready")
+    onWebAppReadyHandlers.push(() => handleFileOpen(filePath))
+  }
+  return
+});
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.

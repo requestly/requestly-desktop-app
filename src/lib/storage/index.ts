@@ -1,3 +1,4 @@
+import AccessedFilesProcessor from "./action-processors/accessed-files";
 import BaseActionProcessor from "./action-processors/base";
 import SSLProxyingActionProcessor from "./action-processors/ssl-proxying";
 import UserPreferenceActionProcessor from "./action-processors/user-preference";
@@ -10,10 +11,16 @@ class StorageService {
   actionProcessors: BaseActionProcessor[];
 
   sslProxyingStore!: StoreWrapper;
+
   userPreferenceStore!: StoreWrapper;
 
+  accesssedFileStore!: StoreWrapper;
+
   sslProxyingActionProcessor!: BaseActionProcessor;
+
   userPreferenceActionProcessor!: BaseActionProcessor;
+
+  accessFileActionProcessor!: BaseActionProcessor;
 
   constructor() {
     this.actionProcessors = [];
@@ -22,7 +29,8 @@ class StorageService {
 
   init = () => {
     this.initSSLProxying();
-    this.initUserPreferences()
+    this.initUserPreferences();
+    this.initAccessFileStore();
   };
 
   initSSLProxying = () => {
@@ -36,10 +44,24 @@ class StorageService {
 
   initUserPreferences = () => {
     const storeName = STORE_NAME.USER_PREFERENCE;
-    this.userPreferenceStore = new StoreWrapper(storeName, userPreferenceSchema);
-    this.userPreferenceActionProcessor = new UserPreferenceActionProcessor(this.userPreferenceStore)
+    this.userPreferenceStore = new StoreWrapper(
+      storeName,
+      userPreferenceSchema
+    );
+    this.userPreferenceActionProcessor = new UserPreferenceActionProcessor(
+      this.userPreferenceStore
+    );
     this.actionProcessors.push(this.userPreferenceActionProcessor);
-  }
+  };
+
+  initAccessFileStore = () => {
+    const storeName = STORE_NAME.ACCESSED_FILES;
+    this.accesssedFileStore = new StoreWrapper(storeName);
+    this.accessFileActionProcessor = new AccessedFilesProcessor(
+      this.accesssedFileStore
+    );
+    this.actionProcessors.push(this.accessFileActionProcessor);
+  };
 
   /**
    *
