@@ -251,7 +251,7 @@
     "webpack-merge": "^5.8.0"
   },
   "dependencies": {
-    "@electron/remote": "^2.0.9",
+    "@electron/remote": "^2.1.2",
     "@requestly/requestly-core": "^1.0.4",
     "@requestly/requestly-proxy": "^1.2.0",
     "@sentry/browser": "^6.13.3",
