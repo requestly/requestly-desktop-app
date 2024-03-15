@@ -261,7 +261,7 @@
     "axios": "^0.23.0",
     "browserify-zlib": "^0.2.0",
     "charset": "^1.0.1",
-    "chrome-remote-interface": "^0.31.0",
+    "chrome-remote-interface": "^0.33.0",
     "command-exists": "^1.2.9",
     "core-js": "^3.18.3",
     "crypto-browserify": "^3.12.0",
