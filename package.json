@@ -257,7 +257,7 @@
     "@sentry/browser": "^6.13.3",
     "@sentry/electron": "^2.5.4",
     "assert": "^2.0.0",
-    "async": "^3.2.1",
+    "async": "^3.2.5",
     "axios": "^0.28.0",
     "browserify-zlib": "^0.2.0",
     "charset": "^1.0.1",
