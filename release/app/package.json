@@ -24,11 +24,12 @@
     "ws": "^8.16.0"
   },
   "devDependencies": {
-    "electron": "23.0.0",
+    "electron": "^27.3.8",
     "npm-force-resolutions": "0.0.10"
   },
   "resolutions": {
     "bufferutil": "4.0.3",
     "utf-8-validate": "5.0.6"
+    
   }
 }

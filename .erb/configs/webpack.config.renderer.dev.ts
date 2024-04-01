@@ -267,15 +267,21 @@ export default merge(baseConfig, {
       verbose: true,
       disableDotRule: false,
     },
-    onBeforeSetupMiddleware() {
+    setupMiddlewares: (middlewares, devServer) => {
+      if (!devServer) {
+          throw new Error('webpack-dev-server is not defined');
+      }
+
       console.log("Starting Main Process...");
       spawn("npm", ["run", "start:main"], {
-        shell: true,
-        env: process.env,
-        stdio: "inherit",
+          shell: true,
+          env: process.env,
+          stdio: "inherit",
       })
-        .on("close", (code) => process.exit(code))
-        .on("error", (spawnError) => console.error(spawnError));
-    },
+      .on("close", (code) => process.exit(code))
+      .on("error", (spawnError) => console.error(spawnError));
+
+      return middlewares; // make sure to return the middlewares array
+  },
   },
 });
