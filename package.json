@@ -255,7 +255,7 @@
   "dependencies": {
     "@electron/remote": "^2.1.2",
     "@requestly/requestly-core": "^1.0.4",
-    "@requestly/requestly-proxy": "^1.2.1",
+    "@requestly/requestly-proxy": "^1.2.2",
     "@sentry/browser": "^6.13.3",
     "@sentry/electron": "^2.5.4",
     "assert": "^2.0.0",
