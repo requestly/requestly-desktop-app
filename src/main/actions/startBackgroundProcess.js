@@ -39,7 +39,6 @@ const startBackgroundProcess = async () => {
             nodeIntegration: true,
             contextIsolation: false,
             enableRemoteModule: true,
-            webSecurity: false,
           },
         }),
       });

@@ -23,7 +23,7 @@ HTTPConnection.__init__ = _new_http_connection_init
 
 def _build_default_context():
     import ssl
-    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
     context.options |= ssl.OP_NO_SSLv2
     context.options |= ssl.OP_NO_SSLv3
     return context
