@@ -30,6 +30,7 @@ import { shutdown } from "./shutdown";
 import storageService from "lib/storage";
 import ACTION_TYPES from "lib/storage/types/action-types";
 import storageCacheService from "renderer/services/storage-cache";
+import { getAvailableAndroidDevices } from "./apps/mobile/utils";
 
 const initEventHandlers = () => {
   ipcRenderer.on("start-proxy-server", async () => {
@@ -58,9 +59,17 @@ const initEventHandlers = () => {
     ipcRenderer.send("reply-detect-available-apps", final_result);
   });
 
+  ipcRenderer.on("detect-available-android-devices", async (event, payload) => {
+    let devices = [];
+    devices = getAvailableAndroidDevices();
+    ipcRenderer.send("reply-detect-available-android-devices", devices);
+  });
+
   ipcRenderer.on("activate-app", async (event, payload) => {
     const { id, options } = payload;
     let res = { success: false };
+
+    console.log({ event, payload });
 
     try {
       /* (Checking -> Installing) cert on every app launch, so that launched
@@ -77,10 +86,10 @@ const initEventHandlers = () => {
   });
 
   ipcRenderer.on("deactivate-app", async (event, payload) => {
-    const { id } = payload;
+    const { id, options } = payload;
     let res = { success: false };
     try {
-      res = await deactivateApp({ id });
+      res = await deactivateApp({ id, options });
     } catch (err) {
       Sentry.captureException(err);
       console.error(err.message);

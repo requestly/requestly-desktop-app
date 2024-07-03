@@ -58,13 +58,13 @@ export const activateApp = async ({ id, proxyPort, options }) => {
   }
 };
 
-export const deactivateApp = async ({ id, proxyPort }) => {
+export const deactivateApp = async ({ id, proxyPort, options }) => {
   const app = apps[id];
   if (!app) throw new Error(`Unknown app ${id}`);
 
   const targetPort = proxyPort ? proxyPort : getCurrentProxyPort()
 
-  await app.deactivate(targetPort).catch((e) => {
+  await app.deactivate(targetPort, options).catch((e) => {
     Sentry.captureException(e);
     console.error(e.message);
   });
