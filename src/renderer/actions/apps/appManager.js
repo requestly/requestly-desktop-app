@@ -27,7 +27,7 @@ import { FreshFirefox } from "./browsers/fresh-firefox";
 import { FreshSafari } from "./browsers/safari";
 import { SystemWideProxy } from "./os/system-wide";
 import { ipcRenderer } from "electron";
-import AndroidDevice from "./mobile/android";
+import AndroidAdbDevice from "./mobile/android";
 
 export const buildApps = (config) => {
   const apps = [
@@ -54,7 +54,7 @@ export const buildApps = (config) => {
     new Electron(config),
     new FreshSafari(config),
     new SystemWideProxy(config),
-    new AndroidDevice(config),
+    new AndroidAdbDevice(config),
   ];
 
   // When the server exits, try to shut down the interceptors too

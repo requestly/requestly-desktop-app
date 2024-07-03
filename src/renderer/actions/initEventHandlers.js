@@ -61,7 +61,11 @@ const initEventHandlers = () => {
 
   ipcRenderer.on("detect-available-android-devices", async (event, payload) => {
     let devices = [];
-    devices = getAvailableAndroidDevices();
+    try {
+      devices = await getAvailableAndroidDevices();
+    } catch (err) {
+      // TODO: Handle Errors
+    }
     ipcRenderer.send("reply-detect-available-android-devices", devices);
   });
 
