@@ -29,6 +29,10 @@ import { SystemWideProxy } from "./os/system-wide";
 import { ipcRenderer } from "electron";
 import AndroidAdbDevice from "./mobile/android";
 
+export const shutdownApps = (apps) => {
+  return Promise.all(apps.map((i) => i.deactivateAll()));
+};
+
 export const buildApps = (config) => {
   const apps = [
     new FreshChrome(config),
@@ -67,22 +71,18 @@ export const buildApps = (config) => {
   }
 
   /*
-  * Extra IPC for now
-  *
-  * TODO in proxy : lib/proxy/lib/proxy.js -> Proxy.prototype.close
-  * a cleaner way would be to directly add
-  * shutdown/close handler inside the proxy
-  * so no IPC call, every proxy restart would trigger
-  * all added `closeHandlers`
-  */
+   * Extra IPC for now
+   *
+   * TODO in proxy : lib/proxy/lib/proxy.js -> Proxy.prototype.close
+   * a cleaner way would be to directly add
+   * shutdown/close handler inside the proxy
+   * so no IPC call, every proxy restart would trigger
+   * all added `closeHandlers`
+   */
   ipcRenderer.on("deactivate-traffic-sources", async () => {
     await shutdownApps(apps);
     ipcRenderer.send("reply-deactivate-traffic-sources");
   });
 
   return appIndex;
-};
-
-export const shutdownApps = (apps) => {
-  return Promise.all(apps.map((i) => i.deactivateAll()));
 };

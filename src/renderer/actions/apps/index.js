@@ -6,6 +6,7 @@ import { delay, returnWithFallback } from "../../utils/misc";
 // CONFIG
 import { staticConfig } from "../../config";
 // SENTRY
+import { readFileSync } from "fs";
 import * as Sentry from "@sentry/browser";
 import { getLauncher } from "./browsers/browser-handler";
 import { getCurrentProxyPort } from "../storage/cacheUtils";
@@ -15,6 +16,7 @@ const config = {
   configPath: staticConfig.BROWSER_CONFIG_PATH,
   https: {
     certPath: staticConfig.ROOT_CERT_PATH,
+    certContent: readFileSync(staticConfig.ROOT_CERT_PATH, "utf8"),
   },
 };
 
@@ -31,7 +33,7 @@ export const activateApp = async ({ id, proxyPort, options }) => {
   const app = apps[id];
   if (!app) throw new Error(`Unknown app ${id}`);
 
-  const targetPort = proxyPort ? proxyPort : getCurrentProxyPort()
+  const targetPort = proxyPort ? proxyPort : getCurrentProxyPort();
 
   // After 30s, don't stop activating, but report an error if we're not done yet
   let activationDone = false; // Flag to keep track
@@ -62,7 +64,7 @@ export const deactivateApp = async ({ id, proxyPort, options }) => {
   const app = apps[id];
   if (!app) throw new Error(`Unknown app ${id}`);
 
-  const targetPort = proxyPort ? proxyPort : getCurrentProxyPort()
+  const targetPort = proxyPort ? proxyPort : getCurrentProxyPort();
 
   await app.deactivate(targetPort, options).catch((e) => {
     Sentry.captureException(e);
