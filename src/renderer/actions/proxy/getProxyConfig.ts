@@ -1,5 +1,4 @@
-import ip from "ip";
-
+import { ip } from "address";
 import { staticConfig } from "../../config";
 import { getCurrentProxyPort } from "../storage/cacheUtils";
 
@@ -10,7 +9,7 @@ interface ProxyConfig {
 }
 
 const getProxyConfig = (): ProxyConfig | null => {
-  const proxyIp = ip.address();
+  const proxyIp = ip()!;
 
   return {
     ip: proxyIp,
