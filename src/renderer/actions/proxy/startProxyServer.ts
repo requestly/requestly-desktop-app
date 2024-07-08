@@ -1,5 +1,5 @@
 // UTILS
-const ip = require("ip");
+import {ip} from "address";
 
 import { RQProxyProvider } from "@requestly/requestly-proxy";
 import RulesDataSource from "../../lib/proxy-interface/rulesFetcher";
@@ -44,7 +44,7 @@ export default async function startProxyServer (
     Sentry.captureException(error);
     logger.log("A proxy server close req was made but no proxy was up");
   }
-  const proxyIp = ip.address();
+  const proxyIp = ip()!;
   const targetPort = proxyPort ? proxyPort : getDefaultProxyPort();
 
   const result: IStartProxyResult = {
