@@ -1,6 +1,10 @@
 <p align="center">
   <a rel="noreferrer noopener" href="https://requestly.io/">
-    <img src="https://user-images.githubusercontent.com/16779465/194505910-b6a7be70-df20-4b1a-9730-06a48cdd75ac.png" alt="Requestly Logo" width="40%"/>
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/requestly/requestly-desktop-app/assets/16779465/84f8c853-81df-4ffc-94cb-40f0b1d122d6">
+      <source media="(prefers-color-scheme: light)" srcset="https://github.com/requestly/requestly-desktop-app/assets/16779465/ebadc791-4eb6-4faa-920a-a322aa4b892b">
+        <img alt="Requestly Logo" src="https://github.com/requestly/requestly-desktop-app/assets/16779465/84f8c853-81df-4ffc-94cb-40f0b1d122d6" width="40%">
+      </picture>
   </a>
 </p>
 
