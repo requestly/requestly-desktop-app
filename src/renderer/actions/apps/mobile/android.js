@@ -2,15 +2,7 @@
 import Adb, { DeviceClient } from "@devicefarmer/adbkit";
 
 // import getProxyConfig from "renderer/actions/proxy/getProxyConfig";
-import {
-  ANDROID_TEMP,
-  getRootCommand,
-  hasCertInstalled,
-  injectSystemCertificate,
-  pushFile,
-  rootDevice,
-  stringAsStream,
-} from "./adb-commands";
+import { hasCertInstalled, rootDevice } from "./adb-commands";
 import {
   getCertificateFingerprint,
   getCertificateSubjectHash,
@@ -18,6 +10,7 @@ import {
 } from "renderer/utils/cert";
 import getProxyConfig from "renderer/actions/proxy/getProxyConfig";
 import { execSync } from "child_process";
+import { delay } from "./utils";
 
 export default class AndroidAdbDevice {
   constructor(config) {
@@ -80,16 +73,29 @@ export default class AndroidAdbDevice {
     // await deviceClient.reboot();
 
     try {
-      await this.setupProxy(proxyPort, options.deviceId);
-      await this.injectSystemCertIfPossible(
+      await rootDevice(this.adbClient, options.deviceId);
+      await delay(4000);
+      const needsReboot = await this.injectSystemCertIfPossible(
         options.deviceId,
         this.config?.https?.certContent
       );
-      await this.adbClient.getDevice(options.deviceId).reboot();
+      await this.setupProxy(proxyPort, options.deviceId);
+      await delay(2000);
+
+      if (needsReboot) {
+        await this.adbClient.getDevice(options.deviceId).reboot();
+      }
       this.activeDevices[options?.deviceId] = true;
+      // eslint-disable-next-line consistent-return
+      return {
+        message: needsReboot
+          ? "Restarting device to apply changes. Please wait..."
+          : "",
+      };
     } catch (err) {
       console.log(err);
       this.removeProxy(options.deviceId);
+      await delay(2000);
       throw err;
     }
   }
@@ -119,33 +125,30 @@ export default class AndroidAdbDevice {
   }
 
   async setupProxy(proxyPort, deviceId) {
-    console.log("[android-adb:activate] Settings up proxy", {
-      deviceId,
-      command: `settings put global http_proxy "${
-        getProxyConfig().ip
-      }:${proxyPort}"`,
-    });
-    await this.adbClient
-      .getDevice(deviceId)
-      .shell(
-        `settings put global http_proxy "${getProxyConfig().ip}:${proxyPort}"`
-      )
-      .then(Adb.util.readAll)
-      .then((output) =>
-        console.log(
-          "[android-adb:activate] Proxy setup output",
-          output.toString()
+    try {
+      console.log("[android-adb:activate:setupProxy] Setting up proxy", {
+        proxyPort,
+        deviceId,
+      });
+      await this.adbClient
+        .getDevice(deviceId)
+        .shell(
+          `settings put global http_proxy "${getProxyConfig().ip}:${proxyPort}"`
         )
-      );
+        .then(Adb.util.readAll)
+        .then((output) =>
+          console.log(
+            "[android-adb:activate:setupProxy] Proxy setup output",
+            output.toString()
+          )
+        );
+    } catch (err) {
+      console.error("[android-adb:activate:setupProxy] Error", err);
+      throw new Error("Error setting up proxy");
+    }
   }
 
   async injectSystemCertIfPossible(deviceId, certContent) {
-    const rootCmd = await getRootCommand(this.adbClient, deviceId);
-    if (!rootCmd) {
-      console.log("Root not available, skipping cert injection");
-      return;
-    }
-
     const cert = parseCert(certContent);
 
     try {
@@ -163,49 +166,67 @@ export default class AndroidAdbDevice {
         )
       ) {
         console.log("Cert already installed, nothing to do");
-        return;
+        return false;
       }
 
-      const certPath = `${ANDROID_TEMP}/${subjectHash}.0`;
-      console.log(`Adding cert file as ${certPath}`);
-
-      // await pushFile(
-      //   this.adbClient,
-      //   deviceId,
-      //   stringAsStream(certContent.replace("\r\n", "\n")),
-      //   certPath,
-      //   0o444
-      // );
-
-      // await injectSystemCertificate(
-      //   this.adbClient,
-      //   deviceId,
-      //   rootCmd,
-      //   certPath
-      // );
-
       if (this.config?.https?.certPath) {
+        console.log(
+          "[android-adb:activate:injectSystemCertIfPossible] Installing certificate"
+        );
         const escapedCertPath = this.config?.https?.certPath.replace(
           /(\s+)/g,
           "\\$1"
         );
+
+        // // Root device
+        // console.log(
+        //   "[android-adb:activate:injectSystemCertIfPossible] Rooting Device"
+        // );
+        // await rootDevice(this.adbClient, deviceId);
+        // console.log(
+        //   "[android-adb:activate:injectSystemCertIfPossible] Rooting Device Fin"
+        // );
+
+        // Prepare & Push Certificate
+        console.log(
+          "[android-adb:activate:injectSystemCertIfPossible] Pushing Certificate"
+        );
         const caCommand = `#!/bin/bash
 subjectHash=\`openssl x509 -inform PEM -subject_hash_old -in ${escapedCertPath} | head -n 1\`
 openssl x509 -in ${escapedCertPath} -inform PEM -outform DER -out $subjectHash.0
-adb root
-adb push ./$subjectHash.0 /data/misc/user/0/cacerts-added/$subjectHash.0
-adb shell "su 0 chmod 644 /data/misc/user/0/cacerts-added/$subjectHash.0"
+adb -s ${deviceId} push ./$subjectHash.0 /data/misc/user/0/cacerts-added/$subjectHash.0
+adb -s ${deviceId} shell "su 0 chmod 644 /data/misc/user/0/cacerts-added/$subjectHash.0"
 `;
-        console.log("Installing certificate", caCommand);
         const output = execSync(caCommand).toString();
-        console.log("Installing Ceritificate Output", output);
+        console.log(
+          "[android-adb:activate:injectSystemCertIfPossible:prepareCertificate] Pushing Certificate Fin",
+          { output, caCommand }
+        );
+
+        // // Push Certificate
+        // console.log(
+        //   "[android-adb:activate:injectSystemCertIfPossible] Pushing Ceritificate"
+        // );
+        // await this.adbClient
+        //   .getDevice(deviceId)
+        //   .push(
+        //     `./$subjectHash.0 /data/misc/user/0/cacerts-added/$subjectHash.0`
+        //   );
+
+        // await this.adbClient
+        //   .getDevice(deviceId)
+        //   .shell(
+        //     `su 0 chmod 644 /data/misc/user/0/cacerts-added/$subjectHash.0`
+        //   );
+
+        // console.log(
+        //   "[android-adb:activate:injectSystemCertIfPossible] Pushing Ceritificate Fin"
+        // );
       }
-
-      // await this.adbClient.getDevice(deviceId).reboot();
-
-      console.log(`Cert injected`);
+      return true;
     } catch (e) {
       console.error("[android-adb:injectSystemCertIfPossible] Error", e);
     }
+    return false;
   }
 }

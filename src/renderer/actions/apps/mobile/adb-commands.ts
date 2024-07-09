@@ -75,7 +75,7 @@ export async function rootDevice(
     }
 
     console.error(error);
-    return false;
+    throw new Error("Could not root your Android Emulator!!");
   }
 }
 
@@ -153,7 +153,8 @@ export async function hasCertInstalled(
   certFingerprint: string
 ) {
   try {
-    const certPath = `/system/etc/security/cacerts/${certHash}.0`;
+    // const certPath = `/system/etc/security/cacerts/${certHash}.0`;
+    const certPath = `/data/misc/user/0/cacerts-added/${certHash}.0`;
     const certStream = await adbClient.getDevice(deviceId).pull(certPath);
 
     // Wait until it's clear that the read is successful
@@ -166,13 +167,21 @@ export async function hasCertInstalled(
       certStream.on("error", reject);
     });
 
+    console.log("Read data", { data: data.toString("utf8") });
     // The device already has an cert. But is it the right one?
     const existingCert = parseCert(data.toString("utf8"));
     const existingFingerprint = getCertificateFingerprint(existingCert);
+    console.log({
+      certHash,
+      data: data.toString("utf8"),
+      certFingerprint,
+      existingFingerprint,
+    });
     return certFingerprint === existingFingerprint;
   } catch (e) {
     // Couldn't read the cert, or some other error - either way, we probably
     // don't have a working system cert installed.
+    console.log("Error reading cert", e);
     return false;
   }
 }
