@@ -73,7 +73,7 @@ export async function rootDevice(
     }
 
     console.error(error);
-    throw new Error("Could not root your Android Emulator!!");
+    throw new Error(error?.message);
   }
 }
 
@@ -246,3 +246,16 @@ export async function injectSystemCertificate(
   // Actually run the script that we just pushed above, as root
   await run(adbClient, deviceId, rootCmd.concat("sh", injectionScriptPath));
 }
+
+export const checkProxy = async (adbClient: adb.Client, deviceId: string) => {
+  return adbClient
+    .getDevice(deviceId)
+    .shell("settings get global http_proxy")
+    .then(adb.Adb.util.readAll)
+    .then((output: any) => {
+      return output.toString().trim();
+    })
+    .catch((err: any) => {
+      console.log("checkProxy", err);
+    });
+};

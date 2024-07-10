@@ -1,6 +1,7 @@
 import Adb, { DeviceClient } from "@devicefarmer/adbkit";
 
 import {
+  checkProxy,
   hasCertInstalled,
   pushFile,
   rootDevice,
@@ -25,13 +26,26 @@ export default class AndroidAdbDevice {
     console.log("AndroidAdbDevice", { config });
   }
 
-  isActive(deviceId) {
+  async isActive(deviceId, proxyPort) {
     console.log("android-adb:isActive", {
       deviceId,
       activeDevices: JSON.stringify(this.activeDevices),
     });
+    const proxyOutput = await checkProxy(this.adbClient, deviceId);
+
+    console.log("android-adb:isActive", {
+      proxyOutput,
+      proxy: `${getProxyConfig().ip}:${proxyPort}`,
+    });
+
     const device = this.activeDevices[deviceId];
-    return !!device;
+    if (proxyOutput === `${getProxyConfig().ip}:${proxyPort}` && device) {
+      console.log("[android-adb:isActive] Device active");
+      return true;
+    }
+
+    console.log("[android-adb:isActive] Device not active");
+    return false;
   }
 
   async isActivable() {
@@ -40,7 +54,7 @@ export default class AndroidAdbDevice {
   }
 
   async activate(proxyPort, options) {
-    if (this.isActive(options?.deviceId)) {
+    if (await this.isActive(options?.deviceId, proxyPort)) {
       console.log(`Device ${options?.deviceId} is already active`);
       return;
     }
@@ -77,10 +91,8 @@ export default class AndroidAdbDevice {
     console.log("android:deactivate", { proxyPort, options });
     const deviceClient = new DeviceClient(this.adbClient, options.deviceId);
 
-    if (this.isActive(options.deviceId)) {
-      await deviceClient.shell("settings put global http_proxy :0");
-      delete this.activeDevices[options.deviceId];
-    }
+    await deviceClient.shell("settings put global http_proxy :0");
+    delete this.activeDevices[options.deviceId];
   }
 
   async deactivateAll() {
