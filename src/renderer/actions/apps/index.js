@@ -53,7 +53,7 @@ export const activateApp = async ({ id, proxyPort, options }) => {
 
   if (isActivationError(result)) {
     if (result.reportable !== false) console.error(result);
-    return { success: false, metadata: result.metadata };
+    return { success: false, metadata: { message: result?.message } };
   } else {
     console.log(`Successfully activated ${id}`, { category: "app" });
     return { success: true, metadata: result };

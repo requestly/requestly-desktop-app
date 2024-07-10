@@ -1,9 +1,7 @@
-// import Adb from "@devicefarmer/adbkit";
 import * as adb from "@devicefarmer/adbkit";
 import { getCertificateFingerprint, parseCert } from "renderer/utils/cert";
 import stream from "stream";
 import { delay, waitUntil } from "./utils";
-// import { delay, waitUntil } from "./utils";
 
 // async function run(
 //   adbClient: adb.Client,
@@ -153,7 +151,6 @@ export async function hasCertInstalled(
   certFingerprint: string
 ) {
   try {
-    // const certPath = `/system/etc/security/cacerts/${certHash}.0`;
     const certPath = `/data/misc/user/0/cacerts-added/${certHash}.0`;
     const certStream = await adbClient.getDevice(deviceId).pull(certPath);
 
