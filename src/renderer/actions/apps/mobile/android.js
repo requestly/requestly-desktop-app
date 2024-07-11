@@ -5,7 +5,6 @@ import {
   hasCertInstalled,
   pushFile,
   rootDevice,
-  stringAsStream,
 } from "./adb-commands";
 import {
   getCertificateFingerprint,
@@ -15,6 +14,7 @@ import {
 import getProxyConfig from "renderer/actions/proxy/getProxyConfig";
 import { execSync } from "child_process";
 import { delay } from "./utils";
+import { stringAsStream } from "utils";
 
 export default class AndroidAdbDevice {
   constructor(config) {
@@ -110,27 +110,26 @@ export default class AndroidAdbDevice {
   }
 
   async setupProxy(proxyPort, deviceId) {
-    try {
-      console.log("[android-adb:activate:setupProxy] Setting up proxy", {
-        proxyPort,
-        deviceId,
-      });
-      await this.adbClient
-        .getDevice(deviceId)
-        .shell(
-          `settings put global http_proxy "${getProxyConfig().ip}:${proxyPort}"`
+    console.log("[android-adb:activate:setupProxy] Setting up proxy", {
+      proxyPort,
+      deviceId,
+    });
+    await this.adbClient
+      .getDevice(deviceId)
+      .shell(
+        `settings put global http_proxy "${getProxyConfig().ip}:${proxyPort}"`
+      )
+      .then(Adb.util.readAll)
+      .then((output) =>
+        console.log(
+          "[android-adb:activate:setupProxy] Proxy setup output",
+          output.toString()
         )
-        .then(Adb.util.readAll)
-        .then((output) =>
-          console.log(
-            "[android-adb:activate:setupProxy] Proxy setup output",
-            output.toString()
-          )
-        );
-    } catch (err) {
-      console.error("[android-adb:activate:setupProxy] Error", err);
-      throw new Error("Error setting up proxy");
-    }
+      )
+      .catch((err) => {
+        console.error("[android-adb:activate:setupProxy] Error", err);
+        throw new Error("Error setting up proxy");
+      });
   }
 
   async injectSystemCertIfPossible(deviceId, certContent) {

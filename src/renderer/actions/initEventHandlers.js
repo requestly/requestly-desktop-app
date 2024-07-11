@@ -73,8 +73,6 @@ const initEventHandlers = () => {
     const { id, options } = payload;
     let res = { success: false };
 
-    console.log({ event, payload });
-
     try {
       /* (Checking -> Installing) cert on every app launch, so that launched
        * browsers also trust the self signed certificate (RQProxyCA).
