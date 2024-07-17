@@ -11,7 +11,7 @@ import * as Sentry from "@sentry/browser";
 import { getLauncher } from "./browsers/browser-handler";
 import { getCurrentProxyPort } from "../storage/cacheUtils";
 
-let certContent = null;
+let certContent = "";
 try {
   certContent = readFileSync(staticConfig.ROOT_CERT_PATH, "utf8");
 } catch (err) {
