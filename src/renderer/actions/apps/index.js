@@ -11,12 +11,19 @@ import * as Sentry from "@sentry/browser";
 import { getLauncher } from "./browsers/browser-handler";
 import { getCurrentProxyPort } from "../storage/cacheUtils";
 
+let certContent = "";
+try {
+  certContent = readFileSync(staticConfig.ROOT_CERT_PATH, "utf8");
+} catch (err) {
+  console.error("Error reading cert file", err);
+}
+
 const config = {
   appName: staticConfig.APP_NAME,
   configPath: staticConfig.BROWSER_CONFIG_PATH,
   https: {
     certPath: staticConfig.ROOT_CERT_PATH,
-    certContent: readFileSync(staticConfig.ROOT_CERT_PATH, "utf8"),
+    certContent,
   },
 };
 
