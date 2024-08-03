@@ -65,8 +65,7 @@ const initEventHandlers = () => {
 
   ipcRenderer.on("get-shared-state", async () => {
     const proxyInstance = RQProxyProvider.getInstance();
-    const currentSharedState =
-      proxyInstance?.customGlobalState.getSharedStateCopy();
+    const currentSharedState = proxyInstance?.globalState.getSharedStateCopy();
 
     ipcRenderer.send("reply-get-shared-state", currentSharedState ?? {});
   });
