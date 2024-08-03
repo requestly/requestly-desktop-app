@@ -2,16 +2,11 @@
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 // CORE
-import { ipcMain, ipcRenderer, shell } from "electron";
+import { ipcRenderer, shell } from "electron";
 // ACTION
 import startProxyServer from "./proxy/startProxyServer";
 import getProxyConfig from "./proxy/getProxyConfig";
-import {
-  areAppsActivatable,
-  activateApp,
-  deactivateApp,
-  isAppActivatable,
-} from "./apps";
+import { activateApp, deactivateApp, isAppActivatable } from "./apps";
 import saveRootCert from "./saveRootCert";
 // STATE MANAGEMENT
 import { setState } from "./stateManagement";
@@ -27,10 +22,9 @@ import { staticConfig } from "../config";
 import { installCert } from "./apps/os/ca";
 import { applyProxy } from "./apps/os/proxy";
 import { shutdown } from "./shutdown";
-import storageService from "lib/storage";
-import ACTION_TYPES from "lib/storage/types/action-types";
 import storageCacheService from "renderer/services/storage-cache";
 import { getAvailableAndroidDevices } from "./apps/mobile/utils";
+import { RQProxyProvider } from "@requestly/requestly-proxy";
 
 const initEventHandlers = () => {
   ipcRenderer.on("start-proxy-server", async () => {
@@ -41,9 +35,9 @@ const initEventHandlers = () => {
 
   ipcRenderer.on("detect-available-apps", async (event, payload) => {
     const arrayOfAppIds = payload;
-    let final_result = {};
+    const final_result = {};
 
-    for (let appId of arrayOfAppIds) {
+    for (const appId of arrayOfAppIds) {
       isAppActivatable({ id: appId })
         .then((result) => {
           final_result[appId] = result;
@@ -67,6 +61,14 @@ const initEventHandlers = () => {
       // TODO: Handle Errors
     }
     ipcRenderer.send("reply-detect-available-android-devices", devices);
+  });
+
+  ipcRenderer.on("get-shared-state", async () => {
+    const proxyInstance = RQProxyProvider.getInstance();
+    const currentSharedState =
+      proxyInstance?.customGlobalState.getSharedStateCopy();
+
+    ipcRenderer.send("reply-get-shared-state", currentSharedState ?? {});
   });
 
   ipcRenderer.on("activate-app", async (event, payload) => {
