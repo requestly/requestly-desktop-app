@@ -93,7 +93,8 @@ function startProxyFromModule(PROXY_PORT: number) {
   RQProxyProvider.createInstance(
     proxyConfig,
     new RulesDataSource(),
-    new LoggerService()
+    new LoggerService(),
+    { variables: { ID: "REQUESTLY-DESKTOP-APP" } } // DUMMY STATE
   );
 
   // Helper server needs http port, hence
