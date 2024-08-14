@@ -1,7 +1,7 @@
 {
   "name": "requestly",
   "productName": "Requestly",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "main": "src/main/main.ts",
   "private": true,
   "description": "Intercept & Modify HTTP Requests",
@@ -82,14 +82,6 @@
         {
           "target": "dmg",
           "arch": [
-            "x64",
-            "arm64"
-          ]
-        },
-        {
-          "target": "zip",
-          "arch": [
-            "x64",
             "arm64"
           ]
         }
@@ -256,7 +248,7 @@
     "@devicefarmer/adbkit": "^3.2.6",
     "@electron/remote": "^2.1.2",
     "@requestly/requestly-core": "^1.0.4",
-    "@requestly/requestly-proxy": "^1.2.3",
+    "@requestly/requestly-proxy": "^1.3.0",
     "@sentry/browser": "^6.13.3",
     "@sentry/electron": "^2.5.4",
     "address": "^2.0.3",
