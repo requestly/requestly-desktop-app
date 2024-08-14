@@ -10,7 +10,7 @@ export const filterSuperObjectByType = (superObject, requestedObjectType) => {
   }
 
   return records.filter((record) => {
-    let objectType = record.objectType;
+    let objectType = record?.objectType;
     return objectType === requestedObjectType;
   });
 };
