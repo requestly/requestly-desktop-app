@@ -53,7 +53,8 @@ const startHelperServer = async (helperServerPort) => {
         case "/proxy":
           res.writeHead(200, {
             "Content-Type": "application/json",
-            "access-control-allow-origin": "*",
+            "access-control-allow-origin":
+              "chrome://mcidagfcffoaenpopilcmlklfmemlpce",
           });
           res.write(
             JSON.stringify({
