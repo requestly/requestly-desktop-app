@@ -1,5 +1,5 @@
 // UTILS
-import {ip} from "address";
+import { ip } from "address";
 
 import { RQProxyProvider } from "@requestly/requestly-proxy";
 import RulesDataSource from "../../lib/proxy-interface/rulesFetcher";
@@ -13,27 +13,31 @@ import * as Sentry from "@sentry/browser";
 import startHelperServer from "../startHelperServer";
 import logger from "utils/logger";
 import { getDefaultProxyPort } from "../storage/cacheUtils";
-import { handleCARegeneration} from "../apps/os/ca/utils";
+import { handleCARegeneration } from "../apps/os/ca/utils";
+import { startExtensionSocketConnection } from "../extensionSocketConnection";
 
 declare global {
-  interface Window { proxy: any }
+  interface Window {
+    proxy: any;
+  }
 }
 
 interface IStartProxyResult {
-  success: Boolean
-  port: number | null
-  proxyIp: any
-  helperServerPort?: any
+  success: Boolean;
+  port: number | null;
+  proxyIp: any;
+  helperServerPort?: any;
 }
 
 const { CERTS_PATH, ROOT_CERT_PATH } = staticConfig;
 
 const DEFAULT_HELPER_SERVER_PORT = 7040;
+const DEFAULT_SOCKET_CONNECTION_PORT = 59763;
 
 // this automatically stops the old server before starting the new one
 export default async function startProxyServer(
   proxyPort?: number,
-  shouldStartHelperServer=true
+  shouldStartHelperServer = true
 ): Promise<IStartProxyResult> {
   // Check if proxy is already listening. If so, close it
   try {
@@ -78,8 +82,20 @@ export default async function startProxyServer(
     }
     await startHelperServer(HELPER_SERVER_PORT);
   }
+
+  const SOCKET_CONNECTION_PORT = await getNextAvailablePort(
+    DEFAULT_SOCKET_CONNECTION_PORT
+  );
+
+  if (!SOCKET_CONNECTION_PORT) {
+    result.success = false;
+    return result;
+  }
+
+  startExtensionSocketConnection(SOCKET_CONNECTION_PORT);
+
   return result;
-};
+}
 
 function startProxyFromModule(PROXY_PORT: number) {
   const proxyConfig = {
