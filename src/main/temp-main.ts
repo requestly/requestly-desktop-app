@@ -1,0 +1,591 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+/* eslint global-require: off, no-console: off, promise/always-return: off */
+
+/**
+ * This module executes inside of electron's main process. You can start
+ * electron renderer process from here and communicate with the other processes
+ * through IPC.
+ *
+ * When running `npm run build` or `npm run build:main`, this file is compiled to
+ * `./src/main.js` using webpack. This gives us some performance wins.
+ */
+import "core-js/stable";
+import "regenerator-runtime/runtime";
+import path from "path";
+import { app, BrowserWindow, shell, dialog, Tray, Menu, clipboard } from "electron";
+import log from "electron-log";
+import MenuBuilder from "./menu";
+import {
+  registerMainProcessCommonEvents,
+  registerMainProcessEvents,
+  registerMainProcessEventsForWebAppWindow,
+  trackRecentlyAccessedFile,
+} from "./events";
+/** Storage - State */
+import "./actions/initGlobalState";
+import AutoUpdate from "../lib/autoupdate";
+import { cleanupAndQuit } from "./actions/cleanup";
+import { trackEventViaWebApp } from "./actions/events";
+import EVENTS from "./actions/events/constants";
+import fs from "fs";
+import logger from "../utils/logger";
+
+const logFilePath = path.join("/Users/nafees", "app-debug.log");
+
+function logToFile(...args: any[]) {
+  const message = args.join(" ");
+  const timestamp = new Date().toISOString();
+  // eslint-disable-next-line no-shadow
+  const logMessage = `[${timestamp}] ${message}\n`;
+  fs.appendFileSync(logFilePath, logMessage);
+}
+
+// process.stderr.on("data", (data) => {
+//   logToFile("stderr data", data);
+// });
+
+// process.stdout.on("error", (error) => {
+//   logToFile("stdout error", error);
+// });
+
+// process.stdout.on("connect", (error) => {
+//   logToFile("stdout connect", error);
+// });
+
+// process.stdout.on("close", (error) => {
+//   logToFile("stdout close", error);
+// });
+
+// process.stdout.on("end", (error) => {
+//   logToFile("stdout end", error);
+// });
+
+// process.stdin.on("error", (error) => {
+//   logToFile("stdin error", error);
+// });
+
+// process.stdin.on("close", (error) => {
+//   logToFile("stdin close", error);
+// });
+
+// process.stdin.on("connect", (error: any) => {
+//   logToFile("stdin connect", error);
+// });
+
+// process.stdin.on("end", (error: any) => {
+//   logToFile("stdin end", error);
+// });
+
+// Capture uncaught exceptions
+process.on("uncaughtException", (error) => {
+  logToFile(`Uncaught Exception: ${error.message}\n${error.stack}`);
+});
+
+// Capture unhandled promise rejections
+process.on("unhandledRejection", (reason, promise) => {
+  logToFile(`Unhandled Rejection: ${reason}\n${promise}`);
+});
+
+// Encode a message for transmission, given its content.
+function encodeMessage(messageContent:any) {
+	const encodedContent = JSON.stringify(messageContent);
+	const encodedLength = Buffer.alloc(4);
+	encodedLength.writeUInt32LE(Buffer.byteLength(encodedContent));
+
+	return {
+		length: encodedLength,
+		content: encodedContent,
+	};
+}
+
+// Send an encoded message to stdout.
+function sendMessage(messageContent:any) {
+	const encodedMessage = encodeMessage(messageContent);
+	process.stdout.write(encodedMessage.length);
+	process.stdout.write(encodedMessage.content);
+}
+
+let buffer = Buffer.alloc(0);
+
+process.stdin.on("data", (chunk) => {
+	buffer = Buffer.concat([buffer, chunk]);
+
+	while (buffer.length >= 4) {
+		const messageLength = buffer.readUInt32LE(0);
+
+		// if (buffer.length >= messageLength + 4) {
+			const messageBuffer = buffer.subarray(4, 4 + messageLength);
+			buffer = buffer.subarray(4 + messageLength);
+
+			const messageString = messageBuffer.toString("utf8");
+
+			logToFile("!!!debug msg len", messageLength, "msf string", messageString);
+			try {
+				const message = JSON.parse(messageString);
+				// logToFile(`Received message from Chrome extension:`, message);
+
+				// // Respond back to the extension
+				// const response = JSON.stringify({
+				// 	response: "Message received",
+				// 	received: message,
+				// });
+				// const responseLength = Buffer.byteLength(response);
+				// process.stdout.write(
+				// 	Buffer.from([
+				// 		responseLength & 0xff,
+				// 		(responseLength >> 8) & 0xff,
+				// 		(responseLength >> 16) & 0xff,
+				// 		(responseLength >> 24) & 0xff,
+				// 	])
+				// );
+				// process.stdout.write(response);
+      sendMessage({ response: "Message received", received: message });
+
+      logToFile("Sent response back to Chrome extension");
+			} catch (err) {
+      logToFile(`Error processing message: ${err}`);
+			}
+		// } else {
+		// 	break; // Wait for more data
+		// }
+	}
+});
+
+
+// Init remote so that it could be consumed in renderer
+const remote = require("@electron/remote/main");
+remote.initialize();
+
+// Browser windows
+let webAppWindow: BrowserWindow | null = null;
+let loadingScreenWindow: BrowserWindow | null = null;
+
+let tray: Tray | null = null;
+
+const RESOURCES_PATH = app.isPackaged
+  ? path.join(process.resourcesPath, "assets")
+  : path.join(__dirname, "../../assets");
+
+const getAssetPath = (...paths: string[]): string => {
+  return path.join(RESOURCES_PATH, ...paths);
+};
+
+const isDevelopment =
+  process.env.NODE_ENV === "development" || process.env.DEBUG_PROD === "true";
+
+if (isDevelopment) {
+  const sourceMapSupport = require("source-map-support");
+  sourceMapSupport.install();
+}
+
+if (isDevelopment) {
+  require("electron-debug")();
+}
+
+const installExtensions = async () => {
+  const installer = require("electron-devtools-installer");
+  const forceDownload = !!process.env.UPGRADE_EXTENSIONS;
+  const extensions = ["REACT_DEVELOPER_TOOLS", "REDUX_DEVTOOLS"];
+
+  return installer
+    .default(
+      extensions.map((name) => installer[name]),
+      forceDownload
+    )
+    .catch(console.log);
+};
+
+export default function createTrayMenu(ip?: string, port?: number) {
+  if(tray) { // tray is recreated when proxy parameters are ready
+    tray.destroy();
+    tray = null
+  }
+  const proxyAddress = `${ip}:${port}`;
+  const menuOptions: Electron.MenuItemConstructorOptions[] = [
+    {
+      label: "Show Requestly",
+      click: () => {
+        if(webAppWindow) {
+          if(webAppWindow.isMinimized()) {
+            webAppWindow.restore()
+          }
+          webAppWindow.show();
+          webAppWindow.focus();
+        }
+      },
+    },
+    {
+      type: "separator",
+    },
+    {
+      label: `Listening On ${proxyAddress}`, // todo: get actual ip and port
+      submenu: [
+        {
+          label: "Copy",
+          click: () => {
+            clipboard.writeText(proxyAddress);
+          },
+        },
+        {
+          label: "Copy IP",
+          click: () => {
+            clipboard.writeText(ip ?? "");
+          },
+        },
+        {
+          label: "Copy Port",
+          click: () => {
+            clipboard.writeText(port?.toString() ?? "");
+          },
+        },
+      ],
+    },
+    {
+      type: "separator",
+    },
+    {
+      label: "📖 Documentation",
+      click: () => {
+        // todo: get link from constants
+        const documentationURL = "https://docs.requestly.io";
+        shell.openExternal(documentationURL);
+      },
+    },
+    {
+      label: "🐞 Report an Issue",
+      click: () => {
+        const issueURL = "https://github.com/requestly/requestly/issues/new/choose";
+        shell.openExternal(issueURL);
+      },
+    },
+    {
+      label: "⭐ Give us a Star",
+      click: () => {
+        const repoURL = "https://github.com/requestly/requestly/";
+        shell.openExternal(repoURL);
+      },
+    },
+    {
+      type: "separator",
+    },
+    {
+      label: "Quit",
+      click: () => {
+        app.quit();
+      },
+    },
+  ]
+
+  if(!ip || !port) { // for case when proxy is not ready
+    menuOptions.splice(1,2)
+  }
+  const trayMenu = Menu.buildFromTemplate(menuOptions);
+
+  if(process.platform === "win32") {
+    tray = new Tray(getAssetPath("iconTemplate@2x.ico"));
+  } else {
+    tray = new Tray(getAssetPath("iconTemplate.png"));
+  }
+  tray.setToolTip("Requestly App");
+  tray.setContextMenu(trayMenu);
+}
+
+
+const createWindow = async () => {
+  if (isDevelopment) {
+    await installExtensions();
+  }
+
+  const RESOURCES_PATH = app.isPackaged
+    ? path.join(process.resourcesPath, "assets")
+    : path.join(__dirname, "../../assets");
+
+  const getAssetPath = (...paths: string[]): string => {
+    return path.join(RESOURCES_PATH, ...paths);
+  };
+
+  webAppWindow = new BrowserWindow({
+    show: false,
+    width: 1310,
+    minWidth: 1100,
+    height: 600,
+    minHeight: 500,
+    icon: getAssetPath("icon.png"),
+    webPreferences: {
+      nodeIntegration: false,
+      sandbox: false,
+      preload: path.join(__dirname, "preload.js"),
+    },
+  });
+  new AutoUpdate(webAppWindow);
+  remote.enable(webAppWindow.webContents);
+
+  // TODO @sahil: Prod and Local Urls should be supplied by @requestly/requestly-core-npm package.
+  const DESKTOP_APP_URL = isDevelopment
+    ? "http://localhost:3000"
+    : "https://app.requestly.io";
+  webAppWindow.loadURL(DESKTOP_APP_URL, {
+    extraHeaders: "pragma: no-cache\n",
+  });
+
+  // @ts-ignore
+  webAppWindow.webContents.once("did-fail-load", (event, errorCode, errorDescription, validatedUrl, isMainFrame, frameProcessId, frameRoutingId) => {
+    if(isMainFrame) {
+      console.error(`did-fail-load errorCode=${errorCode} url=${validatedUrl}`);
+      if (webAppWindow) webAppWindow.hide();
+      dialog.showErrorBox(
+        "No internet",
+        "Unable to connect to Requestly servers. Make sure you're connected to the internet or try removing any active proxy."
+      );
+      app.quit();
+    }
+  });
+
+  webAppWindow.once("ready-to-show", () => {
+    if (!webAppWindow) {
+      throw new Error("Not expecting this to happen!");
+    }
+    if (process.env.START_MINIMIZED) {
+      webAppWindow.minimize();
+    } else {
+      // Show Web app
+      webAppWindow.maximize();
+      // webAppWindow.setResizable(false);
+      webAppWindow.show();
+      webAppWindow.focus();
+
+     executeOnWebAppReadyHandlers();
+    }
+
+    // Close loading splash screen
+    if (loadingScreenWindow) {
+      loadingScreenWindow.hide();
+      loadingScreenWindow.close();
+    }
+  });
+
+  // webAppWindow.on('closed', () => {
+  //   webAppWindow = null;
+  // });
+
+  webAppWindow.on("close", (e) => {
+    // Check if user has already asked to Quit app from here or somewhere else
+    // @ts-expect-error
+    if (global.isQuitActionConfirmed) {
+      app.quit();
+      return;
+    }
+
+    if (webAppWindow) {
+      let message =
+        "Do you really want to quit? This would also stop the proxy server.";
+
+      // @ts-expect-error
+      if (global.quitAndInstall) {
+        message = "Confirm to restart & install update";
+        // @ts-expect-error
+        global.quitAndInstall = false;
+      }
+
+      const choice = dialog.showMessageBoxSync(webAppWindow, {
+        type: "question",
+        buttons: ["Yes, quit Requestly", "Minimize instead", "Cancel"],
+        title: "Quit Requestly",
+        message: message,
+      });
+
+      switch (choice) {
+        // If Quit is clicked
+        case 0:
+          // Set flag to check next iteration
+          trackEventViaWebApp(webAppWindow, EVENTS.QUIT_APP)
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-expect-error
+          global.isQuitActionConfirmed = true;
+          // Calling app.quit() would again invoke this function
+          e.preventDefault();
+          cleanupAndQuit();
+          break;
+        // If Minimize is clicked
+        case 1:
+          webAppWindow.minimize();
+          e.preventDefault();
+          break;
+        // If cancel is clicked
+        case 2:
+          e.preventDefault();
+          break;
+        default:
+          break;
+      }
+    }
+  });
+
+  const enableBGWindowDebug = () => {
+    // Show bg window and toggle the devtools
+    try {
+      // Suppress Global object warnings
+      const globalAny: any = global;
+
+      // eslint-disable-next-line
+      if (globalAny.backgroundWindow) {
+        // Show Window
+        // eslint-disable-next-line
+        globalAny.backgroundWindow.show();
+        // eslint-disable-next-line
+        globalAny.backgroundWindow.webContents.toggleDevTools();
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const menuBuilder = new MenuBuilder(webAppWindow, enableBGWindowDebug);
+  menuBuilder.buildMenu();
+  createTrayMenu();
+
+  // Open urls in the user's browser
+  webAppWindow.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url);
+    return { action: 'deny' }
+  });
+};
+
+let onWebAppReadyHandlers: (() => void)[] = [];
+function executeOnWebAppReadyHandlers() {
+  if(onWebAppReadyHandlers.length > 0) {
+    onWebAppReadyHandlers.forEach(callback => {
+      callback();
+    })
+    onWebAppReadyHandlers = []
+  }
+}
+
+function handleCustomProtocolURL(urlString: string) {
+  webAppWindow?.show();
+  webAppWindow?.focus();
+  const url = new URL(urlString);
+  // note: currently action agnostic, because it is only meant for redirection for now
+  if(url.searchParams.has("route")) {
+    const route = url.searchParams.get("route")
+    webAppWindow?.webContents.send("deeplink-handler", route)
+  }
+}
+
+// custom protocol (requestly) handler
+app.on("open-url", (_event, rqUrl) => {
+  if(webAppWindow) {
+    handleCustomProtocolURL(rqUrl)
+  } else {
+    onWebAppReadyHandlers.push(() => handleCustomProtocolURL(rqUrl))
+  }
+})
+
+async function handleFileOpen(filePath: string, webAppWindow?: BrowserWindow) {
+  trackRecentlyAccessedFile(filePath);
+  log.info("filepath opened", filePath)
+  webAppWindow?.show();
+  webAppWindow?.focus();
+  try {
+    const fileContents = await fs.promises.readFile(filePath, "utf8");
+    const fileExtension = path.extname(filePath);
+    const fileName = path.basename(filePath, fileExtension);
+
+    const fileObject = {
+      name: fileName,
+      extension: fileExtension,
+      contents: fileContents,
+      path: filePath,
+    };
+
+    webAppWindow?.webContents.send("open-file", fileObject)
+  } catch (error) {
+    logger.error(`Error while reading file ${filePath}`, error)
+    onWebAppReadyHandlers.push(() => handleFileOpen(filePath))
+  }
+}
+
+app.on('open-file', async (event, filePath) => {
+  event.preventDefault();
+  if(webAppWindow) {
+    handleFileOpen(filePath, webAppWindow);
+  } else {
+    logger.log("webAppWindow not ready")
+    onWebAppReadyHandlers.push(() => handleFileOpen(filePath))
+  }
+  return
+});
+
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
+app.on("ready", () => {
+  // Init loading screen
+  loadingScreenWindow = new BrowserWindow({
+    width: 200,
+    height: 200,
+    /// remove the window frame, so it will become a border-less window
+    frame: false,
+    /// and set the transparency, to remove any window background color
+    transparent: true,
+  });
+  // User should not allow resizing it
+  loadingScreenWindow.setResizable(false);
+
+  loadingScreenWindow.once("show", async () => {
+    // DO actual stuff
+    // Register Basic IPC Events
+    registerMainProcessEvents();
+    // Create Renderer Window
+    await createWindow();
+    // Register Remaining IPC Events that involve browser windows
+    registerMainProcessEventsForWebAppWindow(webAppWindow);
+    registerMainProcessCommonEvents();
+
+    if (process.platform === 'win32') {
+      // Set the path of electron.exe and your app.
+      // These two additional parameters are only available on windows.
+      // Setting this is required to get this working in dev mode.
+      app.setAsDefaultProtocolClient('requestly', process.execPath, [path.resolve(process.argv[1])]);
+    } else {
+      app.setAsDefaultProtocolClient('requestly');
+    }
+  });
+  loadingScreenWindow.loadURL(
+    `file://${path.resolve(__dirname, "../loadingScreen/", "index.html")}`
+  );
+  loadingScreenWindow.show();
+});
+
+// Dont use any proxy
+app.commandLine.appendSwitch("no-proxy-server");
+
+/**
+ * Add event listeners...
+ */
+
+app.on("window-all-closed", () => {
+  // Respect the OSX convention of having the application in memory even
+  // after all windows have been closed
+  // if (process.platform !== 'darwin') {
+  //   app.quit();
+  // }
+
+  // Hotfix- New window cant be recreated, better quit
+  app.quit();
+});
+
+app
+  .whenReady()
+  .then(() => {
+    app.on("activate", () => {
+      // On macOS it's common to re-create a window in the app when the
+      // dock icon is clicked and there are no other windows open.
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+      }
+    });
+  })
+  .catch((err) => {
+    console.log(err);
+  });

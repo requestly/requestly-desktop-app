@@ -54,6 +54,14 @@ export const messageHandler = (): void => {
   }
 };
 
+// https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/lifecycle#chrome_116
+// Active WebSocket connections extend extension service worker lifetimes
+const sendHeartbeat = () => {
+  return setInterval(() => {
+    sendMessageToExtension({ action: "heartbeat" });
+  }, 27000);
+};
+
 export const startExtensionSocketConnection = (
   port: number
 ): webSocket.Server => {
@@ -65,11 +73,13 @@ export const startExtensionSocketConnection = (
 
     activeSocket = socket;
     messageHandler();
+    const heartbeatTimer = sendHeartbeat();
 
     // Handle client disconnect
     socket.on("close", () => {
       console.log("Client disconnected");
       activeSocket = null; // Clear the socket when client disconnects
+      clearInterval(heartbeatTimer);
     });
   });
 
