@@ -107,6 +107,15 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
   ipcMain.handle("app-detected", async (event, payload) => {
     webAppWindow.send("app-detected", payload);
   });
+
+  ipcMain.handle("browser-connected", async (event, payload) => {
+    webAppWindow.send("browser-connected", payload);
+  });
+
+  ipcMain.handle("browser-disconnected", async (event, payload) => {
+    webAppWindow.send("browser-disconnected", payload);
+  });
+
   // Open handle for async browser close
   ipcMain.handle("browser-closed", async (event, payload) => {
     webAppWindow.send("browser-closed", payload);

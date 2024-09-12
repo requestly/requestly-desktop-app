@@ -1,4 +1,7 @@
+import { staticConfig } from "renderer/config";
 import * as webSocket from "ws";
+import { installCert } from "./apps/os/ca";
+import { ipcRenderer } from "electron";
 
 let activeSocket: webSocket | null = null;
 
@@ -31,21 +34,40 @@ const tryParseJSON = (message: string): Record<string, any> | null => {
 
 export const messageHandler = (): void => {
   if (activeSocket) {
-    activeSocket.on("message", (message: string) => {
-      console.log(`Received message: ${message}`);
+    activeSocket.on("message", (messageString: string) => {
+      console.log(`Received message: ${messageString}`);
 
       // Optionally process and send a response
-      const parsedMessage = tryParseJSON(message);
-      if (parsedMessage) {
-        switch (parsedMessage.action) {
+      const message = tryParseJSON(messageString);
+      if (message) {
+        switch (message.action) {
           case "get_proxy":
             sendMessageToExtension({
-              action: parsedMessage.action,
+              action: message.action,
               proxyPort: window.proxy.httpPort,
             });
             break;
+          case "browser_connected":
+            installCert(staticConfig.ROOT_CERT_PATH)
+              .then(() =>
+                ipcRenderer.invoke("browser-connected", {
+                  appId: message.appId,
+                  appName: message.appName,
+                })
+              )
+              .catch(() => {
+                // none
+              });
+            break;
+
+          case "browser_disconnected":
+            ipcRenderer.invoke("browser-disconnected", {
+              appId: message.appId,
+              appName: message.appName,
+            });
+            break;
           default:
-            console.log("Unknown action:", parsedMessage.action);
+            console.log("Unknown action:", message.action);
         }
       }
     });
