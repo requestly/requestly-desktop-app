@@ -52,7 +52,6 @@ export const messageHandler = (): void => {
               .then(() =>
                 ipcRenderer.invoke("browser-connected", {
                   appId: message.appId,
-                  appName: message.appName,
                 })
               )
               .catch(() => {
@@ -63,7 +62,6 @@ export const messageHandler = (): void => {
           case "browser_disconnected":
             ipcRenderer.invoke("browser-disconnected", {
               appId: message.appId,
-              appName: message.appName,
             });
             break;
           default:
