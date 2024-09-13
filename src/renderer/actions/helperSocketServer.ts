@@ -38,7 +38,7 @@ export const messageHandler = (): void => {
       const message = tryParseJSON(messageString);
       if (message) {
         switch (message.action) {
-          case "get_proxy":
+          case "get-proxy":
             sendMessageToExtension({
               action: message.action,
               proxyPort: window.proxy.httpPort,
@@ -62,7 +62,7 @@ export const messageHandler = (): void => {
             });
             break;
           default:
-            console.log("Unknown action:", message.action);
+            console.log("Unknown action app:", message.action);
         }
       }
     });
