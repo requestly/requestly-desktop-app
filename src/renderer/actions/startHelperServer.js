@@ -1,8 +1,6 @@
 import { staticConfig } from "../config";
-import getProxyConfig from "./proxy/getProxyConfig";
 
-const http = require("http");
-
+var http = require("http");
 const pem_path = staticConfig.ROOT_CERT_PATH;
 
 const getShellScript = (port) => `
@@ -37,39 +35,16 @@ const getShellScript = (port) => `
 
 const startHelperServer = async (helperServerPort) => {
   return new Promise((resolve) => {
-    // create web server
-    const server = http.createServer((req, res) => {
+    var server = http.createServer(function (req, res) {
+      //create web server
       console.log(window.proxy.httpPort);
-      console.log("!!!debug", "url", req.url);
-      const path = req.url;
-
-      switch (path) {
-        case "/tpsetup":
-          const shellScript = getShellScript(window.proxy.httpPort);
-          res.writeHead(200, { "Content-Type": "text/x-shellscript" });
-          res.write(shellScript);
-          res.end();
-          break;
-        case "/proxy":
-          res.writeHead(200, {
-            "Content-Type": "application/json",
-            "access-control-allow-origin":
-              "chrome://mcidagfcffoaenpopilcmlklfmemlpce",
-          });
-          res.write(
-            JSON.stringify({
-              proxyUrl: `http://${getProxyConfig().ip}:${
-                getProxyConfig().port
-              }`,
-              proxyIp: getProxyConfig().ip,
-              proxyPort: getProxyConfig().port,
-            })
-          );
-          res.end();
-          break;
-        default:
-          res.end("Invalid Request!");
-      }
+      if (req.url == "/tpsetup") {
+        const shellScript = getShellScript(window.proxy.httpPort);
+        // const shellScript = `export http_proxy="http://127.0.0.1:${window.proxy.httpPort}"`
+        res.writeHead(200, { "Content-Type": "text/x-shellscript" });
+        res.write(shellScript);
+        res.end();
+      } else res.end("Invalid Request!");
     });
     server.listen(helperServerPort, () => {
       resolve(true);
