@@ -5,14 +5,11 @@ import { ipcRenderer } from "electron";
 
 let activeSocket: webSocket | null = null;
 
-const extensionId = "mcidagfcffoaenpopilcmlklfmemlpce";
-
 export const sendMessageToExtension = (message: object): void => {
   if (activeSocket && activeSocket.readyState === webSocket.OPEN) {
     const formattedMessage = JSON.stringify({
       ...message,
       source: "desktop-app",
-      id: extensionId,
     });
     activeSocket.send(formattedMessage);
     console.log(`Message sent: ${formattedMessage}`);
@@ -47,7 +44,7 @@ export const messageHandler = (): void => {
               proxyPort: window.proxy.httpPort,
             });
             break;
-          case "browser_connected":
+          case "browser-connected":
             installCert(staticConfig.ROOT_CERT_PATH)
               .then(() =>
                 ipcRenderer.invoke("browser-connected", {
@@ -59,7 +56,7 @@ export const messageHandler = (): void => {
               });
             break;
 
-          case "browser_disconnected":
+          case "browser-disconnected":
             ipcRenderer.invoke("browser-disconnected", {
               appId: message.appId,
             });
@@ -82,11 +79,8 @@ const sendHeartbeat = () => {
   }, 27000);
 };
 
-export const startExtensionSocketConnection = (
-  port: number
-): webSocket.Server => {
+export const startHelperSocketServer = (port: number): webSocket.Server => {
   const server = new webSocket.Server({ port });
-  console.log(`WebSocket server started on port ${port}`);
 
   server.on("connection", (socket: webSocket) => {
     console.log("New client connected");

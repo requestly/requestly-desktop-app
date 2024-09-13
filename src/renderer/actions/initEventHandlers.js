@@ -31,7 +31,7 @@ import storageService from "lib/storage";
 import ACTION_TYPES from "lib/storage/types/action-types";
 import storageCacheService from "renderer/services/storage-cache";
 import { getAvailableAndroidDevices } from "./apps/mobile/utils";
-import { sendMessageToExtension } from "./extensionSocketConnection";
+import { sendMessageToExtension } from "./helperSocketServer";
 
 const initEventHandlers = () => {
   ipcRenderer.on("start-proxy-server", async () => {

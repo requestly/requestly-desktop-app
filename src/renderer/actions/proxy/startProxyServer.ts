@@ -14,7 +14,7 @@ import startHelperServer from "../startHelperServer";
 import logger from "utils/logger";
 import { getDefaultProxyPort } from "../storage/cacheUtils";
 import { handleCARegeneration } from "../apps/os/ca/utils";
-import { startExtensionSocketConnection } from "../extensionSocketConnection";
+import { startHelperSocketServer } from "../helperSocketServer";
 
 declare global {
   interface Window {
@@ -32,7 +32,7 @@ interface IStartProxyResult {
 const { CERTS_PATH, ROOT_CERT_PATH } = staticConfig;
 
 const DEFAULT_HELPER_SERVER_PORT = 7040;
-const DEFAULT_SOCKET_CONNECTION_PORT = 59763;
+const DEFAULT_SOCKET_SERVER_PORT = 59763;
 
 // this automatically stops the old server before starting the new one
 export default async function startProxyServer(
@@ -83,16 +83,7 @@ export default async function startProxyServer(
     await startHelperServer(HELPER_SERVER_PORT);
   }
 
-  const SOCKET_CONNECTION_PORT = await getNextAvailablePort(
-    DEFAULT_SOCKET_CONNECTION_PORT
-  );
-
-  if (!SOCKET_CONNECTION_PORT) {
-    result.success = false;
-    return result;
-  }
-
-  startExtensionSocketConnection(SOCKET_CONNECTION_PORT);
+  startHelperSocketServer(DEFAULT_SOCKET_SERVER_PORT);
 
   return result;
 }
