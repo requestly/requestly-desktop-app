@@ -164,7 +164,7 @@ const initEventHandlers = () => {
   });
 
   ipcRenderer.on("disconnect-extension", async (event, payload) => {
-    sendMessageToExtension({
+    sendMessageToExtension(payload.clientId, {
       action: "disconnect-extension",
       appId: payload.appId,
     });

@@ -3,9 +3,14 @@ import * as webSocket from "ws";
 import { installCert } from "./apps/os/ca";
 import { ipcRenderer } from "electron";
 
-let activeSocket: webSocket | null = null;
+const activeSockets = new Map<string, webSocket>();
 
-export const sendMessageToExtension = (message: object): void => {
+export const sendMessageToExtension = (
+  clientId: string,
+  message: object
+): void => {
+  const activeSocket = activeSockets.get(clientId);
+
   if (activeSocket && activeSocket.readyState === webSocket.OPEN) {
     const formattedMessage = JSON.stringify({
       ...message,
@@ -20,6 +25,14 @@ export const sendMessageToExtension = (message: object): void => {
   }
 };
 
+export const broadcastToExtensions = (message: object) => {
+  activeSockets.forEach((socket) => {
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(message));
+    }
+  });
+};
+
 const tryParseJSON = (message: string): Record<string, any> | null => {
   try {
     return JSON.parse(message);
@@ -29,9 +42,9 @@ const tryParseJSON = (message: string): Record<string, any> | null => {
   }
 };
 
-export const messageHandler = (): void => {
-  if (activeSocket) {
-    activeSocket.on("message", (messageString: string) => {
+export const messageHandler = (clientId: string, socket: webSocket): void => {
+  if (socket) {
+    socket.on("message", (messageString: string) => {
       console.log(`Received message: ${messageString}`);
 
       // Optionally process and send a response
@@ -39,7 +52,7 @@ export const messageHandler = (): void => {
       if (message) {
         switch (message.action) {
           case "get-proxy":
-            sendMessageToExtension({
+            sendMessageToExtension(clientId, {
               action: message.action,
               proxyPort: window.proxy.httpPort,
             });
@@ -49,6 +62,7 @@ export const messageHandler = (): void => {
               .then(() =>
                 ipcRenderer.invoke("browser-connected", {
                   appId: message.appId,
+                  connectedExtensionClientId: clientId,
                 })
               )
               .catch(() => {
@@ -75,24 +89,32 @@ export const messageHandler = (): void => {
 // Active WebSocket connections extend extension service worker lifetimes
 const sendHeartbeat = () => {
   return setInterval(() => {
-    sendMessageToExtension({ action: "heartbeat" });
+    broadcastToExtensions({ action: "heartbeat" });
   }, 27000);
 };
 
 export const startHelperSocketServer = (port: number): webSocket.Server => {
   const server = new webSocket.Server({ port });
 
-  server.on("connection", (socket: webSocket) => {
-    console.log("New client connected");
+  server.on("connection", (socket: webSocket, req) => {
+    const clientId = `${req.socket.remoteAddress}:${req.socket.remotePort}`;
+    console.log(`Client connected: ${clientId}`);
 
-    activeSocket = socket;
-    messageHandler();
+    activeSockets.set(clientId, socket);
+    messageHandler(clientId, socket);
     const heartbeatTimer = sendHeartbeat();
 
     // Handle client disconnect
     socket.on("close", () => {
       console.log("Client disconnected");
-      activeSocket = null; // Clear the socket when client disconnects
+      activeSockets.delete(clientId);
+      clearInterval(heartbeatTimer);
+    });
+
+    // Handle client errors
+    socket.on("error", (error) => {
+      console.error("Socket error:", error);
+      activeSockets.delete(clientId);
       clearInterval(heartbeatTimer);
     });
   });
