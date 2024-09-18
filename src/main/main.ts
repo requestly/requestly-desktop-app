@@ -48,7 +48,7 @@ const getAssetPath = (...paths: string[]): string => {
   return path.join(RESOURCES_PATH, ...paths);
 };
 
-const isDevelopment = 
+const isDevelopment =
   process.env.NODE_ENV === "development" || process.env.DEBUG_PROD === "true";
 
 if (isDevelopment) {
@@ -344,9 +344,9 @@ function handleCustomProtocolURL(urlString: string) {
   webAppWindow?.focus();
   const url = new URL(urlString);
   // note: currently action agnostic, because it is only meant for redirection for now
-  if(url.searchParams.has("route")) {
-    const route = url.searchParams.get("route")
-    webAppWindow?.webContents.send("deeplink-handler", route)
+  if (url.searchParams.has("route")) {
+    const route = url.searchParams.get("route");
+    webAppWindow?.webContents.send("deeplink-handler", route);
   }
 }
 

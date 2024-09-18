@@ -31,6 +31,7 @@ import storageService from "lib/storage";
 import ACTION_TYPES from "lib/storage/types/action-types";
 import storageCacheService from "renderer/services/storage-cache";
 import { getAvailableAndroidDevices } from "./apps/mobile/utils";
+import { sendMessageToExtension } from "./helperSocketServer";
 
 const initEventHandlers = () => {
   ipcRenderer.on("start-proxy-server", async () => {
@@ -160,6 +161,14 @@ const initEventHandlers = () => {
 
   ipcRenderer.on("rq-storage:storage-updated", async (event, payload) => {
     storageCacheService.updateCache(payload?.storeName);
+  });
+
+  ipcRenderer.on("disconnect-extension", async (event, payload) => {
+    sendMessageToExtension(payload.clientId, {
+      action: "disconnect-extension",
+      appId: payload.appId,
+    });
+    ipcRenderer.send("reply-disconnect-extension", { success: true });
   });
 };
 
