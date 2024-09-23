@@ -40,7 +40,9 @@ const makeApiClientRequest = async ({ apiRequest }) => {
       data: body,
       responseType: "arraybuffer",
       withCredentials: false,
-      validateStatus: false,
+      validateStatus: (status) => {
+        return true;
+      },
     });
     const responseTime = performance.now() - requestStartTime;
 
