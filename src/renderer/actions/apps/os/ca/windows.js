@@ -1,4 +1,4 @@
-const { exec, execSync } = require("child_process");
+const { execSync } = require("child_process");
 
 const installWindowsCert = async (certPath) => {
   const command = `certutil -user -addstore Root ${certPath}`;
@@ -12,8 +12,7 @@ const installWindowsCert = async (certPath) => {
   }
 };
 
-const deleteWindowsCert = async(caName) => {
-  console.log("Deleting Windows Cert")
+const deleteWindowsCert = async (caName) => {
   const command = `certutil -delstore -user Root ${caName}`;
   try {
     execSync(command);
@@ -23,6 +22,6 @@ const deleteWindowsCert = async(caName) => {
     console.log(err);
     return false;
   }
-}
+};
 
 export { installWindowsCert, deleteWindowsCert };

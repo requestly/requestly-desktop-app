@@ -40,7 +40,7 @@ const makeApiClientRequest = async ({ apiRequest }) => {
       data: body,
       responseType: "arraybuffer",
       withCredentials: false,
-      validateStatus: (status) => {
+      validateStatus: () => {
         return true;
       },
     });
@@ -75,6 +75,7 @@ const makeApiClientRequest = async ({ apiRequest }) => {
       redirectedUrl: responseURL !== url ? responseURL : "",
     };
   } catch (e) {
+    console.log("Error while making api client request", e);
     return null;
   }
 };
