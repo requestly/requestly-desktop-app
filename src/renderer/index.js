@@ -20,4 +20,4 @@ initGroupsCache();
 initEventHandlers();
 initAppManager();
 
-import "../utils/sentryInit";
+// import "../utils/sentryInit";

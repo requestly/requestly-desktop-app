@@ -2,8 +2,8 @@ const preferenceManager = require("../renderer/utils/userPreferencesManager");
 const isMain = process.type === "browser";
 
 const { init } = isMain
-  ? require("@sentry/electron/dist/main")
-  : require("@sentry/electron/dist/renderer");
+  ? require("@sentry/electron/main")
+  : require("@sentry/electron/renderer");
 
 let isErrorTrackingEnabled;
 

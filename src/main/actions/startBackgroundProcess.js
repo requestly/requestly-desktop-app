@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { enable as enableWebContents } from "@electron/remote/main";
 /** Babel */
 require("core-js/stable");
