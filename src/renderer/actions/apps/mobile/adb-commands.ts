@@ -51,8 +51,8 @@ export async function hasCertInstalled(
     // Wait until it's clear that the read is successful
     const data = await new Promise<Buffer>((resolve, reject) => {
       // eslint-disable-next-line no-shadow
-      const data: Buffer[] = [];
-      certStream.on("data", (d: Buffer) => data.push(d));
+      const data: Uint8Array[] = [];
+      certStream.on("data", (d: Uint8Array) => data.push(d));
       certStream.on("end", () => resolve(Buffer.concat(data)));
 
       certStream.on("error", reject);

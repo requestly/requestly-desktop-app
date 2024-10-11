@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
+/* eslint-disable */
 /* eslint global-require: off, no-console: off, promise/always-return: off */
 
 /**
@@ -277,7 +277,6 @@ const createWindow = async () => {
         case 0:
           // Set flag to check next iteration
           trackEventViaWebApp(webAppWindow, EVENTS.QUIT_APP)
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-expect-error
           global.isQuitActionConfirmed = true;
           // Calling app.quit() would again invoke this function

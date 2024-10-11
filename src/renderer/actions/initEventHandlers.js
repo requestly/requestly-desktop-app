@@ -2,16 +2,11 @@
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 // CORE
-import { ipcMain, ipcRenderer, shell } from "electron";
+import { ipcRenderer, shell } from "electron";
 // ACTION
 import startProxyServer from "./proxy/startProxyServer";
 import getProxyConfig from "./proxy/getProxyConfig";
-import {
-  areAppsActivatable,
-  activateApp,
-  deactivateApp,
-  isAppActivatable,
-} from "./apps";
+import { activateApp, deactivateApp, isAppActivatable } from "./apps";
 import saveRootCert from "./saveRootCert";
 // STATE MANAGEMENT
 import { setState } from "./stateManagement";
