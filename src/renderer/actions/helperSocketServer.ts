@@ -90,7 +90,7 @@ export const messageHandler = (clientId: string, socket: webSocket): void => {
 const sendHeartbeat = () => {
   return setInterval(() => {
     broadcastToExtensions({ action: "heartbeat" });
-  }, 27000);
+  }, 20000);
 };
 
 export const startHelperSocketServer = (port: number): webSocket.Server => {
@@ -99,6 +99,8 @@ export const startHelperSocketServer = (port: number): webSocket.Server => {
   server.on("connection", (socket: webSocket, req) => {
     const clientId = `${req.socket.remoteAddress}:${req.socket.remotePort}`;
     console.log(`Client connected: ${clientId}`);
+
+    socket.send(JSON.stringify({ type: "handshakeResponse" }));
 
     activeSockets.set(clientId, socket);
     messageHandler(clientId, socket);
