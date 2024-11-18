@@ -15,6 +15,7 @@ import logger from "utils/logger";
 import { getDefaultProxyPort } from "../storage/cacheUtils";
 import { handleCARegeneration } from "../apps/os/ca/utils";
 import { startHelperSocketServer } from "../helperSocketServer";
+import portfinder from "portfinder";
 
 declare global {
   interface Window {
@@ -83,7 +84,11 @@ export default async function startProxyServer(
     await startHelperServer(HELPER_SERVER_PORT);
   }
 
-  startHelperSocketServer(DEFAULT_SOCKET_SERVER_PORT);
+  const HELPER_SOCKET_SERVER_PORT = await portfinder.getPortPromise({
+    port: DEFAULT_SOCKET_SERVER_PORT,
+    stopPort: DEFAULT_SOCKET_SERVER_PORT + 4, // 5 ports for fallback
+  });
+  startHelperSocketServer(HELPER_SOCKET_SERVER_PORT);
 
   return result;
 }
