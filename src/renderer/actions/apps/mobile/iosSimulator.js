@@ -27,12 +27,8 @@ export default class IosSimulatorDevice extends SystemWideProxy {
   }
 
   async activate(proxyPort, options) {
-    const deviceIds = options?.deviceIds;
-    console.log("Activating IosSimulator", { deviceIds });
-
-    if (!deviceIds || !deviceIds.length) {
-      throw new Error("No deviceIds provided");
-    }
+    const deviceIds = // if no deviceIds provided, activate all running simulators
+      options?.deviceIds || this.runningSimulators.map((sim) => sim.udid);
 
     deviceIds.forEach(async (deviceId) => {
       try {
@@ -52,11 +48,9 @@ export default class IosSimulatorDevice extends SystemWideProxy {
   }
 
   async deactivate(proxyPort, options) {
-    console.log("DBG: deactivating ios simulator", options);
-    const deviceIds = options?.deviceIds;
-    // if (!deviceIds || !deviceIds.length) {
-    //   throw new Error("No deviceIds provided");
-    // }
+    const deviceIds = // if no deviceIds provided, activate all running simulators
+      options?.deviceIds || this.runningSimulators.map((sim) => sim.udid);
+
     deviceIds.forEach(async (deviceId) => {
       console.log("DBG: Deactivating", deviceId);
       delete this.simulatorsBeingIntercepted[deviceId];
