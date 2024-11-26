@@ -25,7 +25,7 @@ import { shutdown } from "./shutdown";
 import storageCacheService from "renderer/services/storage-cache";
 import { getAvailableAndroidDevices } from "./apps/mobile/utils";
 import { sendMessageToExtension } from "./helperSocketServer";
-import { getIosSimulators } from "./apps/mobile/simctlActions";
+import IosSimulatorDevice from "./apps/mobile/iosSimulator";
 
 const initEventHandlers = () => {
   ipcRenderer.on("start-proxy-server", async () => {
@@ -66,7 +66,7 @@ const initEventHandlers = () => {
 
   ipcRenderer.on("detect-available-ios-simulators", async () => {
     try {
-      const result = await getIosSimulators();
+      const result = await IosSimulatorDevice.getAvailableSimulators();
       ipcRenderer.send("reply-detect-available-ios-simulators", result);
     } catch (error) {
       console.log("Error while detecting iOS simulators", error);
