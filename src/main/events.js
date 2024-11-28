@@ -18,6 +18,8 @@ import {
   storeSessionRecording,
 } from "./actions/networkSessionStorage";
 import { createOrUpdateAxiosInstance } from "./actions/getProxiedAxios";
+// todo: refactor main.ts to only export core entities like webappWindow
+// and then build these utilites elsewhere
 // eslint-disable-next-line import/no-cycle
 import createTrayMenu from "./main";
 
@@ -218,9 +220,9 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
         const filePath = filePaths[0];
         trackRecentlyAccessedFile(filePath);
         const fileName = path.basename(filePath);
-        const finalCategory = getFileCategory(path.extname(filePath));
+        const fileCategory = getFileCategory(path.extname(filePath));
         const contents = fs.readFileSync(filePath, "utf-8");
-        return { filePath, name: fileName, category: finalCategory, contents };
+        return { filePath, name: fileName, category: fileCategory, contents };
       })
       .catch((err) => {
         console.log(err);
@@ -242,11 +244,15 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
       return "err:NOT FOUND";
     }
   });
+
+  ipcMain.handle("helper-server-hit", () => {
+    webAppWindow.send("helper-server-hit");
+  });
 };
 
 export const registerMainProcessCommonEvents = () => {
-  ipcMain.handle("open-file-dialog", async () => {
-    const fileDialogPromise = dialog.showOpenDialog({});
+  ipcMain.handle("open-file-dialog", async (event, options) => {
+    const fileDialogPromise = dialog.showOpenDialog(options ?? {});
     return fileDialogPromise;
   });
 };
