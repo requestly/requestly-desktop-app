@@ -18,10 +18,13 @@ import {
   storeSessionRecording,
 } from "./actions/networkSessionStorage";
 import { createOrUpdateAxiosInstance } from "./actions/getProxiedAxios";
+// todo: refactor main.ts to only export core entities like webappWindow
+// and then build these utilites elsewhere
+// eslint-disable-next-line import/no-cycle
 import createTrayMenu from "./main";
 
-const getFileCategory = (fileExtension) =>  {
-  switch(fileExtension) {
+const getFileCategory = (fileExtension) => {
+  switch (fileExtension) {
     case ".har":
       return "har";
     case ".rqly":
@@ -30,11 +33,11 @@ const getFileCategory = (fileExtension) =>  {
     default:
       return "unknown";
   }
-}
+};
 
 export async function trackRecentlyAccessedFile(filePath) {
   const fileExtension = path.extname(filePath);
-  
+
   const fileName = path.basename(filePath, fileExtension);
   const fileCategory = getFileCategory(fileExtension);
   const accessTs = Date.now();
@@ -44,22 +47,22 @@ export async function trackRecentlyAccessedFile(filePath) {
     filePath,
     name: fileName,
     lastAccessedTs: accessTs,
-  }
+  };
 
   storageService.processAction({
-    type: "ACCESSED_FILES:ADD", 
+    type: "ACCESSED_FILES:ADD",
     payload: {
-      data: fileRecord
-    }
+      data: fileRecord,
+    },
   });
 }
 
 function removeFileFromAccessRecords(filePath) {
   storageService.processAction({
-    type: "ACCESSED_FILES:REMOVE", 
+    type: "ACCESSED_FILES:REMOVE",
     payload: {
-      data: filePath
-    }
+      data: filePath,
+    },
   });
 }
 
@@ -148,9 +151,9 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
     const { id } = payload;
     try {
       await deleteNetworkRecording(id);
-    } catch(e) {
-      console.info("Error while deleting ", id)
-      console.info(e)
+    } catch (e) {
+      console.info("Error while deleting ", id);
+      console.info(e);
     }
     return resendAllNetworkLogs();
   });
@@ -162,7 +165,7 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
   });
 
   ipcMain.on("proxy-config-updated", (_, payload) => {
-    createTrayMenu(payload?.ip, payload?.port)
+    createTrayMenu(payload?.ip, payload?.port);
     createOrUpdateAxiosInstance(payload);
   });
 
@@ -170,7 +173,7 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
     return makeApiClientRequest(payload);
   });
 
-/* HACKY: Forces regeneration by deleting old cert and closes app */
+  /* HACKY: Forces regeneration by deleting old cert and closes app */
   ipcMain.handle("renew-ssl-certificates", async () => {
     const pathToCurrentCA = path.resolve(
       unescape(app.getPath("appData")),
@@ -181,58 +184,61 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
     );
     fs.unlinkSync(pathToCurrentCA);
     webAppWindow?.close();
-  })
+  });
 
   ipcMain.handle("browse-and-load-file", (event, payload) => {
-    console.log("browse-and-load-file payload", payload)
-    const category = payload?.category || 'unknown';
-    const getCategoryFilter = (category) => {
-      switch(category) {
+    console.log("browse-and-load-file payload", payload);
+    const category = payload?.category || "unknown";
+    const getCategoryFilter = (filterCategory) => {
+      switch (filterCategory) {
         case "har":
-          return [{name: "HAR Files", extensions: ['.har']}]
+          return [{ name: "HAR Files", extensions: [".har"] }];
         case "web-session":
-          return [{name: "Requestly Files", extensions: ['.rqly']}]
+          return [{ name: "Requestly Files", extensions: [".rqly"] }];
         default:
           return [
-            {name: "Requestly Files", extensions: ['.rqly']},
-            {name: "HAR Files", extensions: ['.har']}
-          ]
+            { name: "Requestly Files", extensions: [".rqly"] },
+            { name: "HAR Files", extensions: [".har"] },
+          ];
       }
-    }
+    };
 
-    let dialogOptions = {};
-    dialogOptions["properties"] = ["openFile"];
-    dialogOptions["filters"] = [
+    const dialogOptions = {};
+    dialogOptions.properties = ["openFile"];
+    dialogOptions.filters = [
       ...getCategoryFilter(category),
       { name: "All Files", extensions: ["*"] },
-    ]
-    return dialog.showOpenDialog((dialogOptions)).then((result) => {
-      const { canceled, filePaths } = result;
-      if(canceled || !filePaths?.length) {
+    ];
+    return dialog
+      .showOpenDialog(dialogOptions)
+      .then((result) => {
+        const { canceled, filePaths } = result;
+        if (canceled || !filePaths?.length) {
+          return null;
+        }
+
+        const filePath = filePaths[0];
+        trackRecentlyAccessedFile(filePath);
+        const fileName = path.basename(filePath);
+        const fileCategory = getFileCategory(path.extname(filePath));
+        const contents = fs.readFileSync(filePath, "utf-8");
+        return { filePath, name: fileName, category: fileCategory, contents };
+      })
+      .catch((err) => {
+        console.log(err);
         return null;
-      }
-      
-      const filePath = filePaths[0];
-      trackRecentlyAccessedFile(filePath);
-      const fileName = path.basename(filePath);
-      const category = getFileCategory(path.extname(filePath));
-      const contents = fs.readFileSync(filePath, "utf-8");
-      return { filePath, name: fileName, category, contents };
-    }).catch((err) => {
-      console.log(err);
-      return null;
-    })
-  })
+      });
+  });
 
   ipcMain.handle("get-file-contents", async (event, payload) => {
     try {
       const fileContents = fs.readFileSync(payload.filePath, "utf-8");
-      if(!fileContents) {
+      if (!fileContents) {
         throw new Error("File is empty");
       }
       return fileContents;
-    } catch(e) {
-      console.log("sdfdsfsdfsdf")
+    } catch (e) {
+      console.log("sdfdsfsdfsdf");
       console.log(e);
       // delete file from recently accessed
       removeFileFromAccessRecords(payload.filePath);
@@ -243,7 +249,7 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
 
 export const registerMainProcessCommonEvents = () => {
   ipcMain.handle("open-file-dialog", async (event, options) => {
-    const fileDialogPromise = dialog.showOpenDialog((options = {}));
+    const fileDialogPromise = dialog.showOpenDialog(options ?? {});
     return fileDialogPromise;
   });
 };
