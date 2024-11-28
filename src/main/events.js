@@ -189,8 +189,8 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
   ipcMain.handle("browse-and-load-file", (event, payload) => {
     console.log("browse-and-load-file payload", payload);
     const category = payload?.category || "unknown";
-    const getCategoryFilter = (filterCategory) => {
-      switch (filterCategory) {
+    const getCategoryFilter = (categoryFilter) => {
+      switch (categoryFilter) {
         case "har":
           return [{ name: "HAR Files", extensions: [".har"] }];
         case "web-session":
@@ -238,7 +238,6 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
       }
       return fileContents;
     } catch (e) {
-      console.log("sdfdsfsdfsdf");
       console.log(e);
       // delete file from recently accessed
       removeFileFromAccessRecords(payload.filePath);

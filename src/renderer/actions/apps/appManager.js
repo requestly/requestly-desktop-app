@@ -28,6 +28,7 @@ import { FreshSafari } from "./browsers/safari";
 import { SystemWideProxy } from "./os/system-wide";
 import { ipcRenderer } from "electron";
 import AndroidAdbDevice from "./mobile/android";
+import IosSimulatorDevice from "./mobile/iosSimulator";
 
 export const shutdownApps = (apps) => {
   return Promise.all(apps.map((i) => i.deactivateAll()));
@@ -59,6 +60,7 @@ export const buildApps = (config) => {
     new FreshSafari(config),
     new SystemWideProxy(config),
     new AndroidAdbDevice(config),
+    new IosSimulatorDevice(config),
   ];
 
   // When the server exits, try to shut down the interceptors too

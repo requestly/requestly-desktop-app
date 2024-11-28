@@ -22,11 +22,10 @@ import { staticConfig } from "../config";
 import { installCert } from "./apps/os/ca";
 import { applyProxy } from "./apps/os/proxy";
 import { shutdown } from "./shutdown";
-import storageService from "lib/storage";
-import ACTION_TYPES from "lib/storage/types/action-types";
 import storageCacheService from "renderer/services/storage-cache";
 import { getAvailableAndroidDevices } from "./apps/mobile/utils";
 import { sendMessageToExtension } from "./helperSocketServer";
+import IosSimulatorDevice from "./apps/mobile/iosSimulator";
 
 const initEventHandlers = () => {
   ipcRenderer.on("start-proxy-server", async () => {
@@ -65,6 +64,16 @@ const initEventHandlers = () => {
     ipcRenderer.send("reply-detect-available-android-devices", devices);
   });
 
+  ipcRenderer.on("detect-available-ios-simulators", async () => {
+    try {
+      const result = await IosSimulatorDevice.getAvailableSimulators();
+      ipcRenderer.send("reply-detect-available-ios-simulators", result);
+    } catch (error) {
+      console.log("Error while detecting iOS simulators", error);
+      ipcRenderer.send("reply-detect-available-ios-simulators", {});
+    }
+  });
+
   ipcRenderer.on("activate-app", async (event, payload) => {
     const { id, options } = payload;
     let res = { success: false };
@@ -95,7 +104,7 @@ const initEventHandlers = () => {
     ipcRenderer.send("reply-deactivate-app", res);
   });
 
-  ipcRenderer.on("save-root-cert", async (event, payload) => {
+  ipcRenderer.on("save-root-cert", async () => {
     let res = { success: false };
     try {
       res = await saveRootCert();
@@ -116,12 +125,12 @@ const initEventHandlers = () => {
     ipcRenderer.send("reply-system-wide-cert-trust", res);
   });
 
-  ipcRenderer.on("system-wide-proxy-status", async (event, payload) => {
+  ipcRenderer.on("system-wide-proxy-status", async () => {
     const res = getProxyStatus();
     ipcRenderer.send("reply-system-wide-proxy-status", res);
   });
 
-  ipcRenderer.on("system-wide-proxy-start", async (event, payload) => {
+  ipcRenderer.on("system-wide-proxy-start", async () => {
     const res = applyProxy();
     ipcRenderer.send("reply-system-wide-proxy-start", res);
   });
