@@ -1,8 +1,13 @@
+import { ipcRenderer } from "electron";
 import { staticConfig } from "../config";
 
 const http = require("http");
 
 const pemPath = staticConfig.ROOT_CERT_PATH;
+
+function trackHelperServerHit() {
+  ipcRenderer.invoke("helper-server-hit");
+}
 
 const getShellScript = (port) => `
     export http_proxy="http://127.0.0.1:${port}"
@@ -42,6 +47,7 @@ const startHelperServer = async (helperServerPort) => {
       if (req.url === "/tpsetup") {
         const shellScript = getShellScript(window.proxy.httpPort);
         // const shellScript = `export http_proxy="http://127.0.0.1:${window.proxy.httpPort}"`
+        trackHelperServerHit();
         res.writeHead(200, { "Content-Type": "text/x-shellscript" });
         res.write(shellScript);
         res.end();

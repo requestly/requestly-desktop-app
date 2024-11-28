@@ -245,6 +245,10 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
       return "err:NOT FOUND";
     }
   });
+
+  ipcMain.handle("helper-server-hit", () => {
+    webAppWindow.send("helper-server-hit");
+  });
 };
 
 export const registerMainProcessCommonEvents = () => {
