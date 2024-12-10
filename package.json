@@ -74,9 +74,9 @@
       "entitlementsInherit": "assets/entitlements.mac.plist",
       "gatekeeperAssess": false,
       "requirements": "assets/requirement.rqset",
-      "identity": "RQ LABS, INC. (B7SH28MF39)",
+      "identity": "Sachin Jain (AFBT5Z9V94)",
       "notarize": {
-        "teamId": "B7SH28MF39"
+        "teamId": "AFBT5Z9V94"
       },
       "target": [
         {
