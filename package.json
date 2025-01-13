@@ -133,6 +133,10 @@
       {
         "from": "./release/app",
         "filter": "static/**"
+      },
+      {
+        "from": "./src/loadingScreen/",
+        "to": "loadingScreen"
       }
     ],
     "publish": {
@@ -213,6 +217,7 @@
     "@types/node-forge": "^1.3.11",
     "@types/terser-webpack-plugin": "^5.0.4",
     "@types/webpack-env": "^1.16.3",
+    "@types/ws": "^8.5.13",
     "browserslist-config-erb": "^0.0.3",
     "chalk": "^4.1.2",
     "concurrently": "^6.3.0",
@@ -249,7 +254,8 @@
     "webpack-bundle-analyzer": "^4.5.0",
     "webpack-cli": "^4.9.0",
     "webpack-dev-server": "^4.3.1",
-    "webpack-merge": "^5.8.0"
+    "webpack-merge": "^5.8.0",
+    "source-map-support": "^0.5.21"
   },
   "dependencies": {
     "@devicefarmer/adbkit": "^3.2.6",
@@ -259,6 +265,7 @@
     "@sentry/browser": "^8.34.0",
     "@sentry/electron": "^5.6.0",
     "address": "^2.0.3",
+    "agent-base": "^6.0.2",
     "assert": "^2.0.0",
     "async": "^3.2.1",
     "axios": "^0.28.0",
