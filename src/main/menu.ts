@@ -124,6 +124,33 @@ export default class MenuBuilder {
             this.mainWindow.webContents.toggleDevTools();
           },
         },
+        {
+          type: "separator",
+        },
+        {
+          label: "Zoom In",
+          accelerator: "Command+Plus",
+          click: () => {
+            this.mainWindow.webContents.setZoomLevel(
+              this.mainWindow.webContents.getZoomLevel() + 1
+            );
+          },
+        },
+        {
+          label: "Zoom Out",
+          accelerator: "Command+-",
+          click: () => {
+            this.mainWindow.webContents.setZoomLevel(
+              this.mainWindow.webContents.getZoomLevel() - 1
+            );
+          },
+        },
+        {
+          label: "Reset Zoom",
+          click: () => {
+            this.mainWindow.webContents.setZoomLevel(0);
+          },
+        },
       ],
     };
     const subMenuViewProd: MenuItemConstructorOptions = {
@@ -141,6 +168,33 @@ export default class MenuBuilder {
           click: () => {
             this.mainWindow.webContents.toggleDevTools();
             this.enableBGWindowDebug();
+          },
+        },
+        {
+          type: "separator",
+        },
+        {
+          label: "Zoom In",
+          accelerator: "Command+Plus",
+          click: () => {
+            this.mainWindow.webContents.setZoomLevel(
+              this.mainWindow.webContents.getZoomLevel() + 1
+            );
+          },
+        },
+        {
+          label: "Zoom Out",
+          accelerator: "Command+-",
+          click: () => {
+            this.mainWindow.webContents.setZoomLevel(
+              this.mainWindow.webContents.getZoomLevel() - 1
+            );
+          },
+        },
+        {
+          label: "Reset Zoom",
+          click: () => {
+            this.mainWindow.webContents.setZoomLevel(0);
           },
         },
       ],
@@ -200,7 +254,7 @@ export default class MenuBuilder {
   }
 
   buildDefaultTemplate() {
-    const templateDefault = [
+    const templateDefault: MenuItemConstructorOptions[] = [
       {
         label: "&File",
         submenu: [
@@ -245,6 +299,33 @@ export default class MenuBuilder {
                     this.mainWindow.webContents.toggleDevTools();
                   },
                 },
+                {
+                  type: "separator",
+                },
+                {
+                  label: "Zoom In",
+                  accelerator: "Ctrl+Plus",
+                  click: () => {
+                    this.mainWindow.webContents.setZoomLevel(
+                      this.mainWindow.webContents.getZoomLevel() + 1
+                    );
+                  },
+                },
+                {
+                  label: "Zoom Out",
+                  accelerator: "Ctrl+-",
+                  click: () => {
+                    this.mainWindow.webContents.setZoomLevel(
+                      this.mainWindow.webContents.getZoomLevel() - 1
+                    );
+                  },
+                },
+                {
+                  label: "Reset Zoom",
+                  click: () => {
+                    this.mainWindow.webContents.setZoomLevel(0);
+                  },
+                },
               ]
             : [
                 {
@@ -261,6 +342,33 @@ export default class MenuBuilder {
                   accelerator: "Alt+Ctrl+I",
                   click: () => {
                     this.mainWindow.webContents.toggleDevTools();
+                  },
+                },
+                {
+                  type: "separator",
+                },
+                {
+                  label: "Zoom In",
+                  accelerator: "Ctrl+Plus",
+                  click: () => {
+                    this.mainWindow.webContents.setZoomLevel(
+                      this.mainWindow.webContents.getZoomLevel() + 1
+                    );
+                  },
+                },
+                {
+                  label: "Zoom Out",
+                  accelerator: "Ctrl+-",
+                  click: () => {
+                    this.mainWindow.webContents.setZoomLevel(
+                      this.mainWindow.webContents.getZoomLevel() - 1
+                    );
+                  },
+                },
+                {
+                  label: "Reset Zoom",
+                  click: () => {
+                    this.mainWindow.webContents.setZoomLevel(0);
                   },
                 },
               ],
