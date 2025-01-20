@@ -195,6 +195,8 @@ const createWindow = async () => {
       preload: path.join(__dirname, "preload.js"),
     },
   });
+  webAppWindow.webContents.setVisualZoomLevelLimits(1, 3)
+
   new AutoUpdate(webAppWindow);
   remote.enable(webAppWindow.webContents);
 
