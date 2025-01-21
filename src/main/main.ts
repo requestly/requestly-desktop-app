@@ -182,6 +182,17 @@ const createWindow = async () => {
     return path.join(RESOURCES_PATH, ...paths);
   };
 
+  let framelessOptions = {}
+
+  // Only for OSX right now. Needs to be tested for linux and windows
+  if(process.platform === "darwin") {
+    framelessOptions = {
+      frame: false,
+      titleBarStyle: "hidden" as "hidden",
+      trafficLightPosition: { x: 16, y: 16 },
+    }
+  }
+
   webAppWindow = new BrowserWindow({
     show: false,
     width: 1310,
@@ -194,8 +205,9 @@ const createWindow = async () => {
       sandbox: false,
       preload: path.join(__dirname, "preload.js"),
     },
+    ...framelessOptions
   });
-  webAppWindow.webContents.setVisualZoomLevelLimits(1, 3)
+  webAppWindow.webContents.setVisualZoomLevelLimits(1, 3);
 
   new AutoUpdate(webAppWindow);
   remote.enable(webAppWindow.webContents);
