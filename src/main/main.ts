@@ -189,6 +189,9 @@ const createWindow = async () => {
     height: 600,
     minHeight: 500,
     icon: getAssetPath("icon.png"),
+    frame: false,
+    titleBarStyle: "hidden",
+    trafficLightPosition: {x: 16, y: 16},
     webPreferences: {
       nodeIntegration: false,
       sandbox: false,
