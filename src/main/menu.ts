@@ -111,6 +111,16 @@ export default class MenuBuilder {
           },
         },
         {
+          label: "Force Reload",
+          accelerator: "Shift+Command+R",
+          click: () => {
+            this.mainWindow.webContents.reloadIgnoringCache();
+          },
+        },
+        {
+          type: "separator",
+        },
+        {
           label: "Toggle Full Screen",
           accelerator: "Ctrl+Command+F",
           click: () => {
@@ -156,6 +166,23 @@ export default class MenuBuilder {
     const subMenuViewProd: MenuItemConstructorOptions = {
       label: "View",
       submenu: [
+        {
+          label: "Reload",
+          accelerator: "Command+R",
+          click: () => {
+            this.mainWindow.webContents.reload();
+          },
+        },
+        {
+          label: "Force Reload",
+          accelerator: "Shift+Command+R",
+          click: () => {
+            this.mainWindow.webContents.reloadIgnoringCache();
+          },
+        },
+        {
+          type: "separator",
+        },
         {
           label: "Toggle Full Screen",
           accelerator: "Ctrl+Command+F",
@@ -277,11 +304,21 @@ export default class MenuBuilder {
           process.env.DEBUG_PROD === "true"
             ? [
                 {
-                  label: "&Reload",
+                  label: "Reload",
                   accelerator: "Ctrl+R",
                   click: () => {
                     this.mainWindow.webContents.reload();
                   },
+                },
+                {
+                  label: "Force Reload",
+                  accelerator: "Ctrl+Shift+R",
+                  click: () => {
+                    this.mainWindow.webContents.reloadIgnoringCache();
+                  },
+                },
+                {
+                  type: "separator",
                 },
                 {
                   label: "Toggle &Full Screen",
@@ -328,6 +365,23 @@ export default class MenuBuilder {
                 },
               ]
             : [
+                {
+                  label: "Reload",
+                  accelerator: "Ctrl+R",
+                  click: () => {
+                    this.mainWindow.webContents.reload();
+                  },
+                },
+                {
+                  label: "Force Reload",
+                  accelerator: "Ctrl+Shift+R",
+                  click: () => {
+                    this.mainWindow.webContents.reloadIgnoringCache();
+                  },
+                },
+                {
+                  type: "separator",
+                },
                 {
                   label: "Toggle &Full Screen",
                   accelerator: "F11",
