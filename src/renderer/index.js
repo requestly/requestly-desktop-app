@@ -12,6 +12,7 @@ import initGroupsCache from "./actions/storage/initGroupsCache";
 import { initAppManager } from "./actions/apps";
 import storageService from "lib/storage";
 import "./types";
+import { LocalFileSync } from "./actions/local-files";
 
 // initPrimaryStorageCache();
 initRulesCache();
@@ -21,3 +22,5 @@ initEventHandlers();
 initAppManager();
 
 // import "../utils/sentryInit";
+const LocalFileSyncer = new LocalFileSync();
+LocalFileSyncer.init();
