@@ -28,4 +28,10 @@ export const setupIPCForwardingToWebApp = (webAppWindow) => {
       });
     }
   );
+
+  ipcMain.on("send-from-background-to-webapp", (event, incomingData) => {
+    const { payload, channel } = incomingData;
+    console.log("Sending to webapp", channel, payload);
+    webAppWindow.webContents.send(channel, payload);
+  });
 };
