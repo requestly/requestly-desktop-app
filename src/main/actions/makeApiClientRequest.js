@@ -76,7 +76,9 @@ const makeApiClientRequest = async ({ apiRequest }) => {
     };
   } catch (e) {
     console.log("Error while making api client request", e);
-    return null;
+    return {
+      error: e.message,
+    };
   }
 };
 
