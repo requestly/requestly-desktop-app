@@ -13,6 +13,7 @@ import { initAppManager } from "./actions/apps";
 import storageService from "lib/storage";
 import "./types";
 import { LocalFileSync } from "./actions/local-files";
+import { TestService } from "./actions/local-files/sample/service";
 
 // initPrimaryStorageCache();
 initRulesCache();
@@ -22,5 +23,10 @@ initEventHandlers();
 initAppManager();
 
 // import "../utils/sentryInit";
-const LocalFileSyncer = new LocalFileSync();
-LocalFileSyncer.init();
+// const LocalFileSyncer = new LocalFileSync();
+// LocalFileSyncer.init();
+
+// const TestServiceServer = new TestService();
+
+// eslint-disable-next-line no-unused-vars
+const testService = new TestService();
