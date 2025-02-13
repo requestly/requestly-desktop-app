@@ -29,6 +29,7 @@ import { trackEventViaWebApp } from "./actions/events";
 import EVENTS from "./actions/events/constants";
 import fs from "fs";
 import logger from "../utils/logger";
+import { setupIPCForwardingToWebApp } from "./actions/setupIPCForwarding";
 
 // Init remote so that it could be consumed in renderer
 const remote = require("@electron/remote/main");
@@ -430,6 +431,7 @@ app.on("ready", () => {
     // Create Renderer Window
     await createWindow();
     // Register Remaining IPC Events that involve browser windows
+    setupIPCForwardingToWebApp(webAppWindow);
     registerMainProcessEventsForWebAppWindow(webAppWindow);
     registerMainProcessCommonEvents();
 
