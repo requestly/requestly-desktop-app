@@ -18,16 +18,19 @@ export class RPCServiceOverIPC {
     this.LIVE_EVENTS_CHANNEL = `SERVICE-${serviceName}-LIVE-EVENTS`;
   }
 
-  private generateChannelNameForMethod(method: Function) {
-    return `${this.RPC_CHANNEL_PREFIX}${method.name}`;
+  private generateChannelNameForMethod(methodName: string) {
+    return `${this.RPC_CHANNEL_PREFIX}${methodName}`;
   }
 
-  // eslint-disable-next-line no-unused-vars
-  protected exposeMethodOverIPC(method: (..._args: any[]) => Promise<any>) {
-    const channelName = this.generateChannelNameForMethod(method);
+  protected exposeMethodOverIPC(
+    exposedMethodName: string,
+    // eslint-disable-next-line no-unused-vars
+    method: (..._args: any[]) => Promise<any>
+  ) {
+    const channelName = this.generateChannelNameForMethod(exposedMethodName);
     ipcRenderer.on(channelName, async (_event, args) => {
       try {
-        const result = await method(args);
+        const result = await method(...args);
         ipcRenderer.send(`reply-${channelName}`, {
           success: true,
           data: result,
