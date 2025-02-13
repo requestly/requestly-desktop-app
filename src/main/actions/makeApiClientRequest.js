@@ -75,6 +75,7 @@ const makeApiClientRequest = async ({ apiRequest }) => {
       redirectedUrl: responseURL !== url ? responseURL : "",
     };
   } catch (e) {
+    console.log("Error while making api client request", e);
     return {
       error: e.message,
     };
