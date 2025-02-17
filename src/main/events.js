@@ -255,4 +255,13 @@ export const registerMainProcessCommonEvents = () => {
     const fileDialogPromise = dialog.showOpenDialog(options ?? {});
     return fileDialogPromise;
   });
+
+  ipcMain.handle("open-folder-dialog", async (event, options = {}) => {
+    const dialogOptions = {
+      ...options,
+      properties: ["openDirectory"],
+    };
+    const folderDialogPromise = await dialog.showOpenDialog(dialogOptions);
+    return folderDialogPromise;
+  });
 };
