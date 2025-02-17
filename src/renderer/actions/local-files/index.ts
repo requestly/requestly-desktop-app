@@ -15,20 +15,20 @@ export class LocalFileSync extends RPCServiceOverIPC {
 
     // setup all methods to be exposed over IPC
     Object.values(MethodsToExpose).forEach((method) => {
-      this.exposeMethodOverIPC(method);
+      this.exposeMethodOverIPC(method.name, method);
     });
 
     // setup OS event listener however
-    setInterval(() => {
-      /* GARGBAGE POC CODE FOR NOW */
-      const randomMessage = Math.floor(Math.random() * 100);
-      console.log(`${Date.now()} - Sending event to webapp: `, randomMessage);
+    // setInterval(() => {
+    //   /* GARGBAGE POC CODE FOR NOW */
+    //   const randomMessage = Math.floor(Math.random() * 100);
+    //   console.log(`${Date.now()} - Sending event to webapp: `, randomMessage);
 
-      // relay those events over to webapp
-      this.sendServiceEvent({
-        type: "test",
-        data: { test: "data - non-changing", message: randomMessage },
-      });
-    }, 7500);
+    //   // relay those events over to webapp
+    //   this.sendServiceEvent({
+    //     type: "test",
+    //     data: { test: "data - non-changing", message: randomMessage },
+    //   });
+    // }, 7500);
   }
 }

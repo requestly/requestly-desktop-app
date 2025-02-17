@@ -18,21 +18,28 @@ export class RPCServiceOverIPC {
     this.LIVE_EVENTS_CHANNEL = `SERVICE-${serviceName}-LIVE-EVENTS`;
   }
 
-  private generateChannelNameForMethod(method: Function) {
+  generateChannelNameForMethod(method: Function) {
+    console.log("DBG-1: method name", method.name);
     return `${this.RPC_CHANNEL_PREFIX}${method.name}`;
   }
 
-  // eslint-disable-next-line no-unused-vars
-  protected exposeMethodOverIPC(method: (..._args: any[]) => Promise<any>) {
-    const channelName = this.generateChannelNameForMethod(method);
+  protected exposeMethodOverIPC(
+    exposedMethodName: string,
+    method: (..._args: any[]) => Promise<any>
+  ) {
+    // const channelName = this.generateChannelNameForMethod(method);
+    const channelName = `${this.RPC_CHANNEL_PREFIX}${exposedMethodName}`;
+    console.log("DBG-1: exposing channel", channelName);
     ipcRenderer.on(channelName, async (_event, args) => {
       try {
-        const result = await method(args);
+        const result = await method(...args);
+        console.log("DBG-2: result in method", result);
         ipcRenderer.send(`reply-${channelName}`, {
           success: true,
           data: result,
         });
       } catch (error: any) {
+        console.log("DBG-2: error in method", error);
         ipcRenderer.send(`reply-${channelName}`, {
           success: false,
           data: error.message,
@@ -41,7 +48,7 @@ export class RPCServiceOverIPC {
     });
   }
 
-  protected sendServiceEvent(event: any) {
+  sendServiceEvent(event: any) {
     return ipcRenderer.send("send-from-background-to-webapp", {
       channel: this.LIVE_EVENTS_CHANNEL,
       payload: event,
