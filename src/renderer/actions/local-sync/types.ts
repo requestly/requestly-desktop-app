@@ -34,6 +34,7 @@ export type Collection = {
   type: "collection";
   collectionId?: string;
   id: string;
+  name: string;
   variables?: Record<string, any>;
 };
 

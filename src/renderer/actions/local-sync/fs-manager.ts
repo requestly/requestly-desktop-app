@@ -7,21 +7,17 @@ import { ApiRecord, Config } from "./schemas";
 import {
   appendPath,
   createFsResource,
+  getIdFromPath,
   getNormalizedPath,
+  mapSuccessfulFsResult,
+  mapSuccessWrite,
   parseContent,
 } from "./common-utils";
-import { FsResource, FileSystemResult, APIEntity } from "./types";
-import { writeContent } from "./fs-utils";
-
-const CONFIG_FILE = "requestly.json";
+import { FsResource, FileSystemResult, APIEntity, Collection, API } from "./types";
+import { parseFile, parseFileToApi, parseFolderToCollection, writeContent } from "./fs-utils";
+import { CONFIG_FILE, ENVIRONMENT_VARIABLES_FILE } from "./constants";
 
 export class FsManager {
-  static CONFIG_FILE = "requestly.json";
-
-  static COLLECTION_VARIABLES_FILE = "vars.json";
-
-  static ENVIRONMENT_VARIABLES_FILE = "env.json";
-
   private rootPath: string;
 
   private config: Static<typeof Config>;
@@ -33,7 +29,7 @@ export class FsManager {
 
   private parseConfig() {
     const configFile = this.createResource({
-      id: this.getIdFromPath(appendPath(this.rootPath, CONFIG_FILE)),
+      id: getIdFromPath(appendPath(this.rootPath, CONFIG_FILE)),
       type: "file",
     });
     const rawConfig = fs.readFileSync(configFile.path).toString();
@@ -62,38 +58,17 @@ export class FsManager {
     });
   }
 
-  // eslint-disable-next-line
-  private getIdFromPath(path: string) {
-    return path;
-  }
-
-  private mapSuccessWrite<
-    T extends FileSystemResult<{ resource: FsResource }>,
-    R extends FileSystemResult<any>
-  >(writeResult: T, fn: (id: string) => R) {
-    if (writeResult.type === "success") {
-      const { resource } = writeResult.content;
-      const id = this.getIdFromPath(resource.path);
-      return fn(id);
-    }
-
-    // If writeResult is not success, then we simply need to bubble up the error.
-    // To do that along with keeping the return type consistent, we manually cast here.
-    // This cast is safe since it's error response we are dealing with.
-    return writeResult as unknown as R & { type: "error" };
-  }
-
-  private parseFolder(path: string, container: FsResource[]) {
-    const children = fs.readdirSync(path);
+  private async parseFolder(path: string, container: FsResource[]) {
+    const children = await fsp.readdir(path);
     // eslint-disable-next-line
     for (const child of children) {
       const resourcePath = appendPath(path, child);
-      const resourceMetadata = fs.statSync(resourcePath);
+      const resourceMetadata = await fsp.stat(resourcePath);
 
       if (resourceMetadata.isDirectory()) {
         container.push(
           this.createResource({
-            id: this.getIdFromPath(resourcePath),
+            id: getIdFromPath(resourcePath),
             type: "folder",
           })
         );
@@ -101,42 +76,11 @@ export class FsManager {
       } else {
         container.push(
           this.createResource({
-            id: this.getIdFromPath(resourcePath),
+            id: getIdFromPath(resourcePath),
             type: "file",
           })
         );
       }
-    }
-  }
-
-  private async parseFile<T extends TObject>(
-    id: string,
-    validator: T
-  ): Promise<FileSystemResult<Static<T>>> {
-    const resource = this.createResource({
-      id,
-      type: "file",
-    });
-    try {
-      const content = (await fsp.readFile(resource.path)).toString();
-      const parsedContentResult = parseContent(content, validator);
-      if (parsedContentResult.type === "error") {
-        return {
-          type: "error",
-          error: {
-            message: parsedContentResult.error.message,
-          },
-        };
-      }
-
-      return parsedContentResult;
-    } catch (e: any) {
-      return {
-        type: "error",
-        error: {
-          message: e.message || "An unexpected error has occured!",
-        },
-      };
     }
   }
 
@@ -146,11 +90,52 @@ export class FsManager {
   }
 
   getRecord(id: string) {
-    return this.parseFile(id, ApiRecord);
+    return parseFile({
+      resource: this.createResource({
+        id,
+        type: "file",
+      }),
+      validator: ApiRecord,
+    });
   }
 
-  getAllRecords(): APIEntity[] {
-    return [];
+  async getAllRecords(): Promise<APIEntity[]> {
+    const resourceContainer: FsResource[] = [];
+    await this.parseFolder(this.rootPath, resourceContainer);
+
+    const entities: APIEntity[] = [];
+    // eslint-disable-next-line
+    for (const resource of resourceContainer) {
+      const entityParsingResult: FileSystemResult<APIEntity> | undefined =
+        await (async () => {
+          if (resource.type === "folder") {
+            return parseFolderToCollection(this.rootPath, resource).then(
+              (result) =>
+                mapSuccessfulFsResult(
+                  result,
+                  (successfulResult) => successfulResult.content.collection
+                )
+            );
+          }
+          const envFile = appendPath(this.rootPath, ENVIRONMENT_VARIABLES_FILE);
+          if (resource.path === envFile) {
+            // eslint-disable-next-line consistent-return
+            return;
+          }
+          return parseFileToApi(this.rootPath, resource).then((result) =>
+            mapSuccessfulFsResult(
+              result,
+              (successfulResult) => successfulResult.content.api
+            )
+          );
+        })();
+
+      if (entityParsingResult?.type === "success") {
+        entities.push(entityParsingResult.content);
+      }
+    }
+
+    return entities;
   }
 
   async createRecord(
@@ -169,7 +154,7 @@ export class FsManager {
         type: "file",
       });
       return writeContent(resource, content).then((result) =>
-        this.mapSuccessWrite(result, (id) => {
+        mapSuccessWrite(result, (id) => {
           return {
             type: "success",
             content: {
@@ -197,10 +182,10 @@ export class FsManager {
         id,
         type: "file",
       });
-      const parsedRecordResult = await this.parseFile(
-        fileResource.path,
-        ApiRecord
-      );
+      const parsedRecordResult = await parseFile({
+        resource: fileResource,
+        validator: ApiRecord,
+      });
 
       if (parsedRecordResult.type === "error") {
         return parsedRecordResult;

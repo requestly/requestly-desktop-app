@@ -1,6 +1,6 @@
-import { Static, TObject } from "@sinclair/typebox";
+import { Static, TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
-import { ContentParseResult, FsResource } from "./types";
+import { ContentParseResult, FileSystemResult, FsResource } from "./types";
 
 export function getNormalizedPath(path: string) {
   const normalizedPath = path.endsWith("/") ? path : `${path}/`;
@@ -61,7 +61,7 @@ export function createFsResource<T extends FsResource["type"]>(params: {
   } as FsResource & { type: T };
 }
 
-export function parseRawJson<T extends TObject>(
+export function parseRawJson<T extends TSchema>(
   json: Record<any, any>,
   validator: T
 ): ContentParseResult<Static<T>> {
@@ -86,7 +86,7 @@ export function parseRawJson<T extends TObject>(
   }
 }
 
-export function parseContent<T extends TObject>(
+export function parseContent<T extends TSchema>(
   content: string,
   validator: T
 ): ContentParseResult<Static<T>> {
@@ -101,4 +101,54 @@ export function parseContent<T extends TObject>(
       },
     };
   }
+}
+
+export function getIdFromPath(path: string) {
+  return path;
+}
+
+export function mapSuccessWrite<
+  T extends FileSystemResult<{ resource: FsResource }>,
+  R extends FileSystemResult<any>
+>(writeResult: T, fn: (id: string) => R) {
+  if (writeResult.type === "success") {
+    const { resource } = writeResult.content;
+    const id = getIdFromPath(resource.path);
+    return fn(id);
+  }
+
+  // If writeResult is not success, then we simply need to bubble up the error.
+  // To do that along with keeping the return type consistent, we manually cast here.
+  // This cast is safe since it's error response we are dealing with.
+  return writeResult as unknown as R & { type: "error" };
+}
+
+export function mapSuccessfulFsResult<
+  Content,
+  T extends FileSystemResult<Content>,
+  R
+>(result: T, fn: (param: T & { type: "success" }) => R) {
+  if (result.type === "success") {
+    const newContent = fn(result as T & { type: "success" });
+    const returnResult = {
+      type: "success",
+      content: newContent,
+    } as FileSystemResult<R>;
+    return returnResult;
+  }
+
+  // If writeResult is not success, then we simply need to bubble up the error.
+  // To do that along with keeping the return type consistent, we manually cast here.
+  // This cast is safe since it's error response we are dealing with.
+  return result as unknown as FileSystemResult<R>;
+}
+
+export function getNameOfResource(fsResource: FsResource) {
+  const parts = fsResource.path.split("/");
+  if (fsResource.type === "folder") {
+    const endPart = parts[parts.length - 2];
+    return endPart;
+  }
+  const endPart = parts[parts.length - 1];
+  return endPart;
 }

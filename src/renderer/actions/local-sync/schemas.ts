@@ -12,3 +12,8 @@ export const ApiRecord = Type.Object({
   url: Type.String(),
   method: Type.Enum(ApiMethods),
 });
+
+export const Variables = Type.Record(
+  Type.String(),
+  Type.Union([Type.String(), Type.Number()])
+);
