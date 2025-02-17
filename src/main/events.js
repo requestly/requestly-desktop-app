@@ -259,7 +259,7 @@ export const registerMainProcessCommonEvents = () => {
   ipcMain.handle("open-folder-dialog", async (event, options = {}) => {
     const dialogOptions = {
       ...options,
-      properties: ["openDirectory"],
+      properties: ["openDirectory", "createDirectory"],
     };
     const folderDialogPromise = await dialog.showOpenDialog(dialogOptions);
     return folderDialogPromise;
