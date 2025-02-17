@@ -14,6 +14,7 @@ import storageService from "lib/storage";
 import "./types";
 import { LocalFileSync } from "./actions/local-files";
 import { TestService } from "./actions/local-files/sample/service";
+import { FsManagerRPCService } from "./actions/local-sync/fs-manager.rpc-service";
 
 // initPrimaryStorageCache();
 initRulesCache();
@@ -29,4 +30,4 @@ initAppManager();
 // const TestServiceServer = new TestService();
 
 // eslint-disable-next-line no-unused-vars
-const testService = new TestService();
+new FsManagerRPCService();
