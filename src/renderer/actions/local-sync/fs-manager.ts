@@ -1,9 +1,8 @@
-import { TObject, type Static } from "@sinclair/typebox";
+import { type Static } from "@sinclair/typebox";
 
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import { v4 as uuidv4 } from "uuid";
-import { ApiRecord, Config } from "./schemas";
 import {
   appendPath,
   createFsResource,
@@ -13,9 +12,15 @@ import {
   mapSuccessWrite,
   parseContent,
 } from "./common-utils";
-import { FsResource, FileSystemResult, APIEntity, Collection, API } from "./types";
-import { parseFile, parseFileToApi, parseFolderToCollection, writeContent } from "./fs-utils";
 import { CONFIG_FILE, ENVIRONMENT_VARIABLES_FILE } from "./constants";
+import {
+  parseFile,
+  parseFileToApi,
+  parseFolderToCollection,
+  writeContent,
+} from "./fs-utils";
+import { ApiRecord, Config } from "./schemas";
+import { APIEntity, FileSystemResult, FsResource } from "./types";
 
 export class FsManager {
   private rootPath: string;
