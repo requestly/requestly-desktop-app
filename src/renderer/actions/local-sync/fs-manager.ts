@@ -15,12 +15,14 @@ import {
 import { CONFIG_FILE, ENVIRONMENT_VARIABLES_FILE } from "./constants";
 import {
   parseFile,
+  parseFileResultToApi,
   parseFileToApi,
   parseFolderToCollection,
+  sanitizeFsResourceList,
   writeContent,
 } from "./fs-utils";
 import { ApiRecord, Config } from "./schemas";
-import { APIEntity, FileSystemResult, FsResource } from "./types";
+import { API, APIEntity, FileSystemResult, FsResource } from "./types";
 
 export class FsManager {
   private rootPath: string;
@@ -63,7 +65,7 @@ export class FsManager {
     });
   }
 
-  private async parseFolder(rootPath: string) {
+  private async parseFolder(rootPath: string, type: APIEntity["type"]) {
     const container: FsResource[] = [];
     const recursiveParser = async (path: string) => {
       const children = await fsp.readdir(path);
@@ -92,7 +94,7 @@ export class FsManager {
     };
 
     await recursiveParser(rootPath);
-    return container;
+    return sanitizeFsResourceList(rootPath, container, type);
   }
 
   // eslint-disable-next-line
@@ -100,19 +102,29 @@ export class FsManager {
     return `${uuidv4()}.json`;
   }
 
-  getRecord(id: string) {
-    return parseFile({
-      resource: this.createResource({
-        id,
-        type: "file",
-      }),
+  async getRecord(id: string): Promise<FileSystemResult<API>> {
+    const resource = this.createResource({
+      id,
+      type: "file",
+    });
+    const fileResult = await parseFile({
+      resource,
       validator: ApiRecord,
     });
+    if (fileResult.type === "error") {
+      return fileResult;
+    }
+
+    const parseResult = parseFileResultToApi(
+      this.rootPath,
+      resource,
+      fileResult
+    );
+    return parseResult;
   }
 
   async getAllRecords(): Promise<FileSystemResult<APIEntity[]>> {
-    const resourceContainer = await this.parseFolder(this.rootPath);
-
+    const resourceContainer = await this.parseFolder(this.rootPath, "api");
     const entities: APIEntity[] = [];
     // eslint-disable-next-line
     for (const resource of resourceContainer) {
@@ -140,7 +152,7 @@ export class FsManager {
           return parseFileToApi(this.rootPath, resource).then((result) =>
             mapSuccessfulFsResult(
               result,
-              (successfulResult) => successfulResult.content.api
+              (successfulResult) => successfulResult.content
             )
           );
         })();

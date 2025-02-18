@@ -11,7 +11,7 @@ import {
 import { appendPath, createFsResource, getIdFromPath, getNameOfResource, getNormalizedPath, parseContent } from "./common-utils";
 import { COLLECTION_VARIABLES_FILE, CONFIG_FILE, ENVIRONMENT_VARIABLES_FOLDER } from "./constants";
 import { Static, TSchema } from "@sinclair/typebox";
-import { ApiRecord, Variables } from "./schemas";
+import { ApiMethods, ApiRecord, Variables } from "./schemas";
 
 export async function deleteFsResource(
   resource: FsResource
@@ -163,8 +163,10 @@ export async function parseFolderToCollection(
   folder: FolderResource
 ): Promise<FileSystemResult<{ collection: Collection }>> {
   const varsPath = appendPath(folder.path, COLLECTION_VARIABLES_FILE);
-  const fileStats = await fsp.lstat(varsPath);
-  const collectionVariablesExist = fileStats.isFile();
+  const collectionVariablesExist = await fsp
+    .lstat(varsPath)
+    .then((stats) => stats.isFile())
+    .catch(() => false);
 
   const collectionVariablesResult = await (async () => {
     if (collectionVariablesExist) {
@@ -208,15 +210,15 @@ export async function parseFolderToCollection(
   return result;
 }
 
-export async function parseFileToApi(
+export function parseFileResultToApi(
   rootPath: string,
-  file: FileResource
-): Promise<FileSystemResult<{ api: API }>> {
-  const parsedFileResult = await parseFile({
-    resource: file,
-    validator: ApiRecord,
-  });
-
+  file: FileResource,
+  parsedFileResult: FileSystemResult<{
+    name: string;
+    url: string;
+    method: ApiMethods;
+  }>
+) {
   if (parsedFileResult.type === "error") {
     return parsedFileResult;
   }
@@ -229,14 +231,24 @@ export async function parseFileToApi(
     request: record,
   };
 
-  const result: FileSystemResult<{ api: API }> = {
+  const result: FileSystemResult<API> = {
     type: "success",
-    content: {
-      api,
-    },
+    content: api,
   };
 
   return result;
+}
+
+export async function parseFileToApi(
+  rootPath: string,
+  file: FileResource
+): Promise<FileSystemResult<API>> {
+  const parsedFileResult = await parseFile({
+    resource: file,
+    validator: ApiRecord,
+  });
+
+  return parseFileResultToApi(rootPath, file, parsedFileResult);
 }
 
 export function sanitizeFsResourceList(
@@ -247,6 +259,7 @@ export function sanitizeFsResourceList(
   // eslint-disable-next-line no-unused-vars
   const checks: ((resource: FsResource) => boolean)[] = [
     (resource) => resource.path !== appendPath(rootPath, CONFIG_FILE),
+    (resource) => !resource.path.endsWith(COLLECTION_VARIABLES_FILE),
   ];
   if (type === "api") {
     checks.push(

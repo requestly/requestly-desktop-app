@@ -33,7 +33,7 @@ export class RPCServiceOverIPC {
     ipcRenderer.on(channelName, async (_event, args) => {
       try {
         const result = await method(...args);
-        console.log("DBG-2: result in method", result);
+        console.log("DBG-2: result in method", result, exposedMethodName);
         ipcRenderer.send(`reply-${channelName}`, {
           success: true,
           data: result,
