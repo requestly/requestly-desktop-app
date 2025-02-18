@@ -19,8 +19,8 @@ import {
   parseFolderToCollection,
   writeContent,
 } from "./fs-utils";
-import { ApiRecord, Config, EnvironmentRecord } from "./schemas";
-import { APIEntity, Environment, FileSystemResult, FsResource } from "./types";
+import { ApiRecord, Config } from "./schemas";
+import { APIEntity, FileSystemResult, FsResource } from "./types";
 
 export class FsManager {
   private rootPath: string;
@@ -63,30 +63,36 @@ export class FsManager {
     });
   }
 
-  private async parseFolder(path: string, container: FsResource[]) {
-    const children = await fsp.readdir(path);
-    // eslint-disable-next-line
-    for (const child of children) {
-      const resourcePath = appendPath(path, child);
-      const resourceMetadata = await fsp.stat(resourcePath);
+  private async parseFolder(rootPath: string) {
+    const container: FsResource[] = [];
+    const recursiveParser = async (path: string) => {
+      const children = await fsp.readdir(path);
+      // eslint-disable-next-line
+      for (const child of children) {
+        const resourcePath = appendPath(path, child);
+        const resourceMetadata = await fsp.stat(resourcePath);
 
-      if (resourceMetadata.isDirectory()) {
-        container.push(
-          this.createResource({
-            id: getIdFromPath(resourcePath),
-            type: "folder",
-          })
-        );
-        this.parseFolder(resourcePath, container);
-      } else {
-        container.push(
-          this.createResource({
-            id: getIdFromPath(resourcePath),
-            type: "file",
-          })
-        );
+        if (resourceMetadata.isDirectory()) {
+          container.push(
+            this.createResource({
+              id: getIdFromPath(resourcePath),
+              type: "folder",
+            })
+          );
+          await recursiveParser(resourcePath);
+        } else {
+          container.push(
+            this.createResource({
+              id: getIdFromPath(resourcePath),
+              type: "file",
+            })
+          );
+        }
       }
-    }
+    };
+
+    await recursiveParser(rootPath);
+    return container;
   }
 
   // eslint-disable-next-line
@@ -105,8 +111,7 @@ export class FsManager {
   }
 
   async getAllRecords(): Promise<FileSystemResult<APIEntity[]>> {
-    const resourceContainer: FsResource[] = [];
-    await this.parseFolder(this.rootPath, resourceContainer);
+    const resourceContainer = await this.parseFolder(this.rootPath);
 
     const entities: APIEntity[] = [];
     // eslint-disable-next-line

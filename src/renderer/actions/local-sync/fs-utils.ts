@@ -1,6 +1,7 @@
 import fsp from "node:fs/promises";
 import {
   API,
+  APIEntity,
   Collection,
   FileResource,
   FileSystemResult,
@@ -8,7 +9,7 @@ import {
   FsResource,
 } from "./types";
 import { appendPath, createFsResource, getIdFromPath, getNameOfResource, getNormalizedPath, parseContent } from "./common-utils";
-import { COLLECTION_VARIABLES_FILE } from "./constants";
+import { COLLECTION_VARIABLES_FILE, CONFIG_FILE, ENVIRONMENT_VARIABLES_FOLDER } from "./constants";
 import { Static, TSchema } from "@sinclair/typebox";
 import { ApiRecord, Variables } from "./schemas";
 
@@ -236,4 +237,44 @@ export async function parseFileToApi(
   };
 
   return result;
+}
+
+export function sanitizeFsResourceList(
+  rootPath: string,
+  resources: FsResource[],
+  type: APIEntity["type"]
+) {
+  // eslint-disable-next-line no-unused-vars
+  const checks: ((resource: FsResource) => boolean)[] = [
+    (resource) => resource.path !== appendPath(rootPath, CONFIG_FILE),
+  ];
+  if (type === "api") {
+    checks.push(
+      (resource) =>
+        !resource.path.startsWith(
+          getNormalizedPath(appendPath(rootPath, ENVIRONMENT_VARIABLES_FOLDER))
+        )
+    );
+  }
+  if (type === "collection") {
+    checks.push(
+      (resource) =>
+        !resource.path.startsWith(
+          getNormalizedPath(appendPath(rootPath, ENVIRONMENT_VARIABLES_FOLDER))
+        ),
+      (resource) => resource.type === "folder"
+    );
+  }
+  if (type === "environment") {
+    checks.push((resource) =>
+      resource.path.startsWith(
+        getNormalizedPath(appendPath(rootPath, ENVIRONMENT_VARIABLES_FOLDER))
+      )
+    );
+  }
+
+  const predicate = (resource: FsResource) =>
+    checks.every((check) => check(resource));
+
+  return resources.filter(predicate);
 }
