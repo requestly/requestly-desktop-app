@@ -17,3 +17,10 @@ export const Variables = Type.Record(
   Type.String(),
   Type.Union([Type.String(), Type.Number()])
 );
+
+export const EnvironmentRecord = Type.Array(
+  Type.Object({
+    name: Type.String(),
+    variables: Variables,
+  })
+);

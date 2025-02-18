@@ -49,4 +49,11 @@ export type API = {
   };
 };
 
-export type APIEntity = Collection | API;
+export type Environment = {
+  type: "environment";
+  id: string;
+  name: string;
+  variables?: Record<string, any>;
+}
+
+export type APIEntity = Collection | API | Environment;

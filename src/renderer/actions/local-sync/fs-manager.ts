@@ -19,8 +19,8 @@ import {
   parseFolderToCollection,
   writeContent,
 } from "./fs-utils";
-import { ApiRecord, Config } from "./schemas";
-import { APIEntity, FileSystemResult, FsResource } from "./types";
+import { ApiRecord, Config, EnvironmentRecord } from "./schemas";
+import { APIEntity, Environment, FileSystemResult, FsResource } from "./types";
 
 export class FsManager {
   private rootPath: string;
@@ -102,6 +102,25 @@ export class FsManager {
       }),
       validator: ApiRecord,
     });
+  }
+
+  async getEnvironment() {
+    const envFilePath = appendPath(this.rootPath, ENVIRONMENT_VARIABLES_FILE);
+    const parsingResult = await parseFile({
+      resource: this.createResource({
+        id: getIdFromPath(envFilePath),
+        type: "file",
+      }),
+      validator: EnvironmentRecord,
+    });
+
+    if (parsingResult.type === "error") {
+      return;
+    }
+
+    const { content } = parsingResult;
+
+    return {} as Environment;
   }
 
   async getAllRecords(): Promise<APIEntity[]> {
