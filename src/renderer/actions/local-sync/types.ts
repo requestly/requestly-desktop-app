@@ -1,6 +1,3 @@
-import { Static } from "@sinclair/typebox";
-import { type ApiRecord } from "./schemas";
-
 export type FileSystemError = { message: string };
 export type ContentfulSuccess<T> = T extends void
   ? { type: "success" }

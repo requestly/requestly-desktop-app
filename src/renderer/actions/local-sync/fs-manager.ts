@@ -104,26 +104,7 @@ export class FsManager {
     });
   }
 
-  async getEnvironment() {
-    const envFilePath = appendPath(this.rootPath, ENVIRONMENT_VARIABLES_FILE);
-    const parsingResult = await parseFile({
-      resource: this.createResource({
-        id: getIdFromPath(envFilePath),
-        type: "file",
-      }),
-      validator: EnvironmentRecord,
-    });
-
-    if (parsingResult.type === "error") {
-      return;
-    }
-
-    const { content } = parsingResult;
-
-    return {} as Environment;
-  }
-
-  async getAllRecords(): Promise<APIEntity[]> {
+  async getAllRecords(): Promise<FileSystemResult<APIEntity[]>> {
     const resourceContainer: FsResource[] = [];
     await this.parseFolder(this.rootPath, resourceContainer);
 
@@ -146,6 +127,11 @@ export class FsManager {
             // eslint-disable-next-line consistent-return
             return;
           }
+          const configFile = appendPath(this.rootPath, CONFIG_FILE);
+          if (resource.path === configFile) {
+            // eslint-disable-next-line consistent-return
+            return;
+          }
           return parseFileToApi(this.rootPath, resource).then((result) =>
             mapSuccessfulFsResult(
               result,
@@ -154,12 +140,20 @@ export class FsManager {
           );
         })();
 
-      if (entityParsingResult?.type === "success") {
+      if (entityParsingResult?.type === "error") {
+        return entityParsingResult;
+      }
+
+      if (entityParsingResult) {
         entities.push(entityParsingResult.content);
       }
+
     }
 
-    return entities;
+    return {
+      type: "success",
+      content: entities,
+    };
   }
 
   async createRecord(
