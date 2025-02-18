@@ -42,7 +42,11 @@ export type API = {
   type: "api";
   collectionId?: string;
   id: string;
-  request: Static<typeof ApiRecord>;
+  request: {
+    name: string;
+    url: string;
+    method: string;
+  };
 };
 
 export type APIEntity = Collection | API;
