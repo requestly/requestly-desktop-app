@@ -6,6 +6,12 @@ export const Config = Type.Object({
 
 export enum ApiMethods {
   GET = "GET",
+  POST = "POST",
+  PUT = "PUT",
+  DELETE = "DELETE",
+  PATCH = "PATCH",
+  HEAD = "HEAD",
+  OPTIONS = "OPTIONS",
 }
 export const ApiRecord = Type.Object({
   name: Type.String(),
@@ -18,9 +24,7 @@ export const Variables = Type.Record(
   Type.Union([Type.String(), Type.Number()])
 );
 
-export const EnvironmentRecord = Type.Array(
-  Type.Object({
-    name: Type.String(),
-    variables: Variables,
-  })
-);
+export const EnvironmentRecord = Type.Object({
+  name: Type.String(),
+  variables: Variables,
+});

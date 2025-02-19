@@ -12,7 +12,7 @@ import {
   mapSuccessWrite,
   parseContent,
 } from "./common-utils";
-import { CONFIG_FILE, ENVIRONMENT_VARIABLES_FILE } from "./constants";
+import { CONFIG_FILE, ENVIRONMENT_VARIABLES_FOLDER } from "./constants";
 import {
   parseFile,
   parseFileResultToApi,
@@ -21,8 +21,14 @@ import {
   sanitizeFsResourceList,
   writeContent,
 } from "./fs-utils";
-import { ApiRecord, Config } from "./schemas";
-import { API, APIEntity, FileSystemResult, FsResource } from "./types";
+import { ApiRecord, Config, EnvironmentRecord } from "./schemas";
+import {
+  API,
+  APIEntity,
+  Environment,
+  FileSystemResult,
+  FsResource,
+} from "./types";
 
 export class FsManager {
   private rootPath: string;
@@ -125,6 +131,7 @@ export class FsManager {
 
   async getAllRecords(): Promise<FileSystemResult<APIEntity[]>> {
     const resourceContainer = await this.parseFolder(this.rootPath, "api");
+    console.log({ resourceContainerr: resourceContainer });
     const entities: APIEntity[] = [];
     // eslint-disable-next-line
     for (const resource of resourceContainer) {
@@ -139,8 +146,11 @@ export class FsManager {
                 )
             );
           }
-          const envFile = appendPath(this.rootPath, ENVIRONMENT_VARIABLES_FILE);
-          if (resource.path === envFile) {
+          const envFolder = appendPath(
+            this.rootPath,
+            ENVIRONMENT_VARIABLES_FOLDER
+          );
+          if (resource.path === envFolder) {
             // eslint-disable-next-line consistent-return
             return;
           }
@@ -164,9 +174,40 @@ export class FsManager {
       if (entityParsingResult) {
         entities.push(entityParsingResult.content);
       }
-
     }
 
+    return {
+      type: "success",
+      content: entities,
+    };
+  }
+
+  async getAllEnvironments(): Promise<FileSystemResult<APIEntity[]>> {
+    const resourceContainer = await this.parseFolder(
+      this.rootPath,
+      "environment"
+    );
+    const entities: Environment[] = [];
+    // eslint-disable-next-line
+    for (const resource of resourceContainer) {
+      if (resource.type === "file") {
+        const parsedResult = await parseFile({
+          resource,
+          validator: EnvironmentRecord,
+        });
+        if (parsedResult.type === "error") {
+          return parsedResult;
+        }
+        if (parsedResult) {
+          entities.push({
+            type: "environment",
+            id: getIdFromPath(resource.path),
+            name: parsedResult.content.name,
+            variables: parsedResult.content.variables,
+          });
+        }
+      }
+    }
     return {
       type: "success",
       content: entities,

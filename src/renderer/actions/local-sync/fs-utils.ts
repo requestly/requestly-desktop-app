@@ -8,8 +8,20 @@ import {
   FolderResource,
   FsResource,
 } from "./types";
-import { appendPath, createFsResource, getIdFromPath, getNameOfResource, getNormalizedPath, parseContent } from "./common-utils";
-import { COLLECTION_VARIABLES_FILE, CONFIG_FILE, ENVIRONMENT_VARIABLES_FOLDER } from "./constants";
+import {
+  appendPath,
+  createFsResource,
+  getIdFromPath,
+  getNameOfResource,
+  getNormalizedPath,
+  parseContent,
+} from "./common-utils";
+import {
+  COLLECTION_VARIABLES_FILE,
+  CONFIG_FILE,
+  DS_STORE_FILE,
+  ENVIRONMENT_VARIABLES_FOLDER,
+} from "./constants";
 import { Static, TSchema } from "@sinclair/typebox";
 import { ApiMethods, ApiRecord, Variables } from "./schemas";
 
@@ -144,7 +156,6 @@ export async function parseFile<T extends TSchema>(params: {
   }
 }
 
-
 // This will give an empty string if parent is root
 export function getParentFoldePath(rootPath: string, fsResource: FsResource) {
   const { path } = fsResource;
@@ -260,6 +271,7 @@ export function sanitizeFsResourceList(
   const checks: ((resource: FsResource) => boolean)[] = [
     (resource) => resource.path !== appendPath(rootPath, CONFIG_FILE),
     (resource) => !resource.path.endsWith(COLLECTION_VARIABLES_FILE),
+    (resource) => resource.path !== appendPath(rootPath, DS_STORE_FILE),
   ];
   if (type === "api") {
     checks.push(

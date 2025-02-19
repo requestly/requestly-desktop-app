@@ -24,5 +24,10 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
       instance.getAllRecords.bind(instance)
     );
     this.exposeMethodOverIPC("getRecord", instance.getRecord.bind(instance));
+
+    this.exposeMethodOverIPC(
+      "getAllEnvironments",
+      instance.getAllEnvironments.bind(instance)
+    );
   }
 }

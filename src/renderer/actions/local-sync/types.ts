@@ -51,6 +51,6 @@ export type Environment = {
   id: string;
   name: string;
   variables?: Record<string, any>;
-}
+};
 
 export type APIEntity = Collection | API | Environment;
