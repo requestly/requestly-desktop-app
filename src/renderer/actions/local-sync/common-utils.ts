@@ -152,3 +152,14 @@ export function getNameOfResource(fsResource: FsResource) {
   const endPart = parts[parts.length - 1];
   return endPart;
 }
+
+export function removeUndefinedFromRoot(
+  record: Record<any, Object | undefined>
+) {
+  const keys = Object.keys(record);
+  keys.forEach((key) => {
+    if (record[key] === undefined) {
+      delete record[key];
+    }
+  });
+}

@@ -11,6 +11,7 @@ import {
   mapSuccessfulFsResult,
   mapSuccessWrite,
   parseContent,
+  removeUndefinedFromRoot,
 } from "./common-utils";
 import { CONFIG_FILE, ENVIRONMENT_VARIABLES_FOLDER } from "./constants";
 import {
@@ -237,9 +238,7 @@ export class FsManager {
         return writeResult;
       }
 
-      return parseFileToApi(this.rootPath, resource).then((result) =>
-        mapSuccessfulFsResult(result, (s) => s.content)
-      );
+      return parseFileToApi(this.rootPath, resource);
     } catch (e: any) {
       return {
         type: "error",
@@ -270,9 +269,7 @@ export class FsManager {
         return createResult;
       }
 
-      return parseFolderToCollection(this.rootPath, resource).then((result) =>
-        mapSuccessfulFsResult(result, (s) => s.content)
-      );
+      return parseFolderToCollection(this.rootPath, resource);
     } catch (e: any) {
       return {
         type: "error",
@@ -284,10 +281,11 @@ export class FsManager {
   }
 
   async updateRecord(
-    id: string,
-    patch: Partial<Static<typeof ApiRecord>>
-  ): Promise<FileSystemResult<void>> {
+    patch: Partial<Static<typeof ApiRecord>>,
+    id: string
+  ): Promise<FileSystemResult<API>> {
     try {
+      removeUndefinedFromRoot(patch);
       const fileResource = this.createResource({
         id,
         type: "file",
@@ -305,7 +303,12 @@ export class FsManager {
         ...currentRecord,
         ...patch,
       };
-      return writeContent(fileResource, updatedRecord);
+      const writeResult = await writeContent(fileResource, updatedRecord);
+      if (writeResult.type === "error") {
+        return writeResult;
+      }
+
+      return parseFileToApi(this.rootPath, fileResource);
     } catch (e: any) {
       return {
         type: "error",
