@@ -249,6 +249,32 @@ export class FsManager {
     }
   }
 
+  async createRecordWithId(
+    content: Static<typeof ApiRecord>,
+    id: string
+  ): Promise<FileSystemResult<API>> {
+    try {
+      const resource = createFsResource({
+        rootPath: this.rootPath,
+        path: id,
+        type: "file",
+      });
+      const writeResult = await writeContent(resource, content);
+      if (writeResult.type === "error") {
+        return writeResult;
+      }
+
+      return parseFileToApi(this.rootPath, resource);
+    } catch (e: any) {
+      return {
+        type: "error",
+        error: {
+          message: e.message || "An unexpected error has occured!",
+        },
+      };
+    }
+  }
+
   async createCollection(
     name: string,
     collectionId?: string
