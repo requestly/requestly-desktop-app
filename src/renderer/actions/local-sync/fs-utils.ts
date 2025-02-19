@@ -172,7 +172,7 @@ export function getParentFoldePath(rootPath: string, fsResource: FsResource) {
 export async function parseFolderToCollection(
   rootPath: string,
   folder: FolderResource
-): Promise<FileSystemResult<{ collection: Collection }>> {
+): Promise<FileSystemResult<Collection>> {
   const varsPath = appendPath(folder.path, COLLECTION_VARIABLES_FILE);
   const collectionVariablesExist = await fsp
     .lstat(varsPath)
@@ -211,11 +211,9 @@ export async function parseFolderToCollection(
     variables: collectionVariables,
   };
 
-  const result: FileSystemResult<{ collection: Collection }> = {
+  const result: FileSystemResult<Collection> = {
     type: "success",
-    content: {
-      collection,
-    },
+    content: collection,
   };
 
   return result;

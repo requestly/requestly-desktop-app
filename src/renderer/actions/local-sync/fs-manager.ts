@@ -14,6 +14,7 @@ import {
 } from "./common-utils";
 import { CONFIG_FILE, ENVIRONMENT_VARIABLES_FOLDER } from "./constants";
 import {
+  createFolder,
   parseFile,
   parseFileResultToApi,
   parseFileToApi,
@@ -25,6 +26,7 @@ import { ApiRecord, Config, EnvironmentRecord } from "./schemas";
 import {
   API,
   APIEntity,
+  Collection,
   Environment,
   FileSystemResult,
   FsResource,
@@ -142,7 +144,7 @@ export class FsManager {
               (result) =>
                 mapSuccessfulFsResult(
                   result,
-                  (successfulResult) => successfulResult.content.collection
+                  (successfulResult) => successfulResult.content
                 )
             );
           }
@@ -215,29 +217,61 @@ export class FsManager {
   }
 
   async createRecord(
-    collectionId: string,
-    content: Static<typeof ApiRecord>
-  ): Promise<FileSystemResult<{ id: string }>> {
+    content: Static<typeof ApiRecord>,
+    collectionId?: string
+  ): Promise<FileSystemResult<API>> {
     try {
       const folderResource = this.createResource({
-        id: collectionId,
+        id: collectionId || getIdFromPath(this.rootPath),
         type: "folder",
       });
+
       const path = appendPath(folderResource.path, this.generateFileName());
       const resource = createFsResource({
         rootPath: this.rootPath,
         path,
         type: "file",
       });
-      return writeContent(resource, content).then((result) =>
-        mapSuccessWrite(result, (id) => {
-          return {
-            type: "success",
-            content: {
-              id,
-            },
-          };
-        })
+      const writeResult = await writeContent(resource, content);
+      if (writeResult.type === "error") {
+        return writeResult;
+      }
+
+      return parseFileToApi(this.rootPath, resource).then((result) =>
+        mapSuccessfulFsResult(result, (s) => s.content)
+      );
+    } catch (e: any) {
+      return {
+        type: "error",
+        error: {
+          message: e.message || "An unexpected error has occured!",
+        },
+      };
+    }
+  }
+
+  async createCollection(
+    name: string,
+    collectionId?: string
+  ): Promise<FileSystemResult<Collection>> {
+    try {
+      const folderResource = this.createResource({
+        id: collectionId || getIdFromPath(this.rootPath),
+        type: "folder",
+      });
+      const path = appendPath(folderResource.path, name);
+      const resource = createFsResource({
+        rootPath: this.rootPath,
+        path,
+        type: "folder",
+      });
+      const createResult = await createFolder(resource);
+      if (createResult.type === "error") {
+        return createResult;
+      }
+
+      return parseFolderToCollection(this.rootPath, resource).then((result) =>
+        mapSuccessfulFsResult(result, (s) => s.content)
       );
     } catch (e: any) {
       return {
@@ -282,40 +316,3 @@ export class FsManager {
     }
   }
 }
-
-// async function main() {
-//   const fileStore = new FileStore("/Users/rahulramteke/adhoc/ftest");
-//   // console.log(
-//   // 	"aa",
-//   // 	await fileStore.getRecord("/Users/rahulramteke/adhoc/ftest/f1/r2.json"),
-//   // );
-
-//   const createResult = await fileStore.createRecord(
-//     "/Users/rahulramteke/adhoc/ftest/f1",
-//     {
-//       name: "nana",
-//       url: "ass",
-//       method: ApiMethods.GET,
-//     }
-//   );
-
-//   if (createResult.type !== "success") {
-//     console.error(createResult.error);
-//     return;
-//   }
-
-//   const updateResult = await fileStore.updateRecord(createResult.content.id, {
-//     name: "nana23",
-//   });
-
-//   console.log("update result:", updateResult);
-
-//   // const deleteResult = await fileStore.deleteFolder({
-//   // 	path: "/Users/rahulramteke/adhoc/ftest/f4",
-//   // 	type: "folder",
-//   // });
-
-//   // console.log("delete result:", deleteResult);
-// }
-
-// main().catch((e) => console.error("main", e));

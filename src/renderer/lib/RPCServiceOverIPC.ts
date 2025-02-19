@@ -31,6 +31,12 @@ export class RPCServiceOverIPC {
     const channelName = `${this.RPC_CHANNEL_PREFIX}${exposedMethodName}`;
     console.log("DBG-1: exposing channel", channelName);
     ipcRenderer.on(channelName, async (_event, args) => {
+      console.log(
+        "DBG-1: received event on channel",
+        channelName,
+        _event,
+        args
+      );
       try {
         const result = await method(...args);
         console.log("DBG-2: result in method", result, exposedMethodName);
