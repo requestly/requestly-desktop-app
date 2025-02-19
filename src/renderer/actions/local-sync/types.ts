@@ -46,11 +46,29 @@ export type API = {
   };
 };
 
+type VariableValueType = string | number | boolean;
+
+export enum EnvironmentVariableType {
+  String = "string",
+  Number = "number",
+  Boolean = "boolean",
+}
+
+type Variable = Record<
+  string,
+  {
+    id: number;
+    value: VariableValueType;
+    type: EnvironmentVariableType;
+    isSecret: boolean;
+  }
+>;
+
 export type Environment = {
   type: "environment";
   id: string;
   name: string;
-  variables?: Record<string, any>;
+  variables?: Variable;
 };
 
 export type APIEntity = Collection | API | Environment;

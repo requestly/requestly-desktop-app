@@ -1,4 +1,5 @@
 import { Type } from "@sinclair/typebox";
+import { EnvironmentVariableType } from "./types";
 
 export const Config = Type.Object({
   version: Type.String(),
@@ -21,7 +22,12 @@ export const ApiRecord = Type.Object({
 
 export const Variables = Type.Record(
   Type.String(),
-  Type.Union([Type.String(), Type.Number()])
+  Type.Object({
+    id: Type.Number(),
+    value: Type.Union([Type.String(), Type.Number(), Type.Boolean()]),
+    type: Type.Enum(EnvironmentVariableType),
+    isSecret: Type.Boolean(),
+  })
 );
 
 export const EnvironmentRecord = Type.Object({
