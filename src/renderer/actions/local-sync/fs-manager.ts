@@ -7,6 +7,7 @@ import {
   appendPath,
   createFsResource,
   getIdFromPath,
+  getNameOfResource,
   getNormalizedPath,
   mapSuccessfulFsResult,
   parseContent,
@@ -19,11 +20,14 @@ import {
 } from "./constants";
 import {
   createFolder,
+  deleteFsResource,
+  getParentFoldePath,
   parseFile,
   parseFileResultToApi,
   parseFileToApi,
   parseFileToEnv,
   parseFolderToCollection,
+  rename,
   sanitizeFsResourceList,
   writeContent,
 } from "./fs-utils";
@@ -136,6 +140,16 @@ export class FsManager {
     return parseResult;
   }
 
+  async getCollection(id: string): Promise<FileSystemResult<Collection>> {
+    const resource = this.createResource({
+      id,
+      type: "folder",
+    });
+
+    const parseResult = parseFolderToCollection(this.rootPath, resource);
+    return parseResult;
+  }
+
   async getAllRecords(): Promise<FileSystemResult<APIEntity[]>> {
     const resourceContainer = await this.parseFolder(this.rootPath, "api");
     console.log({ resourceContainerr: resourceContainer });
@@ -152,19 +166,6 @@ export class FsManager {
                   (successfulResult) => successfulResult.content
                 )
             );
-          }
-          const envFolder = appendPath(
-            this.rootPath,
-            ENVIRONMENT_VARIABLES_FOLDER
-          );
-          if (resource.path === envFolder) {
-            // eslint-disable-next-line consistent-return
-            return;
-          }
-          const configFile = appendPath(this.rootPath, CONFIG_FILE);
-          if (resource.path === configFile) {
-            // eslint-disable-next-line consistent-return
-            return;
           }
           return parseFileToApi(this.rootPath, resource).then((result) =>
             mapSuccessfulFsResult(
@@ -280,6 +281,45 @@ export class FsManager {
     }
   }
 
+  async deleteRecord(id: string): Promise<FileSystemResult<void>> {
+    try {
+      const resource = createFsResource({
+        rootPath: this.rootPath,
+        path: id,
+        type: "file",
+      });
+      const deleteResult = await deleteFsResource(resource);
+      if (deleteResult.type === "error") {
+        return deleteResult;
+      }
+
+      return {
+        type: "success",
+      };
+    } catch (e: any) {
+      return {
+        type: "error",
+        error: {
+          message: e.message || "An unexpected error has occured!",
+        },
+      };
+    }
+  }
+
+  async deleteRecords(ids: string[]): Promise<FileSystemResult<void>> {
+    // eslint-disable-next-line no-restricted-syntax
+    for (const id of ids) {
+      const result = await this.deleteRecord(id);
+      if (result.type === "error") {
+        return result;
+      }
+    }
+
+    return {
+      type: "success",
+    };
+  }
+
   async createCollection(
     name: string,
     collectionId?: string
@@ -301,6 +341,137 @@ export class FsManager {
       }
 
       return parseFolderToCollection(this.rootPath, resource);
+    } catch (e: any) {
+      return {
+        type: "error",
+        error: {
+          message: e.message || "An unexpected error has occured!",
+        },
+      };
+    }
+  }
+
+  async createCollectionWithId(
+    id: string
+  ): Promise<FileSystemResult<Collection>> {
+    try {
+      const resource = createFsResource({
+        rootPath: this.rootPath,
+        path: id,
+        type: "folder",
+      });
+      const createResult = await createFolder(resource);
+      if (createResult.type === "error") {
+        return createResult;
+      }
+
+      return parseFolderToCollection(this.rootPath, resource);
+    } catch (e: any) {
+      return {
+        type: "error",
+        error: {
+          message: e.message || "An unexpected error has occured!",
+        },
+      };
+    }
+  }
+
+  async deleteCollection(id: string): Promise<FileSystemResult<void>> {
+    try {
+      const resource = createFsResource({
+        rootPath: this.rootPath,
+        path: id,
+        type: "folder",
+      });
+      const deleteResult = await deleteFsResource(resource);
+      if (deleteResult.type === "error") {
+        return deleteResult;
+      }
+
+      return {
+        type: "success",
+      };
+    } catch (e: any) {
+      return {
+        type: "error",
+        error: {
+          message: e.message || "An unexpected error has occured!",
+        },
+      };
+    }
+  }
+
+  async deleteCollections(ids: string[]): Promise<FileSystemResult<void>> {
+    // eslint-disable-next-line no-restricted-syntax
+    for (const id of ids) {
+      const result = await this.deleteCollection(id);
+      if (result.type === "error") {
+        return result;
+      }
+    }
+
+    return {
+      type: "success",
+    };
+  }
+
+  async renameCollection(
+    id: string,
+    newName: string
+  ): Promise<FileSystemResult<Collection>> {
+    try {
+      const folderResource = this.createResource({
+        id,
+        type: "folder",
+      });
+      const parentPath = getParentFoldePath(this.rootPath, folderResource);
+
+      const newFolderResource = this.createResource({
+        id: getIdFromPath(appendPath(parentPath, newName)),
+        type: "folder",
+      });
+
+
+      const renameResult = await rename(folderResource, newFolderResource);
+      if (renameResult.type === "error") {
+        return renameResult;
+      }
+
+      return parseFolderToCollection(this.rootPath, renameResult.content);
+    } catch (e: any) {
+      return {
+        type: "error",
+        error: {
+          message: e.message || "An unexpected error has occured!",
+        },
+      };
+    }
+  }
+
+  async moveCollection(
+    id: string,
+    newParentId: string
+  ): Promise<FileSystemResult<Collection>> {
+    try {
+      const parentPath = newParentId.length ? newParentId : this.rootPath;
+      const folderResource = this.createResource({
+        id,
+        type: "folder",
+      });
+      const resourceName = getNameOfResource(folderResource);
+
+      const newFolderResource = this.createResource({
+        id: getIdFromPath(appendPath(parentPath, resourceName)),
+        type: "folder",
+      });
+
+
+      const renameResult = await rename(folderResource, newFolderResource);
+      if (renameResult.type === "error") {
+        return renameResult;
+      }
+
+      return parseFolderToCollection(this.rootPath, renameResult.content);
     } catch (e: any) {
       return {
         type: "error",
