@@ -26,7 +26,13 @@ import {
   ENVIRONMENT_VARIABLES_FOLDER,
 } from "./constants";
 import { Static, TSchema } from "@sinclair/typebox";
-import { ApiMethods, ApiRecord, EnvironmentRecord, Variables } from "./schemas";
+import {
+  ApiMethods,
+  ApiRecord,
+  Config,
+  EnvironmentRecord,
+  Variables,
+} from "./schemas";
 
 export async function deleteFsResource(
   resource: FsResource
@@ -123,12 +129,22 @@ export function serializeContentForWriting(content: Record<any, any>) {
   return JSON.stringify(content, null, 2);
 }
 
-export async function writeContent(
+export async function writeContent<T extends TSchema>(
   resource: FileResource,
-  content: Record<any, any>
+  content: Record<any, any>,
+  validator: T
 ): Promise<FileSystemResult<{ resource: FileResource }>> {
   try {
     const serializedContent = serializeContentForWriting(content);
+    const parsedContentResult = parseContent(serializedContent, validator);
+    if (parsedContentResult.type === "error") {
+      return {
+        type: "error",
+        error: {
+          message: parsedContentResult.error.message,
+        },
+      };
+    }
     await fsp.writeFile(resource.path, serializedContent);
     return {
       type: "success",
@@ -168,7 +184,8 @@ export async function createWorkspaceFolder(
     }),
     {
       version: "0.0.1",
-    }
+    },
+    Config
   );
   return configFileCreationResult;
 }

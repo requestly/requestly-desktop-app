@@ -122,6 +122,14 @@ export class FsManager {
     return `${uuidv4()}.json`;
   }
 
+  private getEnvironmentsFolderResource() {
+    const envFolderPath = appendPath(
+      this.rootPath,
+      ENVIRONMENT_VARIABLES_FOLDER
+    );
+    return envFolderPath;
+  }
+
   async getRecord(id: string): Promise<FileSystemResult<API>> {
     const resource = this.createResource({
       id,
@@ -242,7 +250,11 @@ export class FsManager {
         path,
         type: "file",
       });
-      const writeResult = await writeContent(resource, content);
+      const writeResult = await writeContent(
+        resource,
+        content,
+        EnvironmentRecord
+      );
       if (writeResult.type === "error") {
         return writeResult;
       }
@@ -268,7 +280,7 @@ export class FsManager {
         path: id,
         type: "file",
       });
-      const writeResult = await writeContent(resource, content);
+      const writeResult = await writeContent(resource, content, ApiRecord);
       if (writeResult.type === "error") {
         return writeResult;
       }
@@ -483,7 +495,7 @@ export class FsManager {
     }
   }
 
-  async duplicateCollection(
+  async copyCollection(
     id: string,
     newId: string
   ): Promise<FileSystemResult<Collection>> {
@@ -540,7 +552,11 @@ export class FsManager {
         ...currentRecord,
         ...patch,
       };
-      const writeResult = await writeContent(fileResource, updatedRecord);
+      const writeResult = await writeContent(
+        fileResource,
+        updatedRecord,
+        ApiRecord
+      );
       if (writeResult.type === "error") {
         return writeResult;
       }
@@ -577,7 +593,11 @@ export class FsManager {
         variables: {},
       };
 
-      const writeResult = await writeContent(envFile, content);
+      const writeResult = await writeContent(
+        envFile,
+        content,
+        EnvironmentRecord
+      );
       if (writeResult.type === "error") {
         return writeResult;
       }
@@ -599,7 +619,7 @@ export class FsManager {
       | { variables: Record<string, EnvironmentVariableValue> }
   ): Promise<FileSystemResult<Environment>> {
     try {
-      // removeUndefinedFromRoot(patch);
+      removeUndefinedFromRoot(patch);
       const fileResource = this.createResource({
         id,
         type: "file",
@@ -625,12 +645,109 @@ export class FsManager {
         updatedRecord.name = patch.name;
       }
 
-      const writeResult = await writeContent(fileResource, updatedRecord);
+      const writeResult = await writeContent(
+        fileResource,
+        updatedRecord,
+        EnvironmentRecord
+      );
       if (writeResult.type === "error") {
         return writeResult;
       }
 
       return parseFileToEnv(fileResource);
+    } catch (e: any) {
+      return {
+        type: "error",
+        error: {
+          message: e.message || "An unexpected error has occured!",
+        },
+      };
+    }
+  }
+
+  async copyEnvironment(
+    id: string,
+    newId: string
+  ): Promise<FileSystemResult<Environment>> {
+    try {
+      const sourceFileResource = this.createResource({
+        id,
+        type: "file",
+      });
+
+      const destinationFileResource = this.createResource({
+        id: newId,
+        type: "file",
+      });
+
+      const result = await copyRecursive(
+        sourceFileResource,
+        destinationFileResource
+      );
+      if (result.type === "error") {
+        return result;
+      }
+
+      return parseFileToEnv(result.content);
+    } catch (e: any) {
+      return {
+        type: "error",
+        error: {
+          message: e.message || "An unexpected error has occured!",
+        },
+      };
+    }
+  }
+
+  async duplicateEnvironment(
+    id: string
+  ): Promise<FileSystemResult<Environment>> {
+    try {
+      const fileResource = this.createResource({
+        id,
+        type: "file",
+      });
+      if (fileResource.path.endsWith(GLOBAL_ENV_FILE)) {
+        return {
+          type: "error",
+          error: {
+            message: "Global environment cannnot be copied!",
+          },
+        };
+      }
+      const originalEnvironment = await parseFile({
+        resource: fileResource,
+        validator: EnvironmentRecord,
+      });
+
+      if (originalEnvironment.type === "error") {
+        return originalEnvironment;
+      }
+
+      const { content } = originalEnvironment;
+
+      const newEnvironmentContent: Static<typeof EnvironmentRecord> = {
+        name: `${content.name} (copy)`,
+        variables: content.variables,
+      };
+      const path = appendPath(
+        this.getEnvironmentsFolderResource(),
+        this.generateFileName()
+      );
+      const resource = this.createResource({
+        id: getIdFromPath(path),
+        type: "file",
+      });
+      const writeResult = await writeContent(
+        resource,
+        newEnvironmentContent,
+        EnvironmentRecord
+      );
+      if (writeResult.type === "error") {
+        return writeResult;
+      }
+
+      return parseFileToEnv(resource);
     } catch (e: any) {
       return {
         type: "error",
