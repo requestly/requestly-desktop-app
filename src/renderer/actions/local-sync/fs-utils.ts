@@ -185,11 +185,12 @@ export function getParentFoldePath(rootPath: string, fsResource: FsResource) {
   const name = getNameOfResource(fsResource);
   const normalizedName =
     fsResource.type === "folder" ? getNormalizedPath(name) : name;
-  const [rawParent] = path.split(normalizedName);
-  if (rawParent === rootPath) {
+  const [rawParent] = path.split(`/${normalizedName}`);
+  const parent = getNormalizedPath(rawParent);
+  if (parent === rootPath) {
     return "";
   }
-  return rawParent;
+  return parent;
 }
 
 export async function parseFolderToCollection(
