@@ -9,16 +9,20 @@ import {
   getIdFromPath,
   getNormalizedPath,
   mapSuccessfulFsResult,
-  mapSuccessWrite,
   parseContent,
   removeUndefinedFromRoot,
 } from "./common-utils";
-import { CONFIG_FILE, ENVIRONMENT_VARIABLES_FOLDER } from "./constants";
+import {
+  CONFIG_FILE,
+  ENVIRONMENT_VARIABLES_FOLDER,
+  GLOBAL_ENV_FILE,
+} from "./constants";
 import {
   createFolder,
   parseFile,
   parseFileResultToApi,
   parseFileToApi,
+  parseFileToEnv,
   parseFolderToCollection,
   sanitizeFsResourceList,
   writeContent,
@@ -190,6 +194,7 @@ export class FsManager {
       this.rootPath,
       "environment"
     );
+    console.log("ENV CONTAINER", { resourceContainer });
     const entities: Environment[] = [];
     // eslint-disable-next-line
     for (const resource of resourceContainer) {
@@ -335,6 +340,42 @@ export class FsManager {
       }
 
       return parseFileToApi(this.rootPath, fileResource);
+    } catch (e: any) {
+      return {
+        type: "error",
+        error: {
+          message: e.message || "An unexpected error has occured!",
+        },
+      };
+    }
+  }
+
+  async createEnvironment(
+    environmentName: string,
+    isGlobal: boolean
+  ): Promise<FileSystemResult<Environment>> {
+    try {
+      const envFolderPath = appendPath(
+        this.rootPath,
+        ENVIRONMENT_VARIABLES_FOLDER
+      );
+      const envFile = this.createResource({
+        id: appendPath(
+          envFolderPath,
+          isGlobal ? GLOBAL_ENV_FILE : this.generateFileName()
+        ),
+        type: "file",
+      });
+      const content = {
+        name: environmentName,
+        variables: {},
+      };
+
+      const writeResult = await writeContent(envFile, content);
+      if (writeResult.type === "error") {
+        return writeResult;
+      }
+      return parseFileToEnv(envFile);
     } catch (e: any) {
       return {
         type: "error",

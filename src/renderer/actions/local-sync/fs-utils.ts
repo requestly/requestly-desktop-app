@@ -3,6 +3,7 @@ import {
   API,
   APIEntity,
   Collection,
+  Environment,
   FileResource,
   FileSystemResult,
   FolderResource,
@@ -23,7 +24,7 @@ import {
   ENVIRONMENT_VARIABLES_FOLDER,
 } from "./constants";
 import { Static, TSchema } from "@sinclair/typebox";
-import { ApiMethods, ApiRecord, Variables } from "./schemas";
+import { ApiMethods, ApiRecord, EnvironmentRecord, Variables } from "./schemas";
 
 export async function deleteFsResource(
   resource: FsResource
@@ -269,7 +270,7 @@ export function sanitizeFsResourceList(
   const checks: ((resource: FsResource) => boolean)[] = [
     (resource) => resource.path !== appendPath(rootPath, CONFIG_FILE),
     (resource) => !resource.path.endsWith(COLLECTION_VARIABLES_FILE),
-    (resource) => resource.path !== appendPath(rootPath, DS_STORE_FILE),
+    (resource) => !resource.path.includes(DS_STORE_FILE),
   ];
   if (type === "api") {
     checks.push(
@@ -300,4 +301,33 @@ export function sanitizeFsResourceList(
     checks.every((check) => check(resource));
 
   return resources.filter(predicate);
+}
+
+export async function parseFileToEnv(
+  file: FileResource
+): Promise<FileSystemResult<Environment>> {
+  const parsedFileResult = await parseFile({
+    resource: file,
+    validator: EnvironmentRecord,
+  });
+
+  if (parsedFileResult.type === "error") {
+    return parsedFileResult;
+  }
+
+  const { content } = parsedFileResult;
+
+  const environment: Environment = {
+    type: "environment",
+    id: getIdFromPath(file.path),
+    name: content.name,
+    variables: content.variables,
+  };
+
+  const result: FileSystemResult<Environment> = {
+    type: "success",
+    content: environment,
+  };
+
+  return result;
 }
