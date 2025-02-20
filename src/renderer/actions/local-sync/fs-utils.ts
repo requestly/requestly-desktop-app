@@ -4,6 +4,8 @@ import {
   APIEntity,
   Collection,
   Environment,
+  EnvironmentVariableType,
+  EnvironmentVariableValue,
   FileResource,
   FileSystemResult,
   FolderResource,
@@ -330,4 +332,27 @@ export async function parseFileToEnv(
   };
 
   return result;
+}
+
+export function parseToEnvironmentEntity(
+  variables: Record<string, EnvironmentVariableValue>
+) {
+  const newVariables: Record<
+    string,
+    Static<(typeof EnvironmentRecord)["variables"]>
+  > = {};
+  // eslint-disable-next-line
+  for (const key in variables) {
+    newVariables[key] = {
+      value: variables[key].localValue,
+      type:
+        variables[key].type === EnvironmentVariableType.Secret
+          ? EnvironmentVariableType.String
+          : variables[key].type,
+      id: variables[key].id,
+      isSecret: variables[key].type === EnvironmentVariableType.Secret,
+    };
+  }
+
+  return newVariables;
 }

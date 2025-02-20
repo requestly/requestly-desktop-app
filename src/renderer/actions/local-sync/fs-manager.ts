@@ -24,6 +24,7 @@ import {
   parseFileToApi,
   parseFileToEnv,
   parseFolderToCollection,
+  parseToEnvironmentEntity,
   sanitizeFsResourceList,
   writeContent,
 } from "./fs-utils";
@@ -33,6 +34,7 @@ import {
   APIEntity,
   Collection,
   Environment,
+  EnvironmentVariableValue,
   FileSystemResult,
   FsResource,
 } from "./types";
@@ -376,6 +378,55 @@ export class FsManager {
         return writeResult;
       }
       return parseFileToEnv(envFile);
+    } catch (e: any) {
+      return {
+        type: "error",
+        error: {
+          message: e.message || "An unexpected error has occured!",
+        },
+      };
+    }
+  }
+
+  async updateEnvironment(
+    id: string,
+    patch:
+      | { name: string }
+      | { variables: Record<string, EnvironmentVariableValue> }
+  ): Promise<FileSystemResult<Environment>> {
+    try {
+      // removeUndefinedFromRoot(patch);
+      const fileResource = this.createResource({
+        id,
+        type: "file",
+      });
+      const parsedRecordResult = await parseFile({
+        resource: fileResource,
+        validator: EnvironmentRecord,
+      });
+
+      if (parsedRecordResult.type === "error") {
+        return parsedRecordResult;
+      }
+      const { content } = parsedRecordResult;
+
+      const updatedRecord: Static<typeof EnvironmentRecord> = {
+        ...content,
+      };
+
+      if ("variables" in patch) {
+        updatedRecord.variables = parseToEnvironmentEntity(patch.variables);
+      }
+      if ("name" in patch) {
+        updatedRecord.name = patch.name;
+      }
+
+      const writeResult = await writeContent(fileResource, updatedRecord);
+      if (writeResult.type === "error") {
+        return writeResult;
+      }
+
+      return parseFileToEnv(fileResource);
     } catch (e: any) {
       return {
         type: "error",

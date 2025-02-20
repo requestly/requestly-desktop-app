@@ -52,7 +52,15 @@ export enum EnvironmentVariableType {
   String = "string",
   Number = "number",
   Boolean = "boolean",
+  Secret = "secret",
 }
+
+export type EnvironmentVariableValue = {
+  localValue?: VariableValueType;
+  syncValue?: VariableValueType;
+  type: EnvironmentVariableType;
+  id: number;
+};
 
 type Variable = Record<
   string,

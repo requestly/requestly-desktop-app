@@ -46,19 +46,14 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
       instance.getAllEnvironments.bind(instance)
     );
 
-    // this.exposeMethodOverIPC(
-    //   "createNonGlobalEnvironment",
-    //   instance.createNonGlobalEnvironment.bind(instance)
-    // );
-
-    // this.exposeMethodOverIPC(
-    //   "createGlobalEnvironment",
-    //   instance.createGlobalEnvironment.bind(instance)
-    // );
-
     this.exposeMethodOverIPC(
       "createEnvironment",
       instance.createEnvironment.bind(instance)
+    );
+
+    this.exposeMethodOverIPC(
+      "updateEnvironment",
+      instance.updateEnvironment.bind(instance)
     );
   }
 }
