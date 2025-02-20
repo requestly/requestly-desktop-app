@@ -33,6 +33,7 @@ import {
   EnvironmentRecord,
   Variables,
 } from "./schemas";
+import { Stats } from "node:fs";
 
 export async function deleteFsResource(
   resource: FsResource
@@ -59,12 +60,34 @@ export async function deleteFsResource(
   }
 }
 
+export async function getFsResourceStats(
+  resource: FsResource
+): Promise<FileSystemResult<Stats>> {
+  try {
+    const pathStats = await fsp.lstat(resource.path);
+    return {
+      type: "success",
+      content: pathStats,
+    };
+  } catch (e: any) {
+    return {
+      type: "error",
+      error: {
+        message: e.message || "An unexpected error has occured!",
+      },
+    };
+  }
+}
+
 export async function createFolder(
   resource: FolderResource
 ): Promise<FileSystemResult<{ resource: FolderResource }>> {
   try {
-    const pathStats = await fsp.lstat(resource.path);
-    if (!pathStats.isDirectory()) {
+    const statsResult = await getFsResourceStats(resource);
+    const doesFolderExist =
+      statsResult.type === "error" ? false : statsResult.content.isDirectory();
+
+    if (!doesFolderExist) {
       await fsp.mkdir(resource.path);
     }
     return {

@@ -22,6 +22,7 @@ import {
   copyRecursive,
   createFolder,
   deleteFsResource,
+  getFsResourceStats,
   getParentFoldePath,
   parseFile,
   parseFileResultToApi,
@@ -122,7 +123,7 @@ export class FsManager {
     return `${uuidv4()}.json`;
   }
 
-  private getEnvironmentsFolderResource() {
+  private getEnvironmentsFolderPath() {
     const envFolderPath = appendPath(
       this.rootPath,
       ENVIRONMENT_VARIABLES_FOLDER
@@ -577,13 +578,21 @@ export class FsManager {
     isGlobal: boolean
   ): Promise<FileSystemResult<Environment>> {
     try {
-      const envFolderPath = appendPath(
-        this.rootPath,
-        ENVIRONMENT_VARIABLES_FOLDER
+      const environmentFolderPath = this.getEnvironmentsFolderPath();
+      const environmentFolderResource = this.createResource({
+        id: getIdFromPath(environmentFolderPath),
+        type: "folder",
+      });
+      const folderCreationResult = await createFolder(
+        environmentFolderResource
       );
+      if (folderCreationResult.type === "error") {
+        return folderCreationResult;
+      }
+
       const envFile = this.createResource({
         id: appendPath(
-          envFolderPath,
+          environmentFolderPath,
           isGlobal ? GLOBAL_ENV_FILE : this.generateFileName()
         ),
         type: "file",
@@ -731,7 +740,7 @@ export class FsManager {
         variables: content.variables,
       };
       const path = appendPath(
-        this.getEnvironmentsFolderResource(),
+        this.getEnvironmentsFolderPath(),
         this.generateFileName()
       );
       const resource = this.createResource({
