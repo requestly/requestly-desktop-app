@@ -77,6 +77,26 @@ export async function createFolder(
   }
 }
 
+export async function rename<T extends FsResource>(
+  oldResource: T,
+  newResource: T
+): Promise<FileSystemResult<T>> {
+  try {
+    await fsp.rename(oldResource.path, newResource.path);
+    return {
+      type: "success",
+      content: newResource,
+    } as FileSystemResult<T>;
+  } catch (e: any) {
+    return {
+      type: "error",
+      error: {
+        message: e.message || "An unexpected error has occured!",
+      },
+    };
+  }
+}
+
 export function serializeContentForWriting(content: Record<any, any>) {
   return JSON.stringify(content, null, 2);
 }
