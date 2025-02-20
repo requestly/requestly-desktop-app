@@ -241,18 +241,23 @@ export async function parseFile<T extends TSchema>(params: {
   }
 }
 
-// This will give an empty string if parent is root
-export function getParentFoldePath(rootPath: string, fsResource: FsResource) {
+export function getParentFolderPath(fsResource: FsResource) {
   const { path } = fsResource;
   const name = getNameOfResource(fsResource);
   const normalizedName =
     fsResource.type === "folder" ? getNormalizedPath(name) : name;
   const [rawParent] = path.split(`/${normalizedName}`);
   const parent = getNormalizedPath(rawParent);
-  if (parent === rootPath) {
-    return "";
-  }
   return parent;
+}
+
+function getCollectionId(rootPath: string, fsResource: FsResource) {
+  const parentPath = getParentFolderPath(fsResource);
+  if (parentPath === rootPath) {
+    return getIdFromPath("");
+  }
+
+  return getIdFromPath(parentPath);
 }
 
 export async function parseFolderToCollection(
@@ -293,7 +298,7 @@ export async function parseFolderToCollection(
     type: "collection",
     id: getIdFromPath(folder.path),
     name: getNameOfResource(folder),
-    collectionId: getIdFromPath(getParentFoldePath(rootPath, folder)),
+    collectionId: getCollectionId(rootPath, folder),
     variables: collectionVariables,
   };
 
@@ -321,7 +326,7 @@ export function parseFileResultToApi(
   const { content: record } = parsedFileResult;
   const api: API = {
     type: "api",
-    collectionId: getIdFromPath(getParentFoldePath(rootPath, file)),
+    collectionId: getCollectionId(rootPath, file),
     id: getIdFromPath(file.path),
     request: record,
   };

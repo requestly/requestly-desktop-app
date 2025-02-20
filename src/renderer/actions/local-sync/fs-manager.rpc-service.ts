@@ -5,7 +5,7 @@ import { createWorkspaceFolder } from "./fs-utils";
 export class FsManagerRPCService extends RPCServiceOverIPC {
   static NAMESPACE = "local_sync";
 
-  // instance?: FsManager;
+  isBuilt = false;
 
   constructor() {
     super(FsManagerRPCService.NAMESPACE);
@@ -13,11 +13,18 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
   }
 
   init() {
+    console.log('main init');
     this.exposeMethodOverIPC("createWorkspaceFolder", createWorkspaceFolder);
     this.exposeMethodOverIPC("build", this.build.bind(this));
   }
 
   async build(rootPath: string) {
+    if (this.isBuilt) {
+      console.log('not building again');
+      return;
+    }
+    this.isBuilt = true;
+    console.log('build received');
     const instance = new FsManager(rootPath);
     this.exposeMethodOverIPC(
       "getAllRecords",
@@ -97,5 +104,7 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
       "duplicateEnvironment",
       instance.duplicateEnvironment.bind(instance)
     );
+
+    console.log('exposed everything');
   }
 }

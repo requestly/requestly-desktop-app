@@ -22,8 +22,7 @@ import {
   copyRecursive,
   createFolder,
   deleteFsResource,
-  getFsResourceStats,
-  getParentFoldePath,
+  getParentFolderPath,
   parseFile,
   parseFileResultToApi,
   parseFileToApi,
@@ -251,11 +250,7 @@ export class FsManager {
         path,
         type: "file",
       });
-      const writeResult = await writeContent(
-        resource,
-        content,
-        EnvironmentRecord
-      );
+      const writeResult = await writeContent(resource, content, ApiRecord);
       if (writeResult.type === "error") {
         return writeResult;
       }
@@ -436,16 +431,20 @@ export class FsManager {
     newName: string
   ): Promise<FileSystemResult<Collection>> {
     try {
+      console.log('rename 1', id);
       const folderResource = this.createResource({
         id,
         type: "folder",
       });
-      const parentPath = getParentFoldePath(this.rootPath, folderResource);
+      const parentPath = getParentFolderPath(folderResource);
+      console.log('rename 2', parentPath, newName);
 
       const newFolderResource = this.createResource({
         id: getIdFromPath(appendPath(parentPath, newName)),
         type: "folder",
       });
+
+      console.log('rename 3',newFolderResource);
 
       const renameResult = await rename(folderResource, newFolderResource);
       if (renameResult.type === "error") {

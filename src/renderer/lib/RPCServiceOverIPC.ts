@@ -29,7 +29,7 @@ export class RPCServiceOverIPC {
   ) {
     // const channelName = this.generateChannelNameForMethod(method);
     const channelName = `${this.RPC_CHANNEL_PREFIX}${exposedMethodName}`;
-    console.log("DBG-1: exposing channel", channelName);
+    console.log("DBG-1: exposing channel", channelName, Date.now());
     ipcRenderer.on(channelName, async (_event, args) => {
       console.log(
         "DBG-1: received event on channel",
