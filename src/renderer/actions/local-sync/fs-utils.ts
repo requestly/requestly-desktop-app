@@ -97,6 +97,28 @@ export async function rename<T extends FsResource>(
   }
 }
 
+export async function copyRecursive<T extends FsResource>(
+  sourceResource: T,
+  destinationResource: T
+): Promise<FileSystemResult<T>> {
+  try {
+    await fsp.cp(sourceResource.path, destinationResource.path, {
+      recursive: true,
+    });
+    return {
+      type: "success",
+      content: destinationResource,
+    } as FileSystemResult<T>;
+  } catch (e: any) {
+    return {
+      type: "error",
+      error: {
+        message: e.message || "An unexpected error has occured!",
+      },
+    };
+  }
+}
+
 export function serializeContentForWriting(content: Record<any, any>) {
   return JSON.stringify(content, null, 2);
 }

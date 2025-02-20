@@ -19,6 +19,7 @@ import {
   GLOBAL_ENV_FILE,
 } from "./constants";
 import {
+  copyRecursive,
   createFolder,
   deleteFsResource,
   getParentFoldePath,
@@ -467,6 +468,40 @@ export class FsManager {
       });
 
       const renameResult = await rename(folderResource, newFolderResource);
+      if (renameResult.type === "error") {
+        return renameResult;
+      }
+
+      return parseFolderToCollection(this.rootPath, renameResult.content);
+    } catch (e: any) {
+      return {
+        type: "error",
+        error: {
+          message: e.message || "An unexpected error has occured!",
+        },
+      };
+    }
+  }
+
+  async duplicateCollection(
+    id: string,
+    newId: string
+  ): Promise<FileSystemResult<Collection>> {
+    try {
+      const sourceFolderResource = this.createResource({
+        id,
+        type: "folder",
+      });
+
+      const destinationFolderResource = this.createResource({
+        id: newId,
+        type: "folder",
+      });
+
+      const renameResult = await copyRecursive(
+        sourceFolderResource,
+        destinationFolderResource
+      );
       if (renameResult.type === "error") {
         return renameResult;
       }
