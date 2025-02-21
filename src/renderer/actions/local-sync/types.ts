@@ -1,3 +1,5 @@
+import { EnvironmentVariableType } from "./schemas";
+
 export type FileSystemError = { message: string };
 export type ContentfulSuccess<T> = T extends void
   ? { type: "success" }
@@ -47,13 +49,6 @@ export type API = {
 };
 
 type VariableValueType = string | number | boolean;
-
-export enum EnvironmentVariableType {
-  String = "string",
-  Number = "number",
-  Boolean = "boolean",
-  Secret = "secret",
-}
 
 export type EnvironmentVariableValue = {
   localValue?: VariableValueType;

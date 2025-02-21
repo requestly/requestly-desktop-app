@@ -1,9 +1,15 @@
 import { Type } from "@sinclair/typebox";
-import { EnvironmentVariableType } from "./types";
 
 export const Config = Type.Object({
   version: Type.String(),
 });
+
+export enum EnvironmentVariableType {
+  String = "string",
+  Number = "number",
+  Boolean = "boolean",
+  Secret = "secret",
+}
 
 export enum ApiMethods {
   GET = "GET",
@@ -14,10 +20,55 @@ export enum ApiMethods {
   HEAD = "HEAD",
   OPTIONS = "OPTIONS",
 }
+
+type RequestBodyContainer = {
+  text?: string;
+  form?: KeyValuePair[];
+};
+
+enum RequestContentType {
+  RAW = "text/plain",
+  JSON = "application/json",
+  FORM = "application/x-www-form-urlencoded",
+}
+
+interface KeyValuePair {
+  id: number;
+  key: string;
+  value: string;
+  isEnabled: boolean;
+  type?: string;
+}
+
 export const ApiRecord = Type.Object({
   name: Type.String(),
   url: Type.String(),
   method: Type.Enum(ApiMethods),
+  queryParams: Type.Array(
+    Type.Object({
+      id: Type.Number(),
+      key: Type.String(),
+      value: Type.String(),
+      isEnabled: Type.Boolean(),
+      type: Type.Optional(Type.String()),
+    })
+  ),
+  headers: Type.Array(
+    Type.Object({
+      id: Type.Number(),
+      key: Type.String(),
+      value: Type.String(),
+      isEnabled: Type.Boolean(),
+      type: Type.Optional(Type.String()),
+    })
+  ),
+  body: Type.Optional(Type.Any()),
+  bodyContainer: Type.Optional(Type.Any()),
+  contentType: Type.Optional(Type.Enum(RequestContentType)),
+  scripts: Type.Object({
+    preRequest: Type.String(),
+    postResponse: Type.String(),
+  }),
 });
 
 export const Variables = Type.Record(

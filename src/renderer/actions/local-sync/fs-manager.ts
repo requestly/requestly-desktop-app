@@ -431,20 +431,20 @@ export class FsManager {
     newName: string
   ): Promise<FileSystemResult<Collection>> {
     try {
-      console.log('rename 1', id);
+      console.log("rename 1", id);
       const folderResource = this.createResource({
         id,
         type: "folder",
       });
       const parentPath = getParentFolderPath(folderResource);
-      console.log('rename 2', parentPath, newName);
+      console.log("rename 2", parentPath, newName);
 
       const newFolderResource = this.createResource({
         id: getIdFromPath(appendPath(parentPath, newName)),
         type: "folder",
       });
 
-      console.log('rename 3',newFolderResource);
+      console.log("rename 3", newFolderResource);
 
       const renameResult = await rename(folderResource, newFolderResource);
       if (renameResult.type === "error") {

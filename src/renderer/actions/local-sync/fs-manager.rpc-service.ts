@@ -13,18 +13,18 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
   }
 
   init() {
-    console.log('main init');
+    console.log("main init");
     this.exposeMethodOverIPC("createWorkspaceFolder", createWorkspaceFolder);
     this.exposeMethodOverIPC("build", this.build.bind(this));
   }
 
   async build(rootPath: string) {
     if (this.isBuilt) {
-      console.log('not building again');
+      console.log("not building again");
       return;
     }
     this.isBuilt = true;
-    console.log('build received');
+    console.log("build received");
     const instance = new FsManager(rootPath);
     this.exposeMethodOverIPC(
       "getAllRecords",
@@ -105,6 +105,6 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
       instance.duplicateEnvironment.bind(instance)
     );
 
-    console.log('exposed everything');
+    console.log("exposed everything");
   }
 }

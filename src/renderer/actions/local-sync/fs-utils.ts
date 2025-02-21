@@ -4,7 +4,6 @@ import {
   APIEntity,
   Collection,
   Environment,
-  EnvironmentVariableType,
   EnvironmentVariableValue,
   FileResource,
   FileSystemResult,
@@ -32,6 +31,7 @@ import {
   Config,
   EnvironmentRecord,
   Variables,
+  EnvironmentVariableType,
 } from "./schemas";
 import { Stats } from "node:fs";
 
