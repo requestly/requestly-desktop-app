@@ -44,31 +44,37 @@ export const ApiRecord = Type.Object({
   name: Type.String(),
   url: Type.String(),
   method: Type.Enum(ApiMethods),
-  queryParams: Type.Array(
-    Type.Object({
-      id: Type.Number(),
-      key: Type.String(),
-      value: Type.String(),
-      isEnabled: Type.Boolean(),
-      type: Type.Optional(Type.String()),
-    })
+  queryParams: Type.Optional(
+    Type.Array(
+      Type.Object({
+        id: Type.Number(),
+        key: Type.String(),
+        value: Type.String(),
+        isEnabled: Type.Boolean(),
+        type: Type.Optional(Type.String()),
+      })
+    )
   ),
-  headers: Type.Array(
-    Type.Object({
-      id: Type.Number(),
-      key: Type.String(),
-      value: Type.String(),
-      isEnabled: Type.Boolean(),
-      type: Type.Optional(Type.String()),
-    })
+  headers: Type.Optional(
+    Type.Array(
+      Type.Object({
+        id: Type.Number(),
+        key: Type.String(),
+        value: Type.String(),
+        isEnabled: Type.Boolean(),
+        type: Type.Optional(Type.String()),
+      })
+    )
   ),
   body: Type.Optional(Type.Any()),
   bodyContainer: Type.Optional(Type.Any()),
   contentType: Type.Optional(Type.Enum(RequestContentType)),
-  scripts: Type.Object({
-    preRequest: Type.String(),
-    postResponse: Type.String(),
-  }),
+  scripts: Type.Optional(
+    Type.Object({
+      preRequest: Type.String(),
+      postResponse: Type.String(),
+    })
+  ),
 });
 
 export const Variables = Type.Record(
