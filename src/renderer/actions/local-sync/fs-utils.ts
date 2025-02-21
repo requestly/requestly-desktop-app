@@ -1,4 +1,5 @@
 import fsp from "node:fs/promises";
+import { v4 as uuidv4 } from "uuid";
 import {
   API,
   APIEntity,
@@ -23,6 +24,8 @@ import {
   CONFIG_FILE,
   DS_STORE_FILE,
   ENVIRONMENT_VARIABLES_FOLDER,
+  GLOBAL_CONFIG_FILE_NAME,
+  GLOBAL_CONFIG_FOLDER_PATH,
 } from "./constants";
 import { Static, TSchema } from "@sinclair/typebox";
 import {
@@ -32,6 +35,7 @@ import {
   EnvironmentRecord,
   Variables,
   EnvironmentVariableType,
+  GlobalConfig,
 } from "./schemas";
 import { Stats } from "node:fs";
 
@@ -79,6 +83,20 @@ export async function getFsResourceStats(
   }
 }
 
+async function getIfFolderExists(resource: FolderResource) {
+  const statsResult = await getFsResourceStats(resource);
+  const doesFolderExist =
+    statsResult.type === "error" ? false : statsResult.content.isDirectory();
+  return doesFolderExist;
+}
+
+async function getIfFileExists(resource: FileResource) {
+  const statsResult = await getFsResourceStats(resource);
+  const doesFileExist =
+    statsResult.type === "error" ? false : statsResult.content.isFile();
+  return doesFileExist;
+}
+
 export async function createFolder(
   resource: FolderResource
 ): Promise<FileSystemResult<{ resource: FolderResource }>> {
@@ -88,7 +106,7 @@ export async function createFolder(
       statsResult.type === "error" ? false : statsResult.content.isDirectory();
 
     if (!doesFolderExist) {
-      await fsp.mkdir(resource.path);
+      await fsp.mkdir(resource.path, { recursive: true });
     }
     return {
       type: "success",
@@ -168,6 +186,7 @@ export async function writeContent<T extends TSchema>(
         },
       };
     }
+    console.log('writing at', resource.path);
     await fsp.writeFile(resource.path, serializedContent);
     return {
       type: "success",
@@ -183,34 +202,6 @@ export async function writeContent<T extends TSchema>(
       },
     };
   }
-}
-
-export async function createWorkspaceFolder(
-  path: string
-): Promise<FileSystemResult<void>> {
-  const folderCreationResult = await createFolder(
-    createFsResource({
-      rootPath: path,
-      path,
-      type: "folder",
-    })
-  );
-
-  if (folderCreationResult.type === "error") {
-    return folderCreationResult;
-  }
-  const configFileCreationResult = await writeContent(
-    createFsResource({
-      rootPath: path,
-      path: appendPath(path, "requestly.json"),
-      type: "file",
-    }),
-    {
-      version: "0.0.1",
-    },
-    Config
-  );
-  return configFileCreationResult;
 }
 
 export async function parseFile<T extends TSchema>(params: {
@@ -240,6 +231,160 @@ export async function parseFile<T extends TSchema>(params: {
     };
   }
 }
+
+export async function createGlobalConfigFolder(): Promise<
+  FileSystemResult<{ resource: FolderResource }>
+> {
+  try {
+    return await createFolder(
+      createFsResource({
+        rootPath: GLOBAL_CONFIG_FOLDER_PATH,
+        path: GLOBAL_CONFIG_FOLDER_PATH,
+        type: "folder",
+      })
+    );
+  } catch (e: any) {
+    return {
+      type: "error",
+      error: {
+        message: e.message || "An unexpected error has occured!",
+      },
+    };
+  }
+}
+
+export async function addWorkspaceToGlobalConfig(params: {
+  name: string;
+  path: string;
+}): Promise<FileSystemResult<{ name: string; id: string; path: string }>> {
+  const { name, path } = params;
+  const globalConfigFolderResource = createFsResource({
+    rootPath: GLOBAL_CONFIG_FOLDER_PATH,
+    path: GLOBAL_CONFIG_FOLDER_PATH,
+    type: "folder",
+  });
+  const globalConfigFolderExists = await getIfFolderExists(
+    globalConfigFolderResource
+  );
+  if (!globalConfigFolderExists) {
+    const result = await createGlobalConfigFolder();
+    if (result.type === "error") {
+      return result;
+    }
+  }
+
+  const globalConfigFileResource = createFsResource({
+    rootPath: GLOBAL_CONFIG_FOLDER_PATH,
+    path: appendPath(GLOBAL_CONFIG_FOLDER_PATH, GLOBAL_CONFIG_FILE_NAME),
+    type: "file",
+  });
+  const configRecord: Static<typeof GlobalConfig>[0] = {
+    id: uuidv4(),
+    name,
+    path,
+  };
+  const globalConfigFileExists = await getIfFileExists(
+    globalConfigFileResource
+  );
+  if (!globalConfigFileExists) {
+    const config: Static<typeof GlobalConfig> = [configRecord];
+    const result = await writeContent(
+      globalConfigFileResource,
+      config,
+      GlobalConfig
+    );
+    if (result.type === "error") {
+      return result;
+    }
+    return {
+      type: "success",
+      content: configRecord,
+    };
+  }
+
+  const readResult = await parseFile({
+    resource: globalConfigFileResource,
+    validator: GlobalConfig,
+  });
+
+  if (readResult.type === "error") {
+    return readResult;
+  }
+
+  const updatedConfig: Static<typeof GlobalConfig> = [
+    ...readResult.content,
+    configRecord,
+  ];
+
+  const writeResult = await writeContent(
+    globalConfigFileResource,
+    updatedConfig,
+    GlobalConfig
+  );
+  if (writeResult.type === "error") {
+    return writeResult;
+  }
+
+  return {
+    type: "success",
+    content: configRecord,
+  };
+}
+
+export async function createWorkspaceFolder(
+  name: string,
+  path: string
+): Promise<FileSystemResult<Static<typeof GlobalConfig>[0]>> {
+  const folderCreationResult = await createFolder(
+    createFsResource({
+      rootPath: path,
+      path,
+      type: "folder",
+    })
+  );
+
+  if (folderCreationResult.type === "error") {
+    return folderCreationResult;
+  }
+  const configFileCreationResult = await writeContent(
+    createFsResource({
+      rootPath: path,
+      path: appendPath(path, "requestly.json"),
+      type: "file",
+    }),
+    {
+      version: "0.0.1",
+    },
+    Config
+  );
+  if (configFileCreationResult.type === "error") {
+    return configFileCreationResult;
+  }
+
+  return addWorkspaceToGlobalConfig({
+    name,
+    path,
+  });
+}
+
+export async function getAllWorkspaces(): Promise<
+  FileSystemResult<Static<typeof GlobalConfig>>
+> {
+  const globalConfigFileResource = createFsResource({
+    rootPath: GLOBAL_CONFIG_FOLDER_PATH,
+    path: appendPath(GLOBAL_CONFIG_FOLDER_PATH, GLOBAL_CONFIG_FILE_NAME),
+    type: "file",
+  });
+
+  const readResult = await parseFile({
+    resource: globalConfigFileResource,
+    validator: GlobalConfig,
+  });
+
+  return readResult;
+}
+
+
 
 export function getParentFolderPath(fsResource: FsResource) {
   const { path } = fsResource;

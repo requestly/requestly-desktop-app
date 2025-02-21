@@ -85,3 +85,11 @@ export const EnvironmentRecord = Type.Object({
   name: Type.String(),
   variables: Variables,
 });
+
+export const GlobalConfig = Type.Array(
+  Type.Object({
+    id: Type.String(),
+    name: Type.String(),
+    path: Type.String(),
+  })
+);

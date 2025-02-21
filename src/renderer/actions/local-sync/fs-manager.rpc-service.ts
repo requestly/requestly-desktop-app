@@ -1,6 +1,6 @@
 import { RPCServiceOverIPC } from "renderer/lib/RPCServiceOverIPC";
 import { FsManager } from "./fs-manager";
-import { createWorkspaceFolder } from "./fs-utils";
+import { createWorkspaceFolder, getAllWorkspaces } from "./fs-utils";
 
 export class FsManagerRPCService extends RPCServiceOverIPC {
   static NAMESPACE = "local_sync";
@@ -15,6 +15,7 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
   init() {
     console.log("main init");
     this.exposeMethodOverIPC("createWorkspaceFolder", createWorkspaceFolder);
+    this.exposeMethodOverIPC("getAllWorkspaces", getAllWorkspaces);
     this.exposeMethodOverIPC("build", this.build.bind(this));
   }
 
