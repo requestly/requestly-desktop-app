@@ -1,3 +1,4 @@
+
 const initGlobalNamespace = () => {
   global.rq = global.rq || {};
 };
@@ -14,7 +15,7 @@ import storageService from "lib/storage";
 import "./types";
 import { LocalFileSync } from "./actions/local-files";
 import { TestService } from "./actions/local-files/sample/service";
-import { FsManagerRPCService } from "./actions/local-sync/fs-manager.rpc-service";
+import { FsManagerBuilderRPCService } from "./actions/local-sync/fs-manager-builder.rpc-service";
 
 // initPrimaryStorageCache();
 initRulesCache();
@@ -29,5 +30,5 @@ initAppManager();
 
 // const TestServiceServer = new TestService();
 
-// eslint-disable-next-line no-unused-vars
-new FsManagerRPCService();
+// eslint-disable-next-line no-unused-vars, no-new
+new FsManagerBuilderRPCService();

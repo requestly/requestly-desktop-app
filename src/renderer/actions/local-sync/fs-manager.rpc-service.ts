@@ -1,111 +1,96 @@
 import { RPCServiceOverIPC } from "renderer/lib/RPCServiceOverIPC";
 import { FsManager } from "./fs-manager";
-import { createWorkspaceFolder, getAllWorkspaces } from "./fs-utils";
 
 export class FsManagerRPCService extends RPCServiceOverIPC {
-  static NAMESPACE = "local_sync";
+  private fsManager: FsManager;
 
-  isBuilt = false;
-
-  constructor() {
-    super(FsManagerRPCService.NAMESPACE);
+  constructor(readonly rootPath: string) {
+    super(`local_sync: ${rootPath}`);
+    this.fsManager = new FsManager(rootPath);
     this.init();
   }
 
   init() {
-    console.log("main init");
-    this.exposeMethodOverIPC("createWorkspaceFolder", createWorkspaceFolder);
-    this.exposeMethodOverIPC("getAllWorkspaces", getAllWorkspaces);
-    this.exposeMethodOverIPC("build", this.build.bind(this));
-  }
-
-  async build(rootPath: string) {
-    if (this.isBuilt) {
-      console.log("not building again");
-      return;
-    }
-    this.isBuilt = true;
-    console.log("build received");
-    const instance = new FsManager(rootPath);
     this.exposeMethodOverIPC(
       "getAllRecords",
-      instance.getAllRecords.bind(instance)
+      this.fsManager.getAllRecords.bind(this.fsManager)
     );
-    this.exposeMethodOverIPC("getRecord", instance.getRecord.bind(instance));
+    this.exposeMethodOverIPC(
+      "getRecord",
+      this.fsManager.getRecord.bind(this.fsManager)
+    );
     this.exposeMethodOverIPC(
       "createRecord",
-      instance.createRecord.bind(instance)
+      this.fsManager.createRecord.bind(this.fsManager)
     );
     this.exposeMethodOverIPC(
       "createRecordWithId",
-      instance.createRecordWithId.bind(instance)
+      this.fsManager.createRecordWithId.bind(this.fsManager)
     );
     this.exposeMethodOverIPC(
       "updateRecord",
-      instance.updateRecord.bind(instance)
+      this.fsManager.updateRecord.bind(this.fsManager)
     );
     this.exposeMethodOverIPC(
       "deleteRecord",
-      instance.deleteRecord.bind(instance)
+      this.fsManager.deleteRecord.bind(this.fsManager)
     );
     this.exposeMethodOverIPC(
       "deleteRecords",
-      instance.deleteRecords.bind(instance)
+      this.fsManager.deleteRecords.bind(this.fsManager)
     );
 
     this.exposeMethodOverIPC(
       "getCollection",
-      instance.getCollection.bind(instance)
+      this.fsManager.getCollection.bind(this.fsManager)
     );
     this.exposeMethodOverIPC(
       "createCollection",
-      instance.createCollection.bind(instance)
+      this.fsManager.createCollection.bind(this.fsManager)
     );
     this.exposeMethodOverIPC(
       "createCollectionWithId",
-      instance.createCollectionWithId.bind(instance)
+      this.fsManager.createCollectionWithId.bind(this.fsManager)
     );
     this.exposeMethodOverIPC(
       "deleteCollection",
-      instance.deleteCollection.bind(instance)
+      this.fsManager.deleteCollection.bind(this.fsManager)
     );
     this.exposeMethodOverIPC(
       "deleteCollections",
-      instance.deleteCollections.bind(instance)
+      this.fsManager.deleteCollections.bind(this.fsManager)
     );
     this.exposeMethodOverIPC(
       "renameCollection",
-      instance.renameCollection.bind(instance)
+      this.fsManager.renameCollection.bind(this.fsManager)
     );
     this.exposeMethodOverIPC(
       "moveCollection",
-      instance.moveCollection.bind(instance)
+      this.fsManager.moveCollection.bind(this.fsManager)
     );
     this.exposeMethodOverIPC(
       "copyCollection",
-      instance.copyCollection.bind(instance)
+      this.fsManager.copyCollection.bind(this.fsManager)
     );
 
     this.exposeMethodOverIPC(
       "getAllEnvironments",
-      instance.getAllEnvironments.bind(instance)
+      this.fsManager.getAllEnvironments.bind(this.fsManager)
     );
 
     this.exposeMethodOverIPC(
       "createEnvironment",
-      instance.createEnvironment.bind(instance)
+      this.fsManager.createEnvironment.bind(this.fsManager)
     );
 
     this.exposeMethodOverIPC(
       "updateEnvironment",
-      instance.updateEnvironment.bind(instance)
+      this.fsManager.updateEnvironment.bind(this.fsManager)
     );
 
     this.exposeMethodOverIPC(
       "duplicateEnvironment",
-      instance.duplicateEnvironment.bind(instance)
+      this.fsManager.duplicateEnvironment.bind(this.fsManager)
     );
-
-    console.log("exposed everything");
   }
 }
