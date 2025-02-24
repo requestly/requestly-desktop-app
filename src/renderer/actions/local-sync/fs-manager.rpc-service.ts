@@ -7,7 +7,6 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
   constructor(readonly rootPath: string) {
     super(`local_sync: ${rootPath}`);
     this.fsManager = new FsManager(rootPath);
-    this.init();
   }
 
   init() {
