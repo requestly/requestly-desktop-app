@@ -85,14 +85,14 @@ export async function getFsResourceStats(
   }
 }
 
-async function getIfFolderExists(resource: FolderResource) {
+export async function getIfFolderExists(resource: FolderResource) {
   const statsResult = await getFsResourceStats(resource);
   const doesFolderExist =
     statsResult.type === "error" ? false : statsResult.content.isDirectory();
   return doesFolderExist;
 }
 
-async function getIfFileExists(resource: FileResource) {
+export async function getIfFileExists(resource: FileResource) {
   const statsResult = await getFsResourceStats(resource);
   const doesFileExist =
     statsResult.type === "error" ? false : statsResult.content.isFile();

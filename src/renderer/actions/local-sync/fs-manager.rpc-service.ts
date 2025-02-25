@@ -83,6 +83,10 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
       "copyCollection",
       this.fsManager.copyCollection.bind(this.fsManager)
     );
+    this.exposeMethodOverIPC(
+      "setCollectionVariables",
+      this.fsManager.setCollectionVariables.bind(this.fsManager)
+    );
 
     this.exposeMethodOverIPC(
       "getAllEnvironments",

@@ -10,10 +10,12 @@ import {
   getNameOfResource,
   getNormalizedPath,
   mapSuccessfulFsResult,
+  mapSuccessWrite,
   parseContent,
   removeUndefinedFromRoot,
 } from "./common-utils";
 import {
+  COLLECTION_VARIABLES_FILE,
   CONFIG_FILE,
   ENVIRONMENT_VARIABLES_FOLDER,
   GLOBAL_ENV_FILE,
@@ -22,6 +24,7 @@ import {
   copyRecursive,
   createFolder,
   deleteFsResource,
+  getIfFileExists,
   getParentFolderPath,
   parseFile,
   parseFileResultToApi,
@@ -33,7 +36,7 @@ import {
   sanitizeFsResourceList,
   writeContent,
 } from "./fs-utils";
-import { ApiRecord, Config, EnvironmentRecord } from "./schemas";
+import { ApiRecord, Config, EnvironmentRecord, Variables } from "./schemas";
 import {
   API,
   APIEntity,
@@ -611,6 +614,47 @@ export class FsManager {
       }
 
       return parseFolderToCollection(this.rootPath, renameResult.content);
+    } catch (e: any) {
+      return {
+        type: "error",
+        error: {
+          message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
+        },
+      };
+    }
+  }
+
+  async setCollectionVariables(
+    id: string,
+    variables: Record<string, any>
+  ): Promise<FileSystemResult<Collection>> {
+    try {
+      const folder = this.createResource({
+        id,
+        type: "folder",
+      });
+      const varsPath = appendPath(folder.path, COLLECTION_VARIABLES_FILE);
+      const file = this.createResource({
+        id: getIdFromPath(varsPath),
+        type: "file",
+      });
+
+      if (!Object.keys(variables).length) {
+        const deleteResult = await deleteFsResource(file);
+        if (deleteResult.type === "error") {
+          return deleteResult;
+        }
+
+        return parseFolderToCollection(this.rootPath, folder);
+      }
+
+      const writeResult = await writeContent(file, variables, Variables);
+      if (writeResult.type === "error") {
+        return writeResult;
+      }
+
+      return parseFolderToCollection(this.rootPath, folder);
     } catch (e: any) {
       return {
         type: "error",
