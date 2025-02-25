@@ -349,7 +349,7 @@ export class FsManager {
         path,
         type: "folder",
       });
-      const createResult = await createFolder(resource);
+      const createResult = await createFolder(resource, true);
       if (createResult.type === "error") {
         return createResult;
       }

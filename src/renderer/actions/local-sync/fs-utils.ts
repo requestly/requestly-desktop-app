@@ -100,7 +100,8 @@ async function getIfFileExists(resource: FileResource) {
 }
 
 export async function createFolder(
-  resource: FolderResource
+  resource: FolderResource,
+  errorIfDoesNotExist = false
 ): Promise<FileSystemResult<{ resource: FolderResource }>> {
   try {
     const statsResult = await getFsResourceStats(resource);
@@ -109,6 +110,14 @@ export async function createFolder(
 
     if (!doesFolderExist) {
       await fsp.mkdir(resource.path, { recursive: true });
+    } else if (errorIfDoesNotExist) {
+      return {
+        type: "error",
+        error: {
+          message: "Folder already exists!",
+          path: resource.path,
+        },
+      };
     }
     return {
       type: "success",
