@@ -38,6 +38,14 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
       "deleteRecords",
       this.fsManager.deleteRecords.bind(this.fsManager)
     );
+    this.exposeMethodOverIPC(
+      "moveRecord",
+      this.fsManager.moveRecord.bind(this.fsManager)
+    );
+    this.exposeMethodOverIPC(
+      "moveRecords",
+      this.fsManager.moveRecords.bind(this.fsManager)
+    );
 
     this.exposeMethodOverIPC(
       "getCollection",
@@ -66,6 +74,10 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
     this.exposeMethodOverIPC(
       "moveCollection",
       this.fsManager.moveCollection.bind(this.fsManager)
+    );
+    this.exposeMethodOverIPC(
+      "moveCollections",
+      this.fsManager.moveCollections.bind(this.fsManager)
     );
     this.exposeMethodOverIPC(
       "copyCollection",

@@ -1,6 +1,6 @@
 import { EnvironmentVariableType } from "./schemas";
 
-export type FileSystemError = { message: string };
+export type FileSystemError = { message: string; path: string };
 export type ContentfulSuccess<T> = T extends void
   ? { type: "success" }
   : { type: "success"; content: T };
