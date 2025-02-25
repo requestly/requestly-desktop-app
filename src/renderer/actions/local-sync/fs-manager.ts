@@ -442,7 +442,8 @@ export class FsManager {
         return {
           type: "error",
           error: {
-            message: "Collection name shoudl not contain special characters.",
+            message: "Collection name should not contain special characters.",
+            path: id,
           },
         };
       }
