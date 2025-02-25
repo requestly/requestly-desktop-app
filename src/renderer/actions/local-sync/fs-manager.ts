@@ -503,6 +503,80 @@ export class FsManager {
     }
   }
 
+  async moveCollections(
+    ids: string[],
+    newParentId: string
+  ): Promise<FileSystemResult<Collection[]>> {
+    const movedCollections: Collection[] = [];
+    // eslint-disable-next-line no-restricted-syntax
+    for (const id of ids) {
+      const result = await this.moveCollection(id, newParentId);
+      if (result.type === "error") {
+        return result;
+      }
+      movedCollections.push(result.content);
+    }
+
+    return {
+      type: "success",
+      content: movedCollections,
+    };
+  }
+
+  async moveRecord(
+    id: string,
+    newParentId: string
+  ): Promise<FileSystemResult<API>> {
+    try {
+      const parentPath = newParentId.length ? newParentId : this.rootPath;
+      const fileResource = this.createResource({
+        id,
+        type: "file",
+      });
+      const resourceName = getNameOfResource(fileResource);
+
+      const newFileResource = this.createResource({
+        id: getIdFromPath(appendPath(parentPath, resourceName)),
+        type: "file",
+      });
+
+      const renameResult = await rename(fileResource, newFileResource);
+      if (renameResult.type === "error") {
+        return renameResult;
+      }
+
+      return parseFileToApi(this.rootPath, renameResult.content);
+    } catch (e: any) {
+      return {
+        type: "error",
+        error: {
+          message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
+        },
+      };
+    }
+  }
+
+  async moveRecords(
+    ids: string[],
+    newParentId: string
+  ): Promise<FileSystemResult<API[]>> {
+    const movedRecords: API[] = [];
+    // eslint-disable-next-line no-restricted-syntax
+    for (const id of ids) {
+      const result = await this.moveRecord(id, newParentId);
+      if (result.type === "error") {
+        return result;
+      }
+      movedRecords.push(result.content);
+    }
+
+    return {
+      type: "success",
+      content: movedRecords,
+    };
+  }
+
   async copyCollection(
     id: string,
     newId: string
