@@ -431,6 +431,15 @@ export class FsManager {
     newName: string
   ): Promise<FileSystemResult<Collection>> {
     try {
+      const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/g;
+      if (specialCharRegex.test(newName)) {
+        return {
+          type: "error",
+          error: {
+            message: "Collection name shoudl not contain special characters.",
+          },
+        };
+      }
       console.log("rename 1", id);
       const folderResource = this.createResource({
         id,
