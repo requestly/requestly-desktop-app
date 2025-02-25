@@ -261,6 +261,7 @@ export class FsManager {
         type: "error",
         error: {
           message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
         },
       };
     }
@@ -287,6 +288,7 @@ export class FsManager {
         type: "error",
         error: {
           message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
         },
       };
     }
@@ -312,6 +314,7 @@ export class FsManager {
         type: "error",
         error: {
           message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
         },
       };
     }
@@ -357,6 +360,7 @@ export class FsManager {
         type: "error",
         error: {
           message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
         },
       };
     }
@@ -382,6 +386,7 @@ export class FsManager {
         type: "error",
         error: {
           message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
         },
       };
     }
@@ -407,6 +412,7 @@ export class FsManager {
         type: "error",
         error: {
           message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
         },
       };
     }
@@ -457,6 +463,7 @@ export class FsManager {
         type: "error",
         error: {
           message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
         },
       };
     }
@@ -490,6 +497,7 @@ export class FsManager {
         type: "error",
         error: {
           message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
         },
       };
     }
@@ -524,6 +532,7 @@ export class FsManager {
         type: "error",
         error: {
           message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
         },
       };
     }
@@ -567,6 +576,7 @@ export class FsManager {
         type: "error",
         error: {
           message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
         },
       };
     }
@@ -615,6 +625,7 @@ export class FsManager {
         type: "error",
         error: {
           message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
         },
       };
     }
@@ -668,6 +679,7 @@ export class FsManager {
         type: "error",
         error: {
           message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
         },
       };
     }
@@ -702,6 +714,7 @@ export class FsManager {
         type: "error",
         error: {
           message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
         },
       };
     }
@@ -720,6 +733,7 @@ export class FsManager {
           type: "error",
           error: {
             message: "Global environment cannnot be copied!",
+            path: fileResource.path,
           },
         };
       }
@@ -761,6 +775,7 @@ export class FsManager {
         type: "error",
         error: {
           message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
         },
       };
     }

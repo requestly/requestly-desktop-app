@@ -59,6 +59,7 @@ export async function deleteFsResource(
       type: "error",
       error: {
         message: e.message || "An unexpected error has occured!",
+        path: resource.path,
       },
     };
   }
@@ -78,6 +79,7 @@ export async function getFsResourceStats(
       type: "error",
       error: {
         message: e.message || "An unexpected error has occured!",
+        path: resource.path,
       },
     };
   }
@@ -119,6 +121,7 @@ export async function createFolder(
       type: "error",
       error: {
         message: e.message || "An unexpected error has occured!",
+        path: resource.path,
       },
     };
   }
@@ -139,6 +142,7 @@ export async function rename<T extends FsResource>(
       type: "error",
       error: {
         message: e.message || "An unexpected error has occured!",
+        path: oldResource.path,
       },
     };
   }
@@ -161,6 +165,7 @@ export async function copyRecursive<T extends FsResource>(
       type: "error",
       error: {
         message: e.message || "An unexpected error has occured!",
+        path: sourceResource.path,
       },
     };
   }
@@ -183,6 +188,7 @@ export async function writeContent<T extends TSchema>(
         type: "error",
         error: {
           message: parsedContentResult.error.message,
+          path: resource.path,
         },
       };
     }
@@ -199,6 +205,7 @@ export async function writeContent<T extends TSchema>(
       type: "error",
       error: {
         message: e.message || "An unexpected error has occured!",
+        path: resource.path,
       },
     };
   }
@@ -217,6 +224,7 @@ export async function parseFile<T extends TSchema>(params: {
         type: "error",
         error: {
           message: parsedContentResult.error.message,
+          path: resource.path,
         },
       };
     }
@@ -227,6 +235,7 @@ export async function parseFile<T extends TSchema>(params: {
       type: "error",
       error: {
         message: e.message || "An unexpected error has occured!",
+        path: resource.path,
       },
     };
   }
@@ -248,6 +257,7 @@ export async function createGlobalConfigFolder(): Promise<
       type: "error",
       error: {
         message: e.message || "An unexpected error has occured!",
+        path: GLOBAL_CONFIG_FOLDER_PATH,
       },
     };
   }
