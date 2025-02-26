@@ -596,7 +596,7 @@ export function parseToEnvironmentEntity(
   // eslint-disable-next-line
   for (const key in variables) {
     newVariables[key] = {
-      value: variables[key].localValue,
+      value: variables[key].syncValue,
       type:
         variables[key].type === EnvironmentVariableType.Secret
           ? EnvironmentVariableType.String
