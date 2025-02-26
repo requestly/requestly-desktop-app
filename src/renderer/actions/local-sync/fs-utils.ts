@@ -39,32 +39,6 @@ import {
 } from "./schemas";
 import { Stats } from "node:fs";
 
-export async function deleteFsResource(
-  resource: FsResource
-): Promise<FileSystemResult<{ resource: FsResource }>> {
-  try {
-    if (resource.type === "file") {
-      await fsp.unlink(resource.path);
-    } else {
-      await fsp.rmdir(resource.path, { recursive: true });
-    }
-    return {
-      type: "success",
-      content: {
-        resource,
-      },
-    };
-  } catch (e: any) {
-    return {
-      type: "error",
-      error: {
-        message: e.message || "An unexpected error has occured!",
-        path: resource.path,
-      },
-    };
-  }
-}
-
 export async function getFsResourceStats(
   resource: FsResource
 ): Promise<FileSystemResult<Stats>> {
@@ -97,6 +71,50 @@ export async function getIfFileExists(resource: FileResource) {
   const doesFileExist =
     statsResult.type === "error" ? false : statsResult.content.isFile();
   return doesFileExist;
+}
+
+export async function deleteFsResource(
+  resource: FsResource
+): Promise<FileSystemResult<{ resource: FsResource }>> {
+  try {
+    if (resource.type === "file") {
+      const exists = await getIfFileExists(resource);
+      if (!exists) {
+        return {
+          type: "success",
+          content: {
+            resource,
+          },
+        };
+      }
+      await fsp.unlink(resource.path);
+    } else {
+      const exists = await getIfFolderExists(resource);
+      if (!exists) {
+        return {
+          type: "success",
+          content: {
+            resource,
+          },
+        };
+      }
+      await fsp.rmdir(resource.path, { recursive: true });
+    }
+    return {
+      type: "success",
+      content: {
+        resource,
+      },
+    };
+  } catch (e: any) {
+    return {
+      type: "error",
+      error: {
+        message: e.message || "An unexpected error has occured!",
+        path: resource.path,
+      },
+    };
+  }
 }
 
 export async function createFolder(
