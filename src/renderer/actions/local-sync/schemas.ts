@@ -49,7 +49,7 @@ export const ApiRecord = Type.Object({
       Type.Object({
         id: Type.Number(),
         key: Type.String(),
-        value: Type.String(),
+        value: Type.Optional(Type.String()),
         isEnabled: Type.Boolean(),
         type: Type.Optional(Type.String()),
       })
@@ -60,7 +60,7 @@ export const ApiRecord = Type.Object({
       Type.Object({
         id: Type.Number(),
         key: Type.String(),
-        value: Type.String(),
+        value: Type.Optional(Type.String()),
         isEnabled: Type.Boolean(),
         type: Type.Optional(Type.String()),
       })
