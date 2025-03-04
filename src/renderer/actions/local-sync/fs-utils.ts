@@ -421,8 +421,6 @@ export async function getAllWorkspaces(): Promise<
   return readResult;
 }
 
-
-
 export function getParentFolderPath(fsResource: FsResource) {
   const { path } = fsResource;
   const name = getNameOfResource(fsResource);

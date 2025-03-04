@@ -10,7 +10,6 @@ import {
   getNameOfResource,
   getNormalizedPath,
   mapSuccessfulFsResult,
-  mapSuccessWrite,
   parseContent,
   removeUndefinedFromRoot,
 } from "./common-utils";
@@ -24,7 +23,6 @@ import {
   copyRecursive,
   createFolder,
   deleteFsResource,
-  getIfFileExists,
   getParentFolderPath,
   parseFile,
   parseFileResultToApi,
@@ -627,7 +625,7 @@ export class FsManager {
 
   async setCollectionVariables(
     id: string,
-    variables: Record<string, any>
+    variables: Record<string, EnvironmentVariableValue>
   ): Promise<FileSystemResult<Collection>> {
     try {
       const folder = this.createResource({
@@ -649,7 +647,9 @@ export class FsManager {
         return parseFolderToCollection(this.rootPath, folder);
       }
 
-      const writeResult = await writeContent(file, variables, Variables);
+      const parsedVariables = parseToEnvironmentEntity(variables);
+
+      const writeResult = await writeContent(file, parsedVariables, Variables);
       if (writeResult.type === "error") {
         return writeResult;
       }
