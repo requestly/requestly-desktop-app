@@ -22,6 +22,7 @@ import {
 import {
   COLLECTION_VARIABLES_FILE,
   CONFIG_FILE,
+  DESCRIPTION_FILE,
   DS_STORE_FILE,
   ENVIRONMENT_VARIABLES_FOLDER,
   GLOBAL_CONFIG_FILE_NAME,
@@ -36,6 +37,7 @@ import {
   Variables,
   EnvironmentVariableType,
   GlobalConfig,
+  Description,
 } from "./schemas";
 import { Stats } from "node:fs";
 
@@ -219,7 +221,7 @@ export async function writeContent<T extends TSchema>(
         },
       };
     }
-    console.log('writing at', resource.path);
+    console.log("writing at", resource.path);
     await fsp.writeFile(resource.path, serializedContent);
     return {
       type: "success",
@@ -440,39 +442,81 @@ function getCollectionId(rootPath: string, fsResource: FsResource) {
   return getIdFromPath(parentPath);
 }
 
-export async function parseFolderToCollection(
+async function getCollectionVariables(
   rootPath: string,
   folder: FolderResource
-): Promise<FileSystemResult<Collection>> {
+): Promise<FileSystemResult<Static<typeof Variables>>> {
   const varsPath = appendPath(folder.path, COLLECTION_VARIABLES_FILE);
   const collectionVariablesExist = await fsp
     .lstat(varsPath)
     .then((stats) => stats.isFile())
     .catch(() => false);
 
-  const collectionVariablesResult = await (async () => {
-    if (collectionVariablesExist) {
-      return parseFile({
-        resource: createFsResource({
-          rootPath,
-          path: varsPath,
-          type: "file",
-        }),
-        validator: Variables,
-      });
-    }
+  if (collectionVariablesExist) {
+    return parseFile({
+      resource: createFsResource({
+        rootPath,
+        path: varsPath,
+        type: "file",
+      }),
+      validator: Variables,
+    });
+  }
 
-    return {
-      type: "success",
-      content: {},
-    } as FileSystemResult<Static<typeof Variables>>;
-  })();
+  return {
+    type: "success",
+    content: {},
+  } as FileSystemResult<Static<typeof Variables>>;
+}
 
+async function getDescription(
+  rootPath: string,
+  folder: FolderResource
+): Promise<FileSystemResult<{ description: string }>> {
+  const descriptionPath = appendPath(folder.path, DESCRIPTION_FILE);
+  const descriptionFileExists = await fsp
+    .lstat(descriptionPath)
+    .then((stats) => stats.isFile())
+    .catch(() => false);
+
+  if (descriptionFileExists) {
+    return parseFile({
+      resource: createFsResource({
+        rootPath,
+        path: descriptionPath,
+        type: "file",
+      }),
+      validator: Description,
+    });
+  }
+
+  return {
+    type: "success",
+    content: {
+      description: "",
+    },
+  } as FileSystemResult<{ description: string }>;
+}
+
+export async function parseFolderToCollection(
+  rootPath: string,
+  folder: FolderResource
+): Promise<FileSystemResult<Collection>> {
+  const collectionVariablesResult = await getCollectionVariables(
+    rootPath,
+    folder
+  );
   if (collectionVariablesResult.type === "error") {
     return collectionVariablesResult;
   }
 
+  const descriptionFileResult = await getDescription(rootPath, folder);
+  if (descriptionFileResult.type === "error") {
+    return descriptionFileResult;
+  }
+
   const collectionVariables = collectionVariablesResult.content;
+  const collectionDescription = descriptionFileResult.content.description;
 
   const collection: Collection = {
     type: "collection",
@@ -480,6 +524,7 @@ export async function parseFolderToCollection(
     name: getNameOfResource(folder),
     collectionId: getCollectionId(rootPath, folder),
     variables: collectionVariables,
+    description: collectionDescription,
   };
 
   const result: FileSystemResult<Collection> = {
@@ -540,6 +585,7 @@ export function sanitizeFsResourceList(
   const checks: ((resource: FsResource) => boolean)[] = [
     (resource) => resource.path !== appendPath(rootPath, CONFIG_FILE),
     (resource) => !resource.path.endsWith(COLLECTION_VARIABLES_FILE),
+    (resource) => !resource.path.endsWith(DESCRIPTION_FILE),
     (resource) => !resource.path.includes(DS_STORE_FILE),
   ];
   if (type === "api") {

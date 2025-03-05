@@ -16,6 +16,7 @@ import {
 import {
   COLLECTION_VARIABLES_FILE,
   CONFIG_FILE,
+  DESCRIPTION_FILE,
   ENVIRONMENT_VARIABLES_FOLDER,
   GLOBAL_ENV_FILE,
 } from "./constants";
@@ -34,7 +35,13 @@ import {
   sanitizeFsResourceList,
   writeContent,
 } from "./fs-utils";
-import { ApiRecord, Config, EnvironmentRecord, Variables } from "./schemas";
+import {
+  ApiRecord,
+  Config,
+  Description,
+  EnvironmentRecord,
+  Variables,
+} from "./schemas";
 import {
   API,
   APIEntity,
@@ -354,6 +361,21 @@ export class FsManager {
       if (createResult.type === "error") {
         return createResult;
       }
+      // create a description file
+      const descriptionFile = this.createResource({
+        id: getIdFromPath(appendPath(resource.path, DESCRIPTION_FILE)),
+        type: "file",
+      });
+      const writeResult = await writeContent(
+        descriptionFile,
+        {
+          description: "",
+        },
+        Description
+      );
+      if (writeResult.type === "error") {
+        return writeResult;
+      }
 
       return parseFolderToCollection(this.rootPath, resource);
     } catch (e: any) {
@@ -469,6 +491,38 @@ export class FsManager {
       }
 
       return parseFolderToCollection(this.rootPath, renameResult.content);
+    } catch (e: any) {
+      return {
+        type: "error",
+        error: {
+          message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
+        },
+      };
+    }
+  }
+
+  async updateCollectionDescription(
+    id: string,
+    description: string
+  ): Promise<FileSystemResult<string>> {
+    try {
+      const descriptionFileResource = this.createResource({
+        id: getIdFromPath(appendPath(id, DESCRIPTION_FILE)),
+        type: "file",
+      });
+      const writeResult = await writeContent(
+        descriptionFileResource,
+        { description },
+        Description
+      );
+      if (writeResult.type === "error") {
+        return writeResult;
+      }
+      return {
+        type: "success",
+        content: description,
+      };
     } catch (e: any) {
       return {
         type: "error",

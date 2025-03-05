@@ -107,5 +107,10 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
       "duplicateEnvironment",
       this.fsManager.duplicateEnvironment.bind(this.fsManager)
     );
+
+    this.exposeMethodOverIPC(
+      "updateCollectionDescription",
+      this.fsManager.updateCollectionDescription.bind(this.fsManager)
+    );
   }
 }
