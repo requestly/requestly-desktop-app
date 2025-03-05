@@ -20,6 +20,7 @@ import {
   parseContent,
 } from "./common-utils";
 import {
+  COLLECTION_AUTH_FILE,
   COLLECTION_VARIABLES_FILE,
   CONFIG_FILE,
   DESCRIPTION_FILE,
@@ -38,6 +39,7 @@ import {
   EnvironmentVariableType,
   GlobalConfig,
   Description,
+  Auth,
 } from "./schemas";
 import { Stats } from "node:fs";
 
@@ -469,7 +471,7 @@ async function getCollectionVariables(
   } as FileSystemResult<Static<typeof Variables>>;
 }
 
-async function getDescription(
+async function getCollectionDescription(
   rootPath: string,
   folder: FolderResource
 ): Promise<FileSystemResult<{ description: string }>> {
@@ -498,6 +500,33 @@ async function getDescription(
   } as FileSystemResult<{ description: string }>;
 }
 
+async function getCollectionAuthData(
+  rootPath: string,
+  folder: FolderResource
+): Promise<FileSystemResult<Static<typeof Auth>>> {
+  const authPath = appendPath(folder.path, COLLECTION_AUTH_FILE);
+  const authFileExists = await fsp
+    .lstat(authPath)
+    .then((stats) => stats.isFile())
+    .catch(() => false);
+
+  if (authFileExists) {
+    return parseFile({
+      resource: createFsResource({
+        rootPath,
+        path: authPath,
+        type: "file",
+      }),
+      validator: Auth,
+    });
+  }
+
+  return {
+    type: "success",
+    content: {},
+  } as FileSystemResult<Static<typeof Auth>>;
+}
+
 export async function parseFolderToCollection(
   rootPath: string,
   folder: FolderResource
@@ -510,13 +539,25 @@ export async function parseFolderToCollection(
     return collectionVariablesResult;
   }
 
-  const descriptionFileResult = await getDescription(rootPath, folder);
+  const descriptionFileResult = await getCollectionDescription(
+    rootPath,
+    folder
+  );
   if (descriptionFileResult.type === "error") {
     return descriptionFileResult;
   }
 
+  const collectionAuthDataResult = await getCollectionAuthData(
+    rootPath,
+    folder
+  );
+  if (collectionAuthDataResult.type === "error") {
+    return collectionAuthDataResult;
+  }
+
   const collectionVariables = collectionVariablesResult.content;
   const collectionDescription = descriptionFileResult.content.description;
+  const collectionAuthData = collectionAuthDataResult.content;
 
   const collection: Collection = {
     type: "collection",
@@ -525,6 +566,7 @@ export async function parseFolderToCollection(
     collectionId: getCollectionId(rootPath, folder),
     variables: collectionVariables,
     description: collectionDescription,
+    auth: collectionAuthData,
   };
 
   const result: FileSystemResult<Collection> = {
@@ -586,6 +628,7 @@ export function sanitizeFsResourceList(
     (resource) => resource.path !== appendPath(rootPath, CONFIG_FILE),
     (resource) => !resource.path.endsWith(COLLECTION_VARIABLES_FILE),
     (resource) => !resource.path.endsWith(DESCRIPTION_FILE),
+    (resource) => !resource.path.endsWith(COLLECTION_AUTH_FILE),
     (resource) => !resource.path.includes(DS_STORE_FILE),
   ];
   if (type === "api") {
