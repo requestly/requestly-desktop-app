@@ -361,22 +361,6 @@ export class FsManager {
       if (createResult.type === "error") {
         return createResult;
       }
-      // create a description file
-      const descriptionFile = this.createResource({
-        id: getIdFromPath(appendPath(resource.path, DESCRIPTION_FILE)),
-        type: "file",
-      });
-      const writeResult = await writeContent(
-        descriptionFile,
-        {
-          description: "",
-        },
-        Description
-      );
-      if (writeResult.type === "error") {
-        return writeResult;
-      }
-
       return parseFolderToCollection(this.rootPath, resource);
     } catch (e: any) {
       return {
