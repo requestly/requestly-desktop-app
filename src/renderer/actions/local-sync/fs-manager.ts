@@ -43,6 +43,7 @@ import {
   Description,
   EnvironmentRecord,
   Variables,
+  AuthType,
 } from "./schemas";
 import {
   API,
@@ -540,6 +541,20 @@ export class FsManager {
         id: getIdFromPath(appendPath(id, COLLECTION_AUTH_FILE)),
         type: "file",
       });
+
+      if (authData.currentAuthType === AuthType.NO_AUTH) {
+        const deleteResult = await deleteFsResource(authFileResource);
+        if (deleteResult.type === "error") {
+          return deleteResult;
+        }
+        return {
+          type: "success",
+          content: {
+            authConfigStore: {},
+            currentAuthType: AuthType.NO_AUTH,
+          },
+        };
+      }
       const writeResult = await writeContent(authFileResource, authData, Auth);
       if (writeResult.type === "error") {
         return writeResult;

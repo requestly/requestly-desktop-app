@@ -21,7 +21,7 @@ export enum ApiMethods {
   OPTIONS = "OPTIONS",
 }
 
-enum AuthType {
+export enum AuthType {
   INHERIT = "INHERIT",
   NO_AUTH = "NO_AUTH",
   API_KEY = "API_KEY",
