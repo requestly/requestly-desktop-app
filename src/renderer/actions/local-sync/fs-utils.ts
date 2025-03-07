@@ -8,6 +8,7 @@ import {
   EnvironmentVariableValue,
   FileResource,
   FileSystemResult,
+  FileType,
   FolderResource,
   FsResource,
 } from "./types";
@@ -26,6 +27,7 @@ import {
   DESCRIPTION_FILE,
   DS_STORE_FILE,
   ENVIRONMENT_VARIABLES_FOLDER,
+  fileTypeToValidator,
   GLOBAL_CONFIG_FILE_NAME,
   GLOBAL_CONFIG_FOLDER_PATH,
 } from "./constants";
@@ -58,9 +60,16 @@ export async function getFsResourceStats(
       error: {
         message: e.message || "An unexpected error has occured!",
         path: resource.path,
+        fileType: "unknown" as FileType,
       },
     };
   }
+}
+
+export function getFileTypeFromValidator(validator: TSchema): FileType {
+  return Object.keys(fileTypeToValidator).find(
+    (key) => fileTypeToValidator[key as FileType] === validator
+  ) as FileType;
 }
 
 export async function getIfFolderExists(resource: FolderResource) {
@@ -116,6 +125,7 @@ export async function deleteFsResource(
       error: {
         message: e.message || "An unexpected error has occured!",
         path: resource.path,
+        fileType: "unknown" as FileType,
       },
     };
   }
@@ -138,6 +148,7 @@ export async function createFolder(
         error: {
           message: "Folder already exists!",
           path: resource.path,
+          fileType: "unknown" as FileType,
         },
       };
     }
@@ -153,6 +164,7 @@ export async function createFolder(
       error: {
         message: e.message || "An unexpected error has occured!",
         path: resource.path,
+        fileType: "unknown" as FileType,
       },
     };
   }
@@ -174,6 +186,7 @@ export async function rename<T extends FsResource>(
       error: {
         message: e.message || "An unexpected error has occured!",
         path: oldResource.path,
+        fileType: "unknown" as FileType,
       },
     };
   }
@@ -197,6 +210,7 @@ export async function copyRecursive<T extends FsResource>(
       error: {
         message: e.message || "An unexpected error has occured!",
         path: sourceResource.path,
+        fileType: "unknown" as FileType,
       },
     };
   }
@@ -220,6 +234,7 @@ export async function writeContent<T extends TSchema>(
         error: {
           message: parsedContentResult.error.message,
           path: resource.path,
+          fileType: getFileTypeFromValidator(validator),
         },
       };
     }
@@ -237,6 +252,7 @@ export async function writeContent<T extends TSchema>(
       error: {
         message: e.message || "An unexpected error has occured!",
         path: resource.path,
+        fileType: getFileTypeFromValidator(validator),
       },
     };
   }
@@ -244,29 +260,37 @@ export async function writeContent<T extends TSchema>(
 
 export async function parseFile<T extends TSchema>(params: {
   resource: FileResource;
-  validator: T;
+  validator?: T;
 }): Promise<FileSystemResult<Static<T>>> {
   const { resource, validator } = params;
   try {
     const content = (await fsp.readFile(resource.path)).toString();
-    const parsedContentResult = parseContent(content, validator);
-    if (parsedContentResult.type === "error") {
-      return {
-        type: "error",
-        error: {
-          message: parsedContentResult.error.message,
-          path: resource.path,
-        },
-      };
-    }
 
-    return parsedContentResult;
+    if (validator) {
+      const parsedContentResult = parseContent(content, validator);
+      if (parsedContentResult.type === "error") {
+        return {
+          type: "error",
+          error: {
+            message: parsedContentResult.error.message,
+            path: resource.path,
+            fileType: getFileTypeFromValidator(validator),
+          },
+        };
+      }
+      return parsedContentResult;
+    }
+    return {
+      type: "success",
+      content: JSON.parse(content),
+    } as FileSystemResult<Static<T>>;
   } catch (e: any) {
     return {
       type: "error",
       error: {
         message: e.message || "An unexpected error has occured!",
         path: resource.path,
+        fileType: "unknown" as FileType,
       },
     };
   }
@@ -289,6 +313,7 @@ export async function createGlobalConfigFolder(): Promise<
       error: {
         message: e.message || "An unexpected error has occured!",
         path: GLOBAL_CONFIG_FOLDER_PATH,
+        fileType: "unknown" as FileType,
       },
     };
   }
@@ -712,4 +737,9 @@ export function parseToEnvironmentEntity(
   }
 
   return newVariables;
+}
+
+export function getFileNameFromPath(path: string) {
+  const parts = path.split("/");
+  return parts[parts.length - 1];
 }

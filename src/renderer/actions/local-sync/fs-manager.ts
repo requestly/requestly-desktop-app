@@ -19,12 +19,14 @@ import {
   CONFIG_FILE,
   DESCRIPTION_FILE,
   ENVIRONMENT_VARIABLES_FOLDER,
+  fileTypeToValidator,
   GLOBAL_ENV_FILE,
 } from "./constants";
 import {
   copyRecursive,
   createFolder,
   deleteFsResource,
+  getFileNameFromPath,
   getParentFolderPath,
   parseFile,
   parseFileResultToApi,
@@ -50,7 +52,9 @@ import {
   Collection,
   Environment,
   EnvironmentVariableValue,
+  ErrorFile,
   FileSystemResult,
+  FileType,
   FsResource,
 } from "./types";
 
@@ -171,10 +175,15 @@ export class FsManager {
     return parseResult;
   }
 
-  async getAllRecords(): Promise<FileSystemResult<APIEntity[]>> {
+  async getAllRecords(): Promise<
+    FileSystemResult<{
+      records: APIEntity[];
+      errorFiles: ErrorFile[];
+    }>
+  > {
     const resourceContainer = await this.parseFolder(this.rootPath, "api");
-    console.log({ resourceContainerr: resourceContainer });
     const entities: APIEntity[] = [];
+    const errorFiles: ErrorFile[] = [];
     // eslint-disable-next-line
     for (const resource of resourceContainer) {
       const entityParsingResult: FileSystemResult<APIEntity> | undefined =
@@ -197,7 +206,14 @@ export class FsManager {
         })();
 
       if (entityParsingResult?.type === "error") {
-        return entityParsingResult;
+        errorFiles.push({
+          name: getFileNameFromPath(entityParsingResult.error.path),
+          path: entityParsingResult.error.path,
+          error: entityParsingResult.error.message,
+          type: entityParsingResult.error.fileType as FileType,
+        });
+        // eslint-disable-next-line
+        continue;
       }
 
       if (entityParsingResult) {
@@ -207,17 +223,26 @@ export class FsManager {
 
     return {
       type: "success",
-      content: entities,
+      content: {
+        records: entities,
+        errorFiles,
+      },
     };
   }
 
-  async getAllEnvironments(): Promise<FileSystemResult<APIEntity[]>> {
+  async getAllEnvironments(): Promise<
+    FileSystemResult<{
+      environments: Environment[];
+      errorFiles: ErrorFile[];
+    }>
+  > {
     const resourceContainer = await this.parseFolder(
       this.rootPath,
       "environment"
     );
     console.log("ENV CONTAINER", { resourceContainer });
     const entities: Environment[] = [];
+    const errorFiles: ErrorFile[] = [];
     // eslint-disable-next-line
     for (const resource of resourceContainer) {
       if (resource.type === "file") {
@@ -226,7 +251,14 @@ export class FsManager {
           validator: EnvironmentRecord,
         });
         if (parsedResult.type === "error") {
-          return parsedResult;
+          errorFiles.push({
+            name: getNameOfResource(resource),
+            path: parsedResult.error.path,
+            error: parsedResult.error.message,
+            type: FileType.ENVIRONMENT,
+          });
+          // eslint-disable-next-line
+          continue;
         }
         if (parsedResult) {
           entities.push({
@@ -240,7 +272,10 @@ export class FsManager {
     }
     return {
       type: "success",
-      content: entities,
+      content: {
+        environments: entities,
+        errorFiles,
+      },
     };
   }
 
@@ -272,6 +307,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
         },
       };
     }
@@ -299,6 +335,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
         },
       };
     }
@@ -325,6 +362,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
         },
       };
     }
@@ -370,6 +408,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
         },
       };
     }
@@ -396,6 +435,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
         },
       };
     }
@@ -422,6 +462,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
         },
       };
     }
@@ -453,6 +494,7 @@ export class FsManager {
           error: {
             message: "Collection name should not contain special characters.",
             path: id,
+            fileType: FileType.UNKNOWN,
           },
         };
       }
@@ -483,6 +525,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
         },
       };
     }
@@ -515,6 +558,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
         },
       };
     }
@@ -543,6 +587,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
         },
       };
     }
@@ -577,6 +622,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
         },
       };
     }
@@ -631,6 +677,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
         },
       };
     }
@@ -686,6 +733,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
         },
       };
     }
@@ -729,6 +777,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
         },
       };
     }
@@ -773,6 +822,32 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
+        },
+      };
+    }
+  }
+
+  async writeToRawFile(
+    id: string,
+    record: any,
+    fileType: FileType
+  ): Promise<FileSystemResult<unknown>> {
+    try {
+      const fileResource = this.createResource({
+        id,
+        type: "file",
+      });
+      const validator = fileTypeToValidator[fileType];
+      const writeResult = await writeContent(fileResource, record, validator);
+      return writeResult;
+    } catch (e: any) {
+      return {
+        type: "error",
+        error: {
+          message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
         },
       };
     }
@@ -822,6 +897,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
         },
       };
     }
@@ -876,6 +952,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
         },
       };
     }
@@ -911,6 +988,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
         },
       };
     }
@@ -930,6 +1008,7 @@ export class FsManager {
           error: {
             message: "Global environment cannnot be copied!",
             path: fileResource.path,
+            fileType: FileType.UNKNOWN,
           },
         };
       }
@@ -972,8 +1051,23 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
         },
       };
     }
+  }
+
+  async getRawFileData(id: string): Promise<FileSystemResult<any>> {
+    const fileResource = this.createResource({
+      id,
+      type: "file",
+    });
+    const parsedRecordResult = await parseFile({
+      resource: fileResource,
+    });
+    if (parsedRecordResult.type === "error") {
+      return parsedRecordResult;
+    }
+    return parsedRecordResult;
   }
 }
