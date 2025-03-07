@@ -497,6 +497,17 @@ export class FsManager {
         id: getIdFromPath(appendPath(id, DESCRIPTION_FILE)),
         type: "file",
       });
+      if (!description.length) {
+        const deleteResult = await deleteFsResource(descriptionFileResource);
+        if (deleteResult.type === "error") {
+          return deleteResult;
+        }
+        return {
+          type: "success",
+          content: "",
+        };
+      }
+
       const writeResult = await writeContent(
         descriptionFileResource,
         { description },
