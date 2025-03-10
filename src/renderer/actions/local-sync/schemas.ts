@@ -72,9 +72,7 @@ export const Auth = Type.Object({
   currentAuthType: Type.Enum(AuthType),
 });
 
-export const Description = Type.Object({
-  description: Type.String(),
-});
+export const Description = Type.String();
 
 export const ApiRecord = Type.Object({
   name: Type.String(),

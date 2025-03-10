@@ -202,27 +202,34 @@ export async function copyRecursive<T extends FsResource>(
   }
 }
 
-export function serializeContentForWriting(content: Record<any, any>) {
+export function serializeContentForWriting(content: string | Record<any, any>) {
+  if (typeof content === "string") {
+    return content;
+  }
   return JSON.stringify(content, null, 2);
 }
 
 export async function writeContent<T extends TSchema>(
   resource: FileResource,
-  content: Record<any, any>,
-  validator: T
+  content: string | Record<any, any>,
+  validator: T,
+  parseAsJson = true
 ): Promise<FileSystemResult<{ resource: FileResource }>> {
   try {
     const serializedContent = serializeContentForWriting(content);
-    const parsedContentResult = parseContent(serializedContent, validator);
-    if (parsedContentResult.type === "error") {
-      return {
-        type: "error",
-        error: {
-          message: parsedContentResult.error.message,
-          path: resource.path,
-        },
-      };
+    if (parseAsJson) {
+      const parsedContentResult = parseContent(serializedContent, validator);
+      if (parsedContentResult.type === "error") {
+        return {
+          type: "error",
+          error: {
+            message: parsedContentResult.error.message,
+            path: resource.path,
+          },
+        };
+      }
     }
+
     console.log("writing at", resource.path);
     await fsp.writeFile(resource.path, serializedContent);
     return {
@@ -235,7 +242,7 @@ export async function writeContent<T extends TSchema>(
     return {
       type: "error",
       error: {
-        message: e.message || "An unexpected error has occured!",
+        message: e.message || "An unexpected error has occurred!",
         path: resource.path,
       },
     };
@@ -245,10 +252,17 @@ export async function writeContent<T extends TSchema>(
 export async function parseFile<T extends TSchema>(params: {
   resource: FileResource;
   validator: T;
+  parseAsJson?: boolean;
 }): Promise<FileSystemResult<Static<T>>> {
-  const { resource, validator } = params;
+  const { resource, validator, parseAsJson = true } = params;
   try {
     const content = (await fsp.readFile(resource.path)).toString();
+    if (!parseAsJson) {
+      return {
+        type: "success",
+        content,
+      } as FileSystemResult<Static<T>>;
+    }
     const parsedContentResult = parseContent(content, validator);
     if (parsedContentResult.type === "error") {
       return {
@@ -474,7 +488,7 @@ async function getCollectionVariables(
 async function getCollectionDescription(
   rootPath: string,
   folder: FolderResource
-): Promise<FileSystemResult<{ description: string }>> {
+): Promise<FileSystemResult<string>> {
   const descriptionPath = appendPath(folder.path, DESCRIPTION_FILE);
   const descriptionFileExists = await fsp
     .lstat(descriptionPath)
@@ -489,15 +503,14 @@ async function getCollectionDescription(
         type: "file",
       }),
       validator: Description,
+      parseAsJson: false,
     });
   }
 
   return {
     type: "success",
-    content: {
-      description: "",
-    },
-  } as FileSystemResult<{ description: string }>;
+    content: "",
+  };
 }
 
 async function getCollectionAuthData(
@@ -556,8 +569,8 @@ export async function parseFolderToCollection(
   }
 
   const collectionVariables = collectionVariablesResult.content;
-  const collectionDescription = descriptionFileResult.content.description;
   const collectionAuthData = collectionAuthDataResult.content;
+  const collectionDescription = descriptionFileResult.content;
 
   const collection: Collection = {
     type: "collection",

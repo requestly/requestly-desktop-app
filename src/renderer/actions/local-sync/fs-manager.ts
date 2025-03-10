@@ -511,8 +511,9 @@ export class FsManager {
 
       const writeResult = await writeContent(
         descriptionFileResource,
-        { description },
-        Description
+        description,
+        Description,
+        false
       );
       if (writeResult.type === "error") {
         return writeResult;
