@@ -40,9 +40,7 @@ interface KeyValuePair {
   type?: string;
 }
 
-export const Description = Type.Object({
-  description: Type.String(),
-});
+export const Description = Type.String();
 
 export const ApiRecord = Type.Object({
   name: Type.String(),
