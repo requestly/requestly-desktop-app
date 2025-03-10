@@ -10,8 +10,8 @@ import { FileType } from "./types";
 import { TSchema, Type } from "@sinclair/typebox";
 
 export const CONFIG_FILE = "requestly.json";
-export const DESCRIPTION_FILE = "description.json";
 export const COLLECTION_AUTH_FILE = "auth.json";
+export const DESCRIPTION_FILE = "description.md";
 export const COLLECTION_VARIABLES_FILE = "vars.json";
 export const ENVIRONMENT_VARIABLES_FILE = "env.json";
 export const ENVIRONMENT_VARIABLES_FOLDER = "environments";

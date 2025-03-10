@@ -45,6 +45,7 @@ import {
   Description,
   EnvironmentRecord,
   Variables,
+  AuthType,
 } from "./schemas";
 import {
   API,
@@ -540,10 +541,22 @@ export class FsManager {
         id: getIdFromPath(appendPath(id, DESCRIPTION_FILE)),
         type: "file",
       });
+      if (!description.length) {
+        const deleteResult = await deleteFsResource(descriptionFileResource);
+        if (deleteResult.type === "error") {
+          return deleteResult;
+        }
+        return {
+          type: "success",
+          content: "",
+        };
+      }
+
       const writeResult = await writeContent(
         descriptionFileResource,
-        { description },
-        Description
+        description,
+        Description,
+        false
       );
       if (writeResult.type === "error") {
         return writeResult;
@@ -573,6 +586,20 @@ export class FsManager {
         id: getIdFromPath(appendPath(id, COLLECTION_AUTH_FILE)),
         type: "file",
       });
+
+      if (authData.currentAuthType === AuthType.NO_AUTH) {
+        const deleteResult = await deleteFsResource(authFileResource);
+        if (deleteResult.type === "error") {
+          return deleteResult;
+        }
+        return {
+          type: "success",
+          content: {
+            authConfigStore: {},
+            currentAuthType: AuthType.NO_AUTH,
+          },
+        };
+      }
       const writeResult = await writeContent(authFileResource, authData, Auth);
       if (writeResult.type === "error") {
         return writeResult;

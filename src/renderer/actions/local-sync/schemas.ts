@@ -21,7 +21,7 @@ export enum ApiMethods {
   OPTIONS = "OPTIONS",
 }
 
-enum AuthType {
+export enum AuthType {
   INHERIT = "INHERIT",
   NO_AUTH = "NO_AUTH",
   API_KEY = "API_KEY",
@@ -72,9 +72,7 @@ export const Auth = Type.Object({
   currentAuthType: Type.Enum(AuthType),
 });
 
-export const Description = Type.Object({
-  description: Type.String(),
-});
+export const Description = Type.String();
 
 export const ApiRecord = Type.Object({
   name: Type.String(),
