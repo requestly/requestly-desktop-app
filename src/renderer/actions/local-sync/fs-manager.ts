@@ -51,6 +51,7 @@ import {
   API,
   APIEntity,
   Collection,
+  CollectionRecord,
   Environment,
   EnvironmentVariableValue,
   ErrorFile,
@@ -1096,5 +1097,65 @@ export class FsManager {
       return parsedRecordResult;
     }
     return parsedRecordResult;
+  }
+
+  async createCollectionFromCompleteRecord(
+    collection: CollectionRecord,
+    id: string
+  ): Promise<FileSystemResult<Collection>> {
+    try {
+      const collectionFolder = this.createResource({
+        id,
+        type: "folder",
+      });
+      console.log("collectionFolder", collectionFolder);
+      const createResult = await createFolder(collectionFolder);
+      console.log("createResult", createResult);
+      if (createResult.type === "error") {
+        return createResult;
+      }
+
+      if (collection.description?.length) {
+        const descriptionFile = this.createResource({
+          id: appendPath(collectionFolder.path, DESCRIPTION_FILE),
+          type: "file",
+        });
+        await writeContent(
+          descriptionFile,
+          { description: collection.description },
+          Description
+        );
+      }
+
+      if (
+        collection.data.auth &&
+        collection.data.auth.currentAuthType !== AuthType.NO_AUTH
+      ) {
+        const authFile = this.createResource({
+          id: appendPath(collectionFolder.path, COLLECTION_AUTH_FILE),
+          type: "file",
+        });
+        await writeContent(authFile, collection.data.auth, Auth);
+      }
+
+      if (collection.data.variables) {
+        const variablesFile = this.createResource({
+          id: appendPath(collectionFolder.path, COLLECTION_VARIABLES_FILE),
+          type: "file",
+        });
+        await writeContent(variablesFile, collection.data.variables, Variables);
+      }
+
+      return parseFolderToCollection(this.rootPath, collectionFolder);
+    } catch (e: any) {
+      return {
+        type: "error",
+        error: {
+          message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
+          fileType: FileType.UNKNOWN,
+        },
+      };
+    }
   }
 }
