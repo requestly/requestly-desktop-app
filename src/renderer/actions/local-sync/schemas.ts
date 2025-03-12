@@ -102,7 +102,7 @@ export const ApiRecord = Type.Object({
   ),
   body: Type.Optional(Type.Any()),
   bodyContainer: Type.Optional(Type.Any()),
-  contentType: Type.Optional(Type.Enum(RequestContentType)),
+  contentType: Type.Optional(Type.Any()),
   auth: Type.Optional(Auth),
   scripts: Type.Optional(
     Type.Object({

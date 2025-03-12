@@ -98,3 +98,18 @@ export type ErrorFile = {
   error: string;
   type: FileType;
 };
+
+export type CollectionRecord = {
+  type: "collection";
+  name: string;
+  description?: string;
+  collectionId: string;
+  data: {
+    auth: Static<typeof Auth>;
+    variables: Variable;
+    scripts?: {
+      preRequest: string;
+      postResponse: string;
+    };
+  };
+};

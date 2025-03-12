@@ -125,5 +125,10 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
       "getRawFileData",
       this.fsManager.getRawFileData.bind(this.fsManager)
     );
+
+    this.exposeMethodOverIPC(
+      "createCollectionFromCompleteRecord",
+      this.fsManager.createCollectionFromCompleteRecord.bind(this.fsManager)
+    );
   }
 }
