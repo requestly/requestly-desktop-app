@@ -1108,9 +1108,7 @@ export class FsManager {
         id,
         type: "folder",
       });
-      console.log("collectionFolder", collectionFolder);
       const createResult = await createFolder(collectionFolder);
-      console.log("createResult", createResult);
       if (createResult.type === "error") {
         return createResult;
       }
@@ -1120,11 +1118,14 @@ export class FsManager {
           id: appendPath(collectionFolder.path, DESCRIPTION_FILE),
           type: "file",
         });
-        await writeContent(
+        const writeResult = await writeContent(
           descriptionFile,
           { description: collection.description },
           Description
         );
+        if (writeResult.type === "error") {
+          return writeResult;
+        }
       }
 
       if (
@@ -1135,7 +1136,14 @@ export class FsManager {
           id: appendPath(collectionFolder.path, COLLECTION_AUTH_FILE),
           type: "file",
         });
-        await writeContent(authFile, collection.data.auth, Auth);
+        const writeResult = await writeContent(
+          authFile,
+          collection.data.auth,
+          Auth
+        );
+        if (writeResult.type === "error") {
+          return writeResult;
+        }
       }
 
       if (collection.data.variables) {
@@ -1143,7 +1151,14 @@ export class FsManager {
           id: appendPath(collectionFolder.path, COLLECTION_VARIABLES_FILE),
           type: "file",
         });
-        await writeContent(variablesFile, collection.data.variables, Variables);
+        const writeResult = await writeContent(
+          variablesFile,
+          collection.data.variables,
+          Variables
+        );
+        if (writeResult.type === "error") {
+          return writeResult;
+        }
       }
 
       return parseFolderToCollection(this.rootPath, collectionFolder);
