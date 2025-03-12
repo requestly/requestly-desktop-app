@@ -1,7 +1,20 @@
 import { Static } from "@sinclair/typebox";
 import { Auth, EnvironmentVariableType } from "./schemas";
 
-export type FileSystemError = { message: string; path: string };
+export enum FileType {
+  API = "api",
+  ENVIRONMENT = "environment",
+  COLLECTION_VARIABLES = "collection_variables",
+  DESCRIPTION = "description",
+  AUTH = "auth",
+  UNKNOWN = "unknown",
+}
+
+export type FileSystemError = {
+  message: string;
+  path: string;
+  fileType: FileType;
+};
 export type ContentfulSuccess<T> = T extends void
   ? { type: "success" }
   : { type: "success"; content: T };
@@ -78,3 +91,10 @@ export type Environment = {
 };
 
 export type APIEntity = Collection | API | Environment;
+
+export type ErrorFile = {
+  name: string;
+  path: string;
+  error: string;
+  type: FileType;
+};
