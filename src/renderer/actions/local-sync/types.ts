@@ -1,4 +1,5 @@
-import { EnvironmentVariableType } from "./schemas";
+import { Static } from "@sinclair/typebox";
+import { Auth, EnvironmentVariableType } from "./schemas";
 
 export type FileSystemError = { message: string; path: string };
 export type ContentfulSuccess<T> = T extends void
@@ -36,6 +37,7 @@ export type Collection = {
   name: string;
   variables?: Record<string, any>;
   description?: string;
+  auth?: Static<typeof Auth>;
 };
 
 export type API = {

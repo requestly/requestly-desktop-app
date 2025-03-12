@@ -21,6 +21,14 @@ export enum ApiMethods {
   OPTIONS = "OPTIONS",
 }
 
+export enum AuthType {
+  INHERIT = "INHERIT",
+  NO_AUTH = "NO_AUTH",
+  API_KEY = "API_KEY",
+  BEARER_TOKEN = "BEARER_TOKEN",
+  BASIC_AUTH = "BASIC_AUTH",
+}
+
 type RequestBodyContainer = {
   text?: string;
   form?: KeyValuePair[];
@@ -39,6 +47,30 @@ interface KeyValuePair {
   isEnabled: boolean;
   type?: string;
 }
+
+export const Auth = Type.Object({
+  authConfigStore: Type.Object({
+    API_KEY: Type.Optional(
+      Type.Object({
+        addTo: Type.String(),
+        key: Type.String(),
+        value: Type.String(),
+      })
+    ),
+    BASIC_AUTH: Type.Optional(
+      Type.Object({
+        username: Type.String(),
+        password: Type.String(),
+      })
+    ),
+    BEARER_TOKEN: Type.Optional(
+      Type.Object({
+        bearer: Type.String(),
+      })
+    ),
+  }),
+  currentAuthType: Type.Enum(AuthType),
+});
 
 export const Description = Type.String();
 
@@ -71,6 +103,7 @@ export const ApiRecord = Type.Object({
   body: Type.Optional(Type.Any()),
   bodyContainer: Type.Optional(Type.Any()),
   contentType: Type.Optional(Type.Enum(RequestContentType)),
+  auth: Type.Optional(Auth),
   scripts: Type.Optional(
     Type.Object({
       preRequest: Type.String(),

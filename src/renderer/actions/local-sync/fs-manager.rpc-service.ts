@@ -112,5 +112,10 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
       "updateCollectionDescription",
       this.fsManager.updateCollectionDescription.bind(this.fsManager)
     );
+
+    this.exposeMethodOverIPC(
+      "updateCollectionAuthData",
+      this.fsManager.updateCollectionAuthData.bind(this.fsManager)
+    );
   }
 }

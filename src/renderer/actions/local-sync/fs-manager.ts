@@ -14,6 +14,7 @@ import {
   removeUndefinedFromRoot,
 } from "./common-utils";
 import {
+  COLLECTION_AUTH_FILE,
   COLLECTION_VARIABLES_FILE,
   CONFIG_FILE,
   DESCRIPTION_FILE,
@@ -37,10 +38,12 @@ import {
 } from "./fs-utils";
 import {
   ApiRecord,
+  Auth,
   Config,
   Description,
   EnvironmentRecord,
   Variables,
+  AuthType,
 } from "./schemas";
 import {
   API,
@@ -518,6 +521,48 @@ export class FsManager {
       return {
         type: "success",
         content: description,
+      };
+    } catch (e: any) {
+      return {
+        type: "error",
+        error: {
+          message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
+        },
+      };
+    }
+  }
+
+  async updateCollectionAuthData(
+    id: string,
+    authData: Static<typeof Auth>
+  ): Promise<FileSystemResult<Static<typeof Auth>>> {
+    try {
+      const authFileResource = this.createResource({
+        id: getIdFromPath(appendPath(id, COLLECTION_AUTH_FILE)),
+        type: "file",
+      });
+
+      if (authData.currentAuthType === AuthType.NO_AUTH) {
+        const deleteResult = await deleteFsResource(authFileResource);
+        if (deleteResult.type === "error") {
+          return deleteResult;
+        }
+        return {
+          type: "success",
+          content: {
+            authConfigStore: {},
+            currentAuthType: AuthType.NO_AUTH,
+          },
+        };
+      }
+      const writeResult = await writeContent(authFileResource, authData, Auth);
+      if (writeResult.type === "error") {
+        return writeResult;
+      }
+      return {
+        type: "success",
+        content: authData,
       };
     } catch (e: any) {
       return {
