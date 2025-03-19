@@ -1,13 +1,4 @@
 import { homedir } from "os";
-import {
-  ApiRecord,
-  Auth,
-  Description,
-  EnvironmentRecord,
-  Variables,
-} from "./schemas";
-import { FileType } from "./types";
-import { TSchema, Type } from "@sinclair/typebox";
 
 export const CONFIG_FILE = "requestly.json";
 export const COLLECTION_AUTH_FILE = "auth.json";
@@ -20,12 +11,3 @@ export const GLOBAL_ENV_FILE = "global.json";
 
 export const GLOBAL_CONFIG_FOLDER_PATH = `${homedir()}/.config/requestly`;
 export const GLOBAL_CONFIG_FILE_NAME = "config.json";
-
-export const fileTypeToValidator: Record<FileType, TSchema> = {
-  [FileType.API]: ApiRecord,
-  [FileType.ENVIRONMENT]: EnvironmentRecord,
-  [FileType.COLLECTION_VARIABLES]: Variables,
-  [FileType.DESCRIPTION]: Description,
-  [FileType.AUTH]: Auth,
-  [FileType.UNKNOWN]: Type.Unknown(),
-};

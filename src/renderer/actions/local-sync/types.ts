@@ -1,19 +1,22 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable no-shadow */
 import { Static } from "@sinclair/typebox";
 import { Auth, EnvironmentVariableType } from "./schemas";
 
-export enum FileType {
+export enum FileTypeEnum {
   API = "api",
   ENVIRONMENT = "environment",
   COLLECTION_VARIABLES = "collection_variables",
   DESCRIPTION = "description",
   AUTH = "auth",
+  GLOBAL_CONFIG = "global_config",
   UNKNOWN = "unknown",
 }
 
 export type FileSystemError = {
   message: string;
   path: string;
-  fileType: FileType;
+  fileType: FileTypeEnum;
 };
 export type ContentfulSuccess<T> = T extends void
   ? { type: "success" }
@@ -92,9 +95,9 @@ export type Environment = {
 
 export type APIEntity = Collection | API | Environment;
 
-export type ErrorFile = {
+export type ErroredRecords = {
   name: string;
   path: string;
   error: string;
-  type: FileType;
+  type: FileTypeEnum;
 };
