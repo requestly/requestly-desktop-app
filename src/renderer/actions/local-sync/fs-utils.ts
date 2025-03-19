@@ -18,7 +18,6 @@ import {
   getIdFromPath,
   getNameOfResource,
   getNormalizedPath,
-  parseContent,
 } from "./common-utils";
 import {
   COLLECTION_AUTH_FILE,
@@ -228,11 +227,7 @@ export async function writeContent(
   fileType: FileType<any>
 ): Promise<FileSystemResult<{ resource: FileResource }>> {
   try {
-    const serializedContent = serializeContentForWriting(content);
-    const parsedContentResult = parseContent(
-      serializedContent,
-      fileType.validator
-    );
+    const parsedContentResult = fileType.parse(content);
     if (parsedContentResult.type === "error") {
       return {
         type: "error",
@@ -245,6 +240,7 @@ export async function writeContent(
     }
 
     console.log("writing at", resource.path);
+    const serializedContent = serializeContentForWriting(content);
     await fsp.writeFile(resource.path, serializedContent);
     return {
       type: "success",
@@ -266,7 +262,7 @@ export async function writeContent(
 
 export async function writeContentRaw(
   resource: FileResource,
-  content: Record<any, any>
+  content: Record<any, any> | string
 ): Promise<FileSystemResult<{ resource: FileResource }>> {
   try {
     const serializedContent = serializeContentForWriting(content);
@@ -301,8 +297,7 @@ export async function parseFile<
   const { resource, fileType } = params;
   try {
     const content = (await fsp.readFile(resource.path)).toString();
-
-    const parsedContentResult = parseContent(content, fileType.validator);
+    const parsedContentResult = fileType.parse(content);
     if (parsedContentResult.type === "error") {
       return {
         type: "error",

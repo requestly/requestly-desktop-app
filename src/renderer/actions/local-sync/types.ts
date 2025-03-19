@@ -101,3 +101,5 @@ export type ErroredRecords = {
   error: string;
   type: FileTypeEnum;
 };
+
+export type AnyRecord = Record<any, any>;

@@ -10,7 +10,7 @@ import {
   getNameOfResource,
   getNormalizedPath,
   mapSuccessfulFsResult,
-  parseContent,
+  parseJsonContent,
   removeUndefinedFromRoot,
 } from "./common-utils";
 import {
@@ -81,7 +81,7 @@ export class FsManager {
       type: "file",
     });
     const rawConfig = fs.readFileSync(configFile.path).toString();
-    const parsedConfig = parseContent(rawConfig, Config);
+    const parsedConfig = parseJsonContent(rawConfig, Config);
     if (parsedConfig.type === "error") {
       throw new Error(
         `Could not load config from ${CONFIG_FILE}. ${parsedConfig.error.message}`

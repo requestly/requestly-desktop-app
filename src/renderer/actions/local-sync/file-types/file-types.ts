@@ -11,11 +11,16 @@ import {
 } from "../schemas";
 import { FileTypeEnum } from "../types";
 import { TUnknown, Type } from "@sinclair/typebox";
+import { parseJsonContent, parseRaw } from "../common-utils";
 
 export class ApiRecordFileType extends FileType<typeof ApiRecord> {
   validator = ApiRecord;
 
   type = FileTypeEnum.API;
+
+  parse(content: string) {
+    return parseJsonContent(content, this.validator);
+  }
 }
 
 export class EnvironmentRecordFileType extends FileType<
@@ -24,6 +29,10 @@ export class EnvironmentRecordFileType extends FileType<
   validator = EnvironmentRecord;
 
   type = FileTypeEnum.ENVIRONMENT;
+
+  parse(content: string) {
+    return parseJsonContent(content, this.validator);
+  }
 }
 
 export class CollectionVariablesRecordFileType extends FileType<
@@ -32,30 +41,50 @@ export class CollectionVariablesRecordFileType extends FileType<
   validator = Variables;
 
   type = FileTypeEnum.COLLECTION_VARIABLES;
+
+  parse(content: string) {
+    return parseJsonContent(content, this.validator);
+  }
 }
 
 export class ReadmeRecordFileType extends FileType<typeof Description> {
   validator = Description;
 
   type = FileTypeEnum.DESCRIPTION;
+
+  parse(content: string) {
+    return parseRaw(content, this.validator);
+  }
 }
 
 export class AuthRecordFileType extends FileType<typeof Auth> {
   validator = Auth;
 
   type = FileTypeEnum.AUTH;
+
+  parse(content: string) {
+    return parseJsonContent(content, this.validator);
+  }
 }
 
 export class GlobalConfigRecordFileType extends FileType<typeof GlobalConfig> {
   validator = GlobalConfig;
 
   type = FileTypeEnum.GLOBAL_CONFIG;
+
+  parse(content: string) {
+    return parseJsonContent(content, this.validator);
+  }
 }
 
 export class UnknownFileType extends FileType<TUnknown> {
   validator = Type.Unknown();
 
   type = FileTypeEnum.UNKNOWN;
+
+  parse(content: string) {
+    return parseRaw(content, this.validator);
+  }
 }
 
 export function parseFileType(type: string): FileType<any> {
