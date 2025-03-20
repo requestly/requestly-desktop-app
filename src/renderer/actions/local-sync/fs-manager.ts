@@ -889,8 +889,7 @@ export class FsManager {
         id,
         type: "file",
       });
-      const record = JSON.parse(rawRecord);
-      const writeResult = await writeContent(fileResource, record, fileType);
+      const writeResult = await writeContent(fileResource, rawRecord, fileType);
       return writeResult;
     } catch (e: any) {
       return {
