@@ -24,6 +24,7 @@ import {
   COLLECTION_AUTH_FILE,
   COLLECTION_VARIABLES_FILE,
   CONFIG_FILE,
+  CURRENT_CONFIG_FILE_VERSION,
   DESCRIPTION_FILE,
   DS_STORE_FILE,
   ENVIRONMENT_VARIABLES_FOLDER,
@@ -359,7 +360,7 @@ export async function addWorkspaceToGlobalConfig(params: {
     path: appendPath(GLOBAL_CONFIG_FOLDER_PATH, GLOBAL_CONFIG_FILE_NAME),
     type: "file",
   });
-  const configRecord: Static<typeof GlobalConfig>[0] = {
+  const newWorkspace = {
     id: uuidv4(),
     name,
     path,
@@ -368,7 +369,10 @@ export async function addWorkspaceToGlobalConfig(params: {
     globalConfigFileResource
   );
   if (!globalConfigFileExists) {
-    const config: Static<typeof GlobalConfig> = [configRecord];
+    const config: Static<typeof GlobalConfig> = {
+      version: CURRENT_CONFIG_FILE_VERSION,
+      workspaces: [newWorkspace],
+    };
     const result = await writeContent(
       globalConfigFileResource,
       config,
@@ -379,7 +383,7 @@ export async function addWorkspaceToGlobalConfig(params: {
     }
     return {
       type: "success",
-      content: configRecord,
+      content: newWorkspace,
     };
   }
 
@@ -392,10 +396,10 @@ export async function addWorkspaceToGlobalConfig(params: {
     return readResult;
   }
 
-  const updatedConfig: Static<typeof GlobalConfig> = [
-    ...readResult.content,
-    configRecord,
-  ];
+  const updatedConfig = {
+    version: readResult.content.version,
+    workspaces: [...readResult.content.workspaces, newWorkspace],
+  };
 
   const writeResult = await writeContent(
     globalConfigFileResource,
@@ -408,14 +412,15 @@ export async function addWorkspaceToGlobalConfig(params: {
 
   return {
     type: "success",
-    content: configRecord,
+    content: newWorkspace,
   };
 }
 
 export async function createWorkspaceFolder(
   name: string,
   path: string
-): Promise<FileSystemResult<Static<typeof GlobalConfig>[0]>> {
+): Promise<FileSystemResult<{ name: string; id: string; path: string }>> {
+  console.log("createWorkspaceFolder called", name, path);
   const folderCreationResult = await createFolder(
     createFsResource({
       rootPath: path,
@@ -448,9 +453,21 @@ export async function createWorkspaceFolder(
   });
 }
 
+export async function migrateGlobalConfig(oldConfig: any) {
+  if (!oldConfig.version) {
+    return {
+      version: CURRENT_CONFIG_FILE_VERSION,
+      workspaces: oldConfig,
+    };
+  }
+
+  return oldConfig;
+}
+
 export async function getAllWorkspaces(): Promise<
-  FileSystemResult<Static<typeof GlobalConfig>>
+  FileSystemResult<Static<typeof GlobalConfig>["workspaces"]>
 > {
+  console.log("getAllWorkspaces called");
   const globalConfigFileResource = createFsResource({
     rootPath: GLOBAL_CONFIG_FOLDER_PATH,
     path: appendPath(GLOBAL_CONFIG_FOLDER_PATH, GLOBAL_CONFIG_FILE_NAME),
@@ -459,10 +476,33 @@ export async function getAllWorkspaces(): Promise<
 
   const readResult = await parseFile({
     resource: globalConfigFileResource,
-    validator: GlobalConfig,
   });
 
-  return readResult;
+  if (readResult.type === "error") {
+    return readResult;
+  }
+  // @ts-ignore
+  if (readResult.content.version !== CURRENT_CONFIG_FILE_VERSION) {
+    const migratedConfig = await migrateGlobalConfig(readResult.content);
+    const writeResult = await writeContent(
+      globalConfigFileResource,
+      migratedConfig,
+      GlobalConfig
+    );
+    if (writeResult.type === "error") {
+      return writeResult;
+    }
+
+    return {
+      type: "success",
+      content: migratedConfig.workspaces,
+    };
+  }
+
+  // @ts-ignore
+  return readResult.content.workspaces as FileSystemResult<
+    Static<typeof GlobalConfig>["workspaces"]
+  >;
 }
 
 export function getParentFolderPath(fsResource: FsResource) {
