@@ -10,7 +10,7 @@ import {
   getNameOfResource,
   getNormalizedPath,
   mapSuccessfulFsResult,
-  parseContent,
+  parseJsonContent,
   removeUndefinedFromRoot,
 } from "./common-utils";
 import {
@@ -19,7 +19,6 @@ import {
   CONFIG_FILE,
   DESCRIPTION_FILE,
   ENVIRONMENT_VARIABLES_FOLDER,
-  fileTypeToValidator,
   GLOBAL_ENV_FILE,
 } from "./constants";
 import {
@@ -29,6 +28,7 @@ import {
   getFileNameFromPath,
   getParentFolderPath,
   parseFile,
+  parseFileRaw,
   parseFileResultToApi,
   parseFileToApi,
   parseFileToEnv,
@@ -42,9 +42,7 @@ import {
   ApiRecord,
   Auth,
   Config,
-  Description,
   EnvironmentRecord,
-  Variables,
   AuthType,
 } from "./schemas";
 import {
@@ -54,11 +52,19 @@ import {
   CollectionRecord,
   Environment,
   EnvironmentVariableValue,
-  ErrorFile,
+  ErroredRecords,
   FileSystemResult,
-  FileType,
+  FileTypeEnum,
   FsResource,
 } from "./types";
+import {
+  ApiRecordFileType,
+  AuthRecordFileType,
+  CollectionVariablesRecordFileType,
+  EnvironmentRecordFileType,
+  parseFileType,
+  ReadmeRecordFileType,
+} from "./file-types/file-types";
 
 export class FsManager {
   private rootPath: string;
@@ -76,7 +82,7 @@ export class FsManager {
       type: "file",
     });
     const rawConfig = fs.readFileSync(configFile.path).toString();
-    const parsedConfig = parseContent(rawConfig, Config);
+    const parsedConfig = parseJsonContent(rawConfig, Config);
     if (parsedConfig.type === "error") {
       throw new Error(
         `Could not load config from ${CONFIG_FILE}. ${parsedConfig.error.message}`
@@ -153,7 +159,7 @@ export class FsManager {
     });
     const fileResult = await parseFile({
       resource,
-      validator: ApiRecord,
+      fileType: new ApiRecordFileType(),
     });
     if (fileResult.type === "error") {
       return fileResult;
@@ -180,12 +186,12 @@ export class FsManager {
   async getAllRecords(): Promise<
     FileSystemResult<{
       records: APIEntity[];
-      errorFiles: ErrorFile[];
+      erroredRecords: ErroredRecords[];
     }>
   > {
     const resourceContainer = await this.parseFolder(this.rootPath, "api");
     const entities: APIEntity[] = [];
-    const errorFiles: ErrorFile[] = [];
+    const erroredRecords: ErroredRecords[] = [];
     // eslint-disable-next-line
     for (const resource of resourceContainer) {
       const entityParsingResult: FileSystemResult<APIEntity> | undefined =
@@ -208,11 +214,11 @@ export class FsManager {
         })();
 
       if (entityParsingResult?.type === "error") {
-        errorFiles.push({
+        erroredRecords.push({
           name: getFileNameFromPath(entityParsingResult.error.path),
           path: entityParsingResult.error.path,
           error: entityParsingResult.error.message,
-          type: entityParsingResult.error.fileType as FileType,
+          type: entityParsingResult.error.fileType,
         });
         // eslint-disable-next-line
         continue;
@@ -227,7 +233,7 @@ export class FsManager {
       type: "success",
       content: {
         records: entities,
-        errorFiles,
+        erroredRecords,
       },
     };
   }
@@ -235,29 +241,30 @@ export class FsManager {
   async getAllEnvironments(): Promise<
     FileSystemResult<{
       environments: Environment[];
-      errorFiles: ErrorFile[];
+      erroredRecords: ErroredRecords[];
     }>
   > {
+    const fileType = new EnvironmentRecordFileType();
     const resourceContainer = await this.parseFolder(
       this.rootPath,
       "environment"
     );
     console.log("ENV CONTAINER", { resourceContainer });
     const entities: Environment[] = [];
-    const errorFiles: ErrorFile[] = [];
+    const erroredRecords: ErroredRecords[] = [];
     // eslint-disable-next-line
     for (const resource of resourceContainer) {
       if (resource.type === "file") {
         const parsedResult = await parseFile({
           resource,
-          validator: EnvironmentRecord,
+          fileType,
         });
         if (parsedResult.type === "error") {
-          errorFiles.push({
+          erroredRecords.push({
             name: getNameOfResource(resource),
             path: parsedResult.error.path,
             error: parsedResult.error.message,
-            type: FileType.ENVIRONMENT,
+            type: fileType.type,
           });
           // eslint-disable-next-line
           continue;
@@ -276,7 +283,7 @@ export class FsManager {
       type: "success",
       content: {
         environments: entities,
-        errorFiles,
+        erroredRecords,
       },
     };
   }
@@ -297,7 +304,11 @@ export class FsManager {
         path,
         type: "file",
       });
-      const writeResult = await writeContent(resource, content, ApiRecord);
+      const writeResult = await writeContent(
+        resource,
+        content,
+        new ApiRecordFileType()
+      );
       if (writeResult.type === "error") {
         return writeResult;
       }
@@ -309,7 +320,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
@@ -325,7 +336,11 @@ export class FsManager {
         path: id,
         type: "file",
       });
-      const writeResult = await writeContent(resource, content, ApiRecord);
+      const writeResult = await writeContent(
+        resource,
+        content,
+        new ApiRecordFileType()
+      );
       if (writeResult.type === "error") {
         return writeResult;
       }
@@ -337,7 +352,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
@@ -364,7 +379,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
@@ -410,7 +425,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
@@ -437,7 +452,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
@@ -464,7 +479,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
@@ -496,7 +511,7 @@ export class FsManager {
           error: {
             message: "Collection name should not contain special characters.",
             path: id,
-            fileType: FileType.UNKNOWN,
+            fileType: FileTypeEnum.UNKNOWN,
           },
         };
       }
@@ -527,7 +542,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
@@ -556,8 +571,7 @@ export class FsManager {
       const writeResult = await writeContent(
         descriptionFileResource,
         description,
-        Description,
-        false
+        new ReadmeRecordFileType()
       );
       if (writeResult.type === "error") {
         return writeResult;
@@ -572,7 +586,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
@@ -601,7 +615,11 @@ export class FsManager {
           },
         };
       }
-      const writeResult = await writeContent(authFileResource, authData, Auth);
+      const writeResult = await writeContent(
+        authFileResource,
+        authData,
+        new AuthRecordFileType()
+      );
       if (writeResult.type === "error") {
         return writeResult;
       }
@@ -615,7 +633,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
@@ -650,7 +668,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
@@ -705,7 +723,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
@@ -761,7 +779,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
@@ -793,7 +811,11 @@ export class FsManager {
 
       const parsedVariables = parseToEnvironmentEntity(variables);
 
-      const writeResult = await writeContent(file, parsedVariables, Variables);
+      const writeResult = await writeContent(
+        file,
+        parsedVariables,
+        new CollectionVariablesRecordFileType()
+      );
       if (writeResult.type === "error") {
         return writeResult;
       }
@@ -805,7 +827,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
@@ -815,6 +837,7 @@ export class FsManager {
     patch: Partial<Static<typeof ApiRecord>>,
     id: string
   ): Promise<FileSystemResult<API>> {
+    const fileType = new ApiRecordFileType();
     try {
       removeUndefinedFromRoot(patch);
       const fileResource = this.createResource({
@@ -823,7 +846,7 @@ export class FsManager {
       });
       const parsedRecordResult = await parseFile({
         resource: fileResource,
-        validator: ApiRecord,
+        fileType,
       });
 
       if (parsedRecordResult.type === "error") {
@@ -837,7 +860,7 @@ export class FsManager {
       const writeResult = await writeContent(
         fileResource,
         updatedRecord,
-        ApiRecord
+        fileType
       );
       if (writeResult.type === "error") {
         return writeResult;
@@ -850,24 +873,24 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
   }
 
-  async writeToRawFile(
+  async writeRawRecord(
     id: string,
-    record: any,
-    fileType: FileType
+    rawRecord: string,
+    rawfileType: string
   ): Promise<FileSystemResult<unknown>> {
     try {
+      const fileType = parseFileType(rawfileType);
       const fileResource = this.createResource({
         id,
         type: "file",
       });
-      const validator = fileTypeToValidator[fileType];
-      const writeResult = await writeContent(fileResource, record, validator);
+      const writeResult = await writeContent(fileResource, rawRecord, fileType);
       return writeResult;
     } catch (e: any) {
       return {
@@ -875,7 +898,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
@@ -913,7 +936,7 @@ export class FsManager {
       const writeResult = await writeContent(
         envFile,
         content,
-        EnvironmentRecord
+        new EnvironmentRecordFileType()
       );
       if (writeResult.type === "error") {
         return writeResult;
@@ -925,7 +948,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
@@ -937,6 +960,7 @@ export class FsManager {
       | { name: string }
       | { variables: Record<string, EnvironmentVariableValue> }
   ): Promise<FileSystemResult<Environment>> {
+    const fileType = new EnvironmentRecordFileType();
     try {
       removeUndefinedFromRoot(patch);
       const fileResource = this.createResource({
@@ -945,7 +969,7 @@ export class FsManager {
       });
       const parsedRecordResult = await parseFile({
         resource: fileResource,
-        validator: EnvironmentRecord,
+        fileType,
       });
 
       if (parsedRecordResult.type === "error") {
@@ -967,7 +991,7 @@ export class FsManager {
       const writeResult = await writeContent(
         fileResource,
         updatedRecord,
-        EnvironmentRecord
+        fileType
       );
       if (writeResult.type === "error") {
         return writeResult;
@@ -980,7 +1004,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
@@ -1016,7 +1040,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
@@ -1025,6 +1049,7 @@ export class FsManager {
   async duplicateEnvironment(
     id: string
   ): Promise<FileSystemResult<Environment>> {
+    const fileType = new EnvironmentRecordFileType();
     try {
       const fileResource = this.createResource({
         id,
@@ -1036,13 +1061,13 @@ export class FsManager {
           error: {
             message: "Global environment cannnot be copied!",
             path: fileResource.path,
-            fileType: FileType.UNKNOWN,
+            fileType: FileTypeEnum.UNKNOWN,
           },
         };
       }
       const originalEnvironment = await parseFile({
         resource: fileResource,
-        validator: EnvironmentRecord,
+        fileType,
       });
 
       if (originalEnvironment.type === "error") {
@@ -1066,7 +1091,7 @@ export class FsManager {
       const writeResult = await writeContent(
         resource,
         newEnvironmentContent,
-        EnvironmentRecord
+        fileType
       );
       if (writeResult.type === "error") {
         return writeResult;
@@ -1079,18 +1104,18 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
   }
 
-  async getRawFileData(id: string): Promise<FileSystemResult<any>> {
+  async getRawFileData(id: string): Promise<FileSystemResult<string>> {
     const fileResource = this.createResource({
       id,
       type: "file",
     });
-    const parsedRecordResult = await parseFile({
+    const parsedRecordResult = await parseFileRaw({
       resource: fileResource,
     });
     if (parsedRecordResult.type === "error") {
@@ -1121,7 +1146,7 @@ export class FsManager {
         const writeResult = await writeContent(
           descriptionFile,
           { description: collection.description },
-          Description
+          new ReadmeRecordFileType()
         );
         if (writeResult.type === "error") {
           return writeResult;
@@ -1139,7 +1164,7 @@ export class FsManager {
         const writeResult = await writeContent(
           authFile,
           collection.data.auth,
-          Auth
+          new AuthRecordFileType()
         );
         if (writeResult.type === "error") {
           return writeResult;
@@ -1154,7 +1179,7 @@ export class FsManager {
         const writeResult = await writeContent(
           variablesFile,
           collection.data.variables,
-          Variables
+          new CollectionVariablesRecordFileType()
         );
         if (writeResult.type === "error") {
           return writeResult;
@@ -1168,7 +1193,7 @@ export class FsManager {
         error: {
           message: e.message || "An unexpected error has occured!",
           path: e.path || "Unknown path",
-          fileType: FileType.UNKNOWN,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }

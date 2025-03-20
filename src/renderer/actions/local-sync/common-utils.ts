@@ -74,22 +74,22 @@ export function createFsResource<T extends FsResource["type"]>(params: {
   }
 }
 
-export function parseRawJson<T extends TSchema>(
-  json: Record<any, any>,
+export function parseRaw<T extends TSchema>(
+  content: any,
   validator: T
 ): ContentParseResult<Static<T>> {
   try {
     const parsedContent = Value.Parse(
       ["Assert"],
       validator,
-      json
+      content
     ) as Static<T>;
     return {
       type: "success",
       content: parsedContent,
     } as ContentParseResult<Static<T>>; // Casting because TS was not able to infer from fn result type
   } catch {
-    const error = [...Value.Errors(validator, json)][0];
+    const error = [...Value.Errors(validator, content)][0];
     return {
       type: "error",
       error: {
@@ -99,13 +99,13 @@ export function parseRawJson<T extends TSchema>(
   }
 }
 
-export function parseContent<T extends TSchema>(
+export function parseJsonContent<T extends TSchema>(
   content: string,
   validator: T
 ): ContentParseResult<Static<T>> {
   try {
     const parsedJson = JSON.parse(content);
-    return parseRawJson(parsedJson, validator);
+    return parseRaw(parsedJson, validator);
   } catch (e: any) {
     return {
       type: "error",
@@ -123,6 +123,7 @@ export function getIdFromPath(path: string) {
 export function mapSuccessWrite<
   T extends FileSystemResult<{ resource: FsResource }>,
   R extends FileSystemResult<any>
+  // eslint-disable-next-line no-unused-vars
 >(writeResult: T, fn: (id: string) => R) {
   if (writeResult.type === "success") {
     const { resource } = writeResult.content;
@@ -140,6 +141,7 @@ export function mapSuccessfulFsResult<
   Content,
   T extends FileSystemResult<Content>,
   R
+  // eslint-disable-next-line no-unused-vars
 >(result: T, fn: (param: T & { type: "success" }) => R) {
   if (result.type === "success") {
     const newContent = fn(result as T & { type: "success" });

@@ -8,7 +8,7 @@ import {
   EnvironmentVariableValue,
   FileResource,
   FileSystemResult,
-  FileType,
+  FileTypeEnum,
   FolderResource,
   FsResource,
 } from "./types";
@@ -18,7 +18,6 @@ import {
   getIdFromPath,
   getNameOfResource,
   getNormalizedPath,
-  parseContent,
 } from "./common-utils";
 import {
   COLLECTION_AUTH_FILE,
@@ -27,23 +26,28 @@ import {
   DESCRIPTION_FILE,
   DS_STORE_FILE,
   ENVIRONMENT_VARIABLES_FOLDER,
-  fileTypeToValidator,
   GLOBAL_CONFIG_FILE_NAME,
   GLOBAL_CONFIG_FOLDER_PATH,
 } from "./constants";
 import { Static, TSchema } from "@sinclair/typebox";
 import {
   ApiMethods,
-  ApiRecord,
-  Config,
   EnvironmentRecord,
   Variables,
   EnvironmentVariableType,
   GlobalConfig,
-  Description,
   Auth,
 } from "./schemas";
 import { Stats } from "node:fs";
+import { FileType } from "./file-types/file-type.interface";
+import {
+  ApiRecordFileType,
+  AuthRecordFileType,
+  CollectionVariablesRecordFileType,
+  EnvironmentRecordFileType,
+  GlobalConfigRecordFileType,
+  ReadmeRecordFileType,
+} from "./file-types/file-types";
 
 export async function getFsResourceStats(
   resource: FsResource
@@ -60,16 +64,10 @@ export async function getFsResourceStats(
       error: {
         message: e.message || "An unexpected error has occured!",
         path: resource.path,
-        fileType: "unknown" as FileType,
+        fileType: FileTypeEnum.UNKNOWN,
       },
     };
   }
-}
-
-export function getFileTypeFromValidator(validator: TSchema): FileType {
-  return Object.keys(fileTypeToValidator).find(
-    (key) => fileTypeToValidator[key as FileType] === validator
-  ) as FileType;
 }
 
 export async function getIfFolderExists(resource: FolderResource) {
@@ -125,7 +123,7 @@ export async function deleteFsResource(
       error: {
         message: e.message || "An unexpected error has occured!",
         path: resource.path,
-        fileType: "unknown" as FileType,
+        fileType: FileTypeEnum.UNKNOWN,
       },
     };
   }
@@ -148,7 +146,7 @@ export async function createFolder(
         error: {
           message: "Folder already exists!",
           path: resource.path,
-          fileType: "unknown" as FileType,
+          fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
@@ -164,7 +162,7 @@ export async function createFolder(
       error: {
         message: e.message || "An unexpected error has occured!",
         path: resource.path,
-        fileType: "unknown" as FileType,
+        fileType: FileTypeEnum.UNKNOWN,
       },
     };
   }
@@ -186,7 +184,7 @@ export async function rename<T extends FsResource>(
       error: {
         message: e.message || "An unexpected error has occured!",
         path: oldResource.path,
-        fileType: "unknown" as FileType,
+        fileType: FileTypeEnum.UNKNOWN,
       },
     };
   }
@@ -210,7 +208,7 @@ export async function copyRecursive<T extends FsResource>(
       error: {
         message: e.message || "An unexpected error has occured!",
         path: sourceResource.path,
-        fileType: "unknown" as FileType,
+        fileType: FileTypeEnum.UNKNOWN,
       },
     };
   }
@@ -223,27 +221,51 @@ export function serializeContentForWriting(content: string | Record<any, any>) {
   return JSON.stringify(content, null, 2);
 }
 
-export async function writeContent<T extends TSchema>(
+export async function writeContent(
   resource: FileResource,
-  content: string | Record<any, any>,
-  validator: T,
-  parseAsJson = true
+  content: Record<any, any> | string,
+  fileType: FileType<any>
+): Promise<FileSystemResult<{ resource: FileResource }>> {
+  try {
+    const parsedContentResult = fileType.parse(content);
+    if (parsedContentResult.type === "error") {
+      return {
+        type: "error",
+        error: {
+          message: parsedContentResult.error.message,
+          path: resource.path,
+          fileType: fileType.type,
+        },
+      };
+    }
+
+    console.log("writing at", resource.path);
+    const serializedContent = serializeContentForWriting(content);
+    await fsp.writeFile(resource.path, serializedContent);
+    return {
+      type: "success",
+      content: {
+        resource,
+      },
+    };
+  } catch (e: any) {
+    return {
+      type: "error",
+      error: {
+        message: e.message || "An unexpected error has occurred!",
+        path: resource.path,
+        fileType: fileType.type,
+      },
+    };
+  }
+}
+
+export async function writeContentRaw(
+  resource: FileResource,
+  content: Record<any, any> | string
 ): Promise<FileSystemResult<{ resource: FileResource }>> {
   try {
     const serializedContent = serializeContentForWriting(content);
-    if (parseAsJson) {
-      const parsedContentResult = parseContent(serializedContent, validator);
-      if (parsedContentResult.type === "error") {
-        return {
-          type: "error",
-          error: {
-            message: parsedContentResult.error.message,
-            path: resource.path,
-            fileType: getFileTypeFromValidator(validator),
-          },
-        };
-      }
-    }
 
     console.log("writing at", resource.path);
     await fsp.writeFile(resource.path, serializedContent);
@@ -259,53 +281,63 @@ export async function writeContent<T extends TSchema>(
       error: {
         message: e.message || "An unexpected error has occurred!",
         path: resource.path,
-        fileType: getFileTypeFromValidator(validator),
+        fileType: FileTypeEnum.UNKNOWN,
       },
     };
   }
 }
 
-export async function parseFile<T extends TSchema>(params: {
+export async function parseFile<
+  V extends TSchema,
+  F extends FileType<V>
+>(params: {
   resource: FileResource;
-  validator?: T;
-  parseAsJson?: boolean;
-}): Promise<FileSystemResult<Static<T>>> {
-  const { resource, validator, parseAsJson = true } = params;
+  fileType: F;
+}): Promise<FileSystemResult<Static<F["validator"]>>> {
+  const { resource, fileType } = params;
   try {
     const content = (await fsp.readFile(resource.path)).toString();
-    if (!parseAsJson) {
+    const parsedContentResult = fileType.parse(content);
+    if (parsedContentResult.type === "error") {
       return {
-        type: "success",
-        content,
-      } as FileSystemResult<Static<T>>;
+        type: "error",
+        error: {
+          message: parsedContentResult.error.message,
+          path: resource.path,
+          fileType: fileType.type,
+        },
+      };
     }
-
-    if (validator) {
-      const parsedContentResult = parseContent(content, validator);
-      if (parsedContentResult.type === "error") {
-        return {
-          type: "error",
-          error: {
-            message: parsedContentResult.error.message,
-            path: resource.path,
-            fileType: getFileTypeFromValidator(validator),
-          },
-        };
-      }
-      return parsedContentResult;
-    }
-
-    return {
-      type: "success",
-      content: JSON.parse(content),
-    } as FileSystemResult<Static<T>>;
+    return parsedContentResult;
   } catch (e: any) {
     return {
       type: "error",
       error: {
         message: e.message || "An unexpected error has occurred!",
         path: resource.path,
-        fileType: "unknown" as FileType,
+        fileType: FileTypeEnum.UNKNOWN,
+      },
+    };
+  }
+}
+
+export async function parseFileRaw(params: {
+  resource: FileResource;
+}): Promise<FileSystemResult<string>> {
+  const { resource } = params;
+  try {
+    const content = (await fsp.readFile(resource.path)).toString();
+    return {
+      type: "success",
+      content,
+    };
+  } catch (e: any) {
+    return {
+      type: "error",
+      error: {
+        message: e.message || "An unexpected error has occurred!",
+        path: resource.path,
+        fileType: FileTypeEnum.UNKNOWN,
       },
     };
   }
@@ -328,7 +360,7 @@ export async function createGlobalConfigFolder(): Promise<
       error: {
         message: e.message || "An unexpected error has occured!",
         path: GLOBAL_CONFIG_FOLDER_PATH,
-        fileType: "unknown" as FileType,
+        fileType: FileTypeEnum.UNKNOWN,
       },
     };
   }
@@ -338,6 +370,7 @@ export async function addWorkspaceToGlobalConfig(params: {
   name: string;
   path: string;
 }): Promise<FileSystemResult<{ name: string; id: string; path: string }>> {
+  const fileType = new GlobalConfigRecordFileType();
   const { name, path } = params;
   const globalConfigFolderResource = createFsResource({
     rootPath: GLOBAL_CONFIG_FOLDER_PATH,
@@ -372,7 +405,7 @@ export async function addWorkspaceToGlobalConfig(params: {
     const result = await writeContent(
       globalConfigFileResource,
       config,
-      GlobalConfig
+      fileType
     );
     if (result.type === "error") {
       return result;
@@ -385,7 +418,7 @@ export async function addWorkspaceToGlobalConfig(params: {
 
   const readResult = await parseFile({
     resource: globalConfigFileResource,
-    validator: GlobalConfig,
+    fileType,
   });
 
   if (readResult.type === "error") {
@@ -400,7 +433,7 @@ export async function addWorkspaceToGlobalConfig(params: {
   const writeResult = await writeContent(
     globalConfigFileResource,
     updatedConfig,
-    GlobalConfig
+    fileType
   );
   if (writeResult.type === "error") {
     return writeResult;
@@ -427,7 +460,7 @@ export async function createWorkspaceFolder(
   if (folderCreationResult.type === "error") {
     return folderCreationResult;
   }
-  const configFileCreationResult = await writeContent(
+  const configFileCreationResult = await writeContentRaw(
     createFsResource({
       rootPath: path,
       path: appendPath(path, "requestly.json"),
@@ -435,8 +468,7 @@ export async function createWorkspaceFolder(
     }),
     {
       version: "0.0.1",
-    },
-    Config
+    }
   );
   if (configFileCreationResult.type === "error") {
     return configFileCreationResult;
@@ -459,7 +491,7 @@ export async function getAllWorkspaces(): Promise<
 
   const readResult = await parseFile({
     resource: globalConfigFileResource,
-    validator: GlobalConfig,
+    fileType: new GlobalConfigRecordFileType(),
   });
 
   return readResult;
@@ -501,7 +533,7 @@ async function getCollectionVariables(
         path: varsPath,
         type: "file",
       }),
-      validator: Variables,
+      fileType: new CollectionVariablesRecordFileType(),
     });
   }
 
@@ -528,8 +560,7 @@ async function getCollectionDescription(
         path: descriptionPath,
         type: "file",
       }),
-      validator: Description,
-      parseAsJson: false,
+      fileType: new ReadmeRecordFileType(),
     });
   }
 
@@ -556,7 +587,7 @@ async function getCollectionAuthData(
         path: authPath,
         type: "file",
       }),
-      validator: Auth,
+      fileType: new AuthRecordFileType(),
     });
   }
 
@@ -651,7 +682,7 @@ export async function parseFileToApi(
 ): Promise<FileSystemResult<API>> {
   const parsedFileResult = await parseFile({
     resource: file,
-    validator: ApiRecord,
+    fileType: new ApiRecordFileType(),
   });
 
   return parseFileResultToApi(rootPath, file, parsedFileResult);
@@ -706,7 +737,7 @@ export async function parseFileToEnv(
 ): Promise<FileSystemResult<Environment>> {
   const parsedFileResult = await parseFile({
     resource: file,
-    validator: EnvironmentRecord,
+    fileType: new EnvironmentRecordFileType(),
   });
 
   if (parsedFileResult.type === "error") {
@@ -754,6 +785,9 @@ export function parseToEnvironmentEntity(
 }
 
 export function getFileNameFromPath(path: string) {
+  if (path.endsWith("/")) {
+    throw new Error('Path seems to be a folder, ends with "/"');
+  }
   const parts = path.split("/");
   return parts[parts.length - 1];
 }

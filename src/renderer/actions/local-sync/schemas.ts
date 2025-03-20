@@ -1,3 +1,5 @@
+/* eslint-disable no-shadow */
+/* eslint-disable no-unused-vars */
 import { Type } from "@sinclair/typebox";
 
 export const Config = Type.Object({
@@ -29,23 +31,23 @@ export enum AuthType {
   BASIC_AUTH = "BASIC_AUTH",
 }
 
-type RequestBodyContainer = {
-  text?: string;
-  form?: KeyValuePair[];
-};
-
-enum RequestContentType {
-  RAW = "text/plain",
-  JSON = "application/json",
-  FORM = "application/x-www-form-urlencoded",
-}
-
 interface KeyValuePair {
   id: number;
   key: string;
   value: string;
   isEnabled: boolean;
   type?: string;
+}
+
+type RequestBodyContainer = {
+  text?: string;
+  form?: KeyValuePair[];
+};
+
+export enum RequestContentType {
+  RAW = "text/plain",
+  JSON = "application/json",
+  FORM = "application/x-www-form-urlencoded",
 }
 
 export const Auth = Type.Object({
@@ -102,7 +104,7 @@ export const ApiRecord = Type.Object({
   ),
   body: Type.Optional(Type.Any()),
   bodyContainer: Type.Optional(Type.Any()),
-  contentType: Type.Optional(Type.Any()),
+  contentType: Type.Optional(Type.Enum(RequestContentType)),
   auth: Type.Optional(Auth),
   scripts: Type.Optional(
     Type.Object({
