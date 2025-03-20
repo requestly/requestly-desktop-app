@@ -10,7 +10,6 @@ import {
   Variables,
 } from "../schemas";
 import { FileTypeEnum } from "../types";
-import { TUnknown, Type } from "@sinclair/typebox";
 import { parseJsonContent, parseRaw } from "../common-utils";
 
 export class ApiRecordFileType extends FileType<typeof ApiRecord> {
@@ -77,17 +76,7 @@ export class GlobalConfigRecordFileType extends FileType<typeof GlobalConfig> {
   }
 }
 
-export class UnknownFileType extends FileType<TUnknown> {
-  validator = Type.Unknown();
-
-  type = FileTypeEnum.UNKNOWN;
-
-  parse(content: string) {
-    return parseRaw(content, this.validator);
-  }
-}
-
-export function parseFileType(type: string): FileType<any> {
+export function parseFileType(type: string) {
   switch (type) {
     case FileTypeEnum.API:
       return new ApiRecordFileType();
@@ -101,9 +90,7 @@ export function parseFileType(type: string): FileType<any> {
       return new AuthRecordFileType();
     case FileTypeEnum.GLOBAL_CONFIG:
       return new GlobalConfigRecordFileType();
-    case FileTypeEnum.UNKNOWN:
-      return new UnknownFileType();
     default:
-      throw new Error("Invalid file type!");
+      throw new Error(`${type} is an invalid file type`);
   }
 }

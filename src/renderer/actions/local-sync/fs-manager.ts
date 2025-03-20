@@ -37,6 +37,7 @@ import {
   rename,
   sanitizeFsResourceList,
   writeContent,
+  writeContentRaw,
 } from "./fs-utils";
 import {
   ApiRecord,
@@ -885,12 +886,27 @@ export class FsManager {
     rawfileType: string
   ): Promise<FileSystemResult<unknown>> {
     try {
-      const fileType = parseFileType(rawfileType);
       const fileResource = this.createResource({
         id,
         type: "file",
       });
-      const writeResult = await writeContent(fileResource, rawRecord, fileType);
+      const fileType = parseFileType(rawfileType);
+      const parsedRecord = fileType.parse(rawRecord);
+      if (parsedRecord.type === "error") {
+        return {
+          type: "error",
+          error: {
+            message: parsedRecord.error.message,
+            path: fileResource.path,
+            fileType: fileType.type,
+          },
+        };
+      }
+
+      const writeResult = await writeContentRaw(
+        fileResource,
+        parsedRecord.content
+      );
       return writeResult;
     } catch (e: any) {
       return {
