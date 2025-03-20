@@ -95,6 +95,20 @@ export type Environment = {
 
 export type APIEntity = Collection | API | Environment;
 
+export type CollectionRecord = {
+  type: "collection";
+  name: string;
+  description?: string;
+  collectionId: string;
+  data: {
+    auth: Static<typeof Auth>;
+    variables: Variable;
+    scripts?: {
+      preRequest: string;
+      postResponse: string;
+    };
+  };
+};
 export type ErroredRecords = {
   name: string;
   path: string;

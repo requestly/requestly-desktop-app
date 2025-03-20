@@ -49,6 +49,7 @@ import {
   API,
   APIEntity,
   Collection,
+  CollectionRecord,
   Environment,
   EnvironmentVariableValue,
   ErroredRecords,
@@ -1121,5 +1122,80 @@ export class FsManager {
       return parsedRecordResult;
     }
     return parsedRecordResult;
+  }
+
+  async createCollectionFromCompleteRecord(
+    collection: CollectionRecord,
+    id: string
+  ): Promise<FileSystemResult<Collection>> {
+    try {
+      const collectionFolder = this.createResource({
+        id,
+        type: "folder",
+      });
+      const createResult = await createFolder(collectionFolder);
+      if (createResult.type === "error") {
+        return createResult;
+      }
+
+      if (collection.description?.length) {
+        const descriptionFile = this.createResource({
+          id: appendPath(collectionFolder.path, DESCRIPTION_FILE),
+          type: "file",
+        });
+        const writeResult = await writeContent(
+          descriptionFile,
+          { description: collection.description },
+          new ReadmeRecordFileType()
+        );
+        if (writeResult.type === "error") {
+          return writeResult;
+        }
+      }
+
+      if (
+        collection.data.auth &&
+        collection.data.auth.currentAuthType !== AuthType.NO_AUTH
+      ) {
+        const authFile = this.createResource({
+          id: appendPath(collectionFolder.path, COLLECTION_AUTH_FILE),
+          type: "file",
+        });
+        const writeResult = await writeContent(
+          authFile,
+          collection.data.auth,
+          new AuthRecordFileType()
+        );
+        if (writeResult.type === "error") {
+          return writeResult;
+        }
+      }
+
+      if (collection.data.variables) {
+        const variablesFile = this.createResource({
+          id: appendPath(collectionFolder.path, COLLECTION_VARIABLES_FILE),
+          type: "file",
+        });
+        const writeResult = await writeContent(
+          variablesFile,
+          collection.data.variables,
+          new CollectionVariablesRecordFileType()
+        );
+        if (writeResult.type === "error") {
+          return writeResult;
+        }
+      }
+
+      return parseFolderToCollection(this.rootPath, collectionFolder);
+    } catch (e: any) {
+      return {
+        type: "error",
+        error: {
+          message: e.message || "An unexpected error has occured!",
+          path: e.path || "Unknown path",
+          fileType: FileTypeEnum.UNKNOWN,
+        },
+      };
+    }
   }
 }
