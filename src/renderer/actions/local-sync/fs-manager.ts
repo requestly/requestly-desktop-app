@@ -1109,7 +1109,7 @@ export class FsManager {
     }
   }
 
-  async getRawFileData(id: string): Promise<FileSystemResult<any>> {
+  async getRawFileData(id: string): Promise<FileSystemResult<string>> {
     const fileResource = this.createResource({
       id,
       type: "file",
