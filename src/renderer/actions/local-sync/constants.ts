@@ -9,6 +9,7 @@ import {
 import { FileType } from "./types";
 import { TSchema, Type } from "@sinclair/typebox";
 
+export const CURRENT_CONFIG_FILE_VERSION = 0.1;
 export const CONFIG_FILE = "requestly.json";
 export const COLLECTION_AUTH_FILE = "auth.json";
 export const DESCRIPTION_FILE = "description.md";
