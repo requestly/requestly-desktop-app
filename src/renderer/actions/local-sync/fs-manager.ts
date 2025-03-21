@@ -1161,7 +1161,7 @@ export class FsManager {
         });
         const writeResult = await writeContent(
           descriptionFile,
-          { description: collection.description },
+          collection.description,
           new ReadmeRecordFileType()
         );
         if (writeResult.type === "error") {
@@ -1192,9 +1192,12 @@ export class FsManager {
           id: appendPath(collectionFolder.path, COLLECTION_VARIABLES_FILE),
           type: "file",
         });
+        const parsedVariables = parseToEnvironmentEntity(
+          collection.data.variables
+        );
         const writeResult = await writeContent(
           variablesFile,
-          collection.data.variables,
+          parsedVariables,
           new CollectionVariablesRecordFileType()
         );
         if (writeResult.type === "error") {
