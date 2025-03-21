@@ -18,6 +18,7 @@ import {
   getIdFromPath,
   getNameOfResource,
   getNormalizedPath,
+  parseRaw,
 } from "./common-utils";
 import {
   COLLECTION_AUTH_FILE,
@@ -227,7 +228,7 @@ export async function writeContent(
   fileType: FileType<any>
 ): Promise<FileSystemResult<{ resource: FileResource }>> {
   try {
-    const parsedContentResult = fileType.parse(content);
+    const parsedContentResult = parseRaw(content, fileType.validator);
     if (parsedContentResult.type === "error") {
       return {
         type: "error",

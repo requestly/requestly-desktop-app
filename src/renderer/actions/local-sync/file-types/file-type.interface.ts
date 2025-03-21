@@ -7,5 +7,5 @@ export abstract class FileType<V extends TSchema> {
   abstract validator: V;
 
   // eslint-disable-next-line no-unused-vars
-  abstract parse(content: any): ContentParseResult<Static<V>>;
+  abstract parse(content: string): ContentParseResult<Static<V>>;
 }
