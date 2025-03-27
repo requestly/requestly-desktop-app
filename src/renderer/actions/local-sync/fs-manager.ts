@@ -66,6 +66,7 @@ import {
   parseFileType,
   ReadmeRecordFileType,
 } from "./file-types/file-types";
+import { isEmpty } from "lodash";
 
 export class FsManager {
   private rootPath: string;
@@ -1187,7 +1188,7 @@ export class FsManager {
         }
       }
 
-      if (collection.data.variables) {
+      if (!isEmpty(collection.data.variables)) {
         const variablesFile = this.createResource({
           id: appendPath(collectionFolder.path, COLLECTION_VARIABLES_FILE),
           type: "file",
