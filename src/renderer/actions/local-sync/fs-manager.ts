@@ -53,7 +53,7 @@ import {
   CollectionRecord,
   Environment,
   EnvironmentVariableValue,
-  ErroredRecords,
+  ErroredRecord,
   FileSystemResult,
   FileTypeEnum,
   FsResource,
@@ -188,12 +188,12 @@ export class FsManager {
   async getAllRecords(): Promise<
     FileSystemResult<{
       records: APIEntity[];
-      erroredRecords: ErroredRecords[];
+      erroredRecords: ErroredRecord[];
     }>
   > {
     const resourceContainer = await this.parseFolder(this.rootPath, "api");
     const entities: APIEntity[] = [];
-    const erroredRecords: ErroredRecords[] = [];
+    const erroredRecords: ErroredRecord[] = [];
     // eslint-disable-next-line
     for (const resource of resourceContainer) {
       const entityParsingResult: FileSystemResult<APIEntity> | undefined =
@@ -243,7 +243,7 @@ export class FsManager {
   async getAllEnvironments(): Promise<
     FileSystemResult<{
       environments: Environment[];
-      erroredRecords: ErroredRecords[];
+      erroredRecords: ErroredRecord[];
     }>
   > {
     const fileType = new EnvironmentRecordFileType();
@@ -253,7 +253,7 @@ export class FsManager {
     );
     console.log("ENV CONTAINER", { resourceContainer });
     const entities: Environment[] = [];
-    const erroredRecords: ErroredRecords[] = [];
+    const erroredRecords: ErroredRecord[] = [];
     // eslint-disable-next-line
     for (const resource of resourceContainer) {
       if (resource.type === "file") {

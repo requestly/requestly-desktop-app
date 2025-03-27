@@ -109,7 +109,7 @@ export type CollectionRecord = {
     };
   };
 };
-export type ErroredRecords = {
+export type ErroredRecord = {
   name: string;
   path: string;
   error: string;
