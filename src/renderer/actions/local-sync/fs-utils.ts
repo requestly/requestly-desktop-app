@@ -49,6 +49,7 @@ import {
   GlobalConfigRecordFileType,
   ReadmeRecordFileType,
 } from "./file-types/file-types";
+import path from "node:path";
 
 export async function getFsResourceStats(
   resource: FsResource
@@ -372,7 +373,7 @@ export async function addWorkspaceToGlobalConfig(params: {
   path: string;
 }): Promise<FileSystemResult<{ name: string; id: string; path: string }>> {
   const fileType = new GlobalConfigRecordFileType();
-  const { name, path } = params;
+  const { name, path: workspacePath } = params;
   const globalConfigFolderResource = createFsResource({
     rootPath: GLOBAL_CONFIG_FOLDER_PATH,
     path: GLOBAL_CONFIG_FOLDER_PATH,
@@ -396,7 +397,7 @@ export async function addWorkspaceToGlobalConfig(params: {
   const configRecord: Static<typeof GlobalConfig>[0] = {
     id: uuidv4(),
     name,
-    path,
+    path: workspacePath,
   };
   const globalConfigFileExists = await getIfFileExists(
     globalConfigFileResource
@@ -448,12 +449,12 @@ export async function addWorkspaceToGlobalConfig(params: {
 
 export async function createWorkspaceFolder(
   name: string,
-  path: string
+  workspacePath: string
 ): Promise<FileSystemResult<Static<typeof GlobalConfig>[0]>> {
   const folderCreationResult = await createFolder(
     createFsResource({
-      rootPath: path,
-      path,
+      rootPath: workspacePath,
+      path: workspacePath,
       type: "folder",
     })
   );
@@ -463,8 +464,8 @@ export async function createWorkspaceFolder(
   }
   const configFileCreationResult = await writeContentRaw(
     createFsResource({
-      rootPath: path,
-      path: appendPath(path, "requestly.json"),
+      rootPath: workspacePath,
+      path: appendPath(workspacePath, "requestly.json"),
       type: "file",
     }),
     {
@@ -477,7 +478,7 @@ export async function createWorkspaceFolder(
 
   return addWorkspaceToGlobalConfig({
     name,
-    path,
+    path: workspacePath,
   });
 }
 
@@ -499,12 +500,8 @@ export async function getAllWorkspaces(): Promise<
 }
 
 export function getParentFolderPath(fsResource: FsResource) {
-  const { path } = fsResource;
-  const name = getNameOfResource(fsResource);
-  const normalizedName =
-    fsResource.type === "folder" ? getNormalizedPath(name) : name;
-  const [rawParent] = path.split(`/${normalizedName}`);
-  const parent = getNormalizedPath(rawParent);
+  const { path: resourcePath } = fsResource;
+  const parent = getNormalizedPath(path.dirname(resourcePath));
   return parent;
 }
 
@@ -785,10 +782,10 @@ export function parseToEnvironmentEntity(
   return newVariables;
 }
 
-export function getFileNameFromPath(path: string) {
-  if (path.endsWith("/")) {
+export function getFileNameFromPath(filePath: string) {
+  if (filePath.endsWith("/")) {
     throw new Error('Path seems to be a folder, ends with "/"');
   }
-  const parts = path.split("/");
+  const parts = filePath.split("/");
   return parts[parts.length - 1];
 }
