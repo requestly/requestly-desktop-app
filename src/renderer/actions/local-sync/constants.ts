@@ -1,5 +1,6 @@
 import { homedir } from "os";
 
+export const CORE_CONFIG_FILE_VERSION = 0.1;
 export const CONFIG_FILE = "requestly.json";
 export const COLLECTION_AUTH_FILE = "auth.json";
 export const DESCRIPTION_FILE = "README.md";

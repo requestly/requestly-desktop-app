@@ -129,10 +129,13 @@ export const EnvironmentRecord = Type.Object({
   variables: Variables,
 });
 
-export const GlobalConfig = Type.Array(
-  Type.Object({
-    id: Type.String(),
-    name: Type.String(),
-    path: Type.String(),
-  })
-);
+export const GlobalConfig = Type.Object({
+  version: Type.Number(),
+  workspaces: Type.Array(
+    Type.Object({
+      id: Type.String(),
+      name: Type.String(),
+      path: Type.String(),
+    })
+  ),
+});
