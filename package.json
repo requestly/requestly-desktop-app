@@ -1,7 +1,7 @@
 {
   "name": "requestly",
   "productName": "Requestly",
-  "version": "2.0.0",
+  "version": "2025.04.11",
   "main": "src/main/main.ts",
   "private": true,
   "description": "Intercept & Modify HTTP Requests",
