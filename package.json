@@ -1,7 +1,7 @@
 {
   "name": "requestly",
   "productName": "Requestly",
-  "version": "2025.04.11",
+  "version": "2025.04.13",
   "main": "src/main/main.ts",
   "private": true,
   "description": "Intercept & Modify HTTP Requests",
@@ -201,7 +201,7 @@
     ]
   },
   "devDependencies": {
-    "@electron/notarize": "^1.2.3",
+    "@electron/notarize": "^2.5.0",
     "@electron/rebuild": "^3.6.0",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.1",
     "@teamsupercell/typings-for-css-modules-loader": "^2.5.1",
