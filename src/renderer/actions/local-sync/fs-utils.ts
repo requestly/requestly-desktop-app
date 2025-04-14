@@ -500,44 +500,55 @@ export async function migrateGlobalConfig(oldConfig: any) {
 export async function getAllWorkspaces(): Promise<
   FileSystemResult<Static<typeof GlobalConfig>["workspaces"]>
 > {
-  const globalConfigFileResource = createFsResource({
-    rootPath: GLOBAL_CONFIG_FOLDER_PATH,
-    path: appendPath(GLOBAL_CONFIG_FOLDER_PATH, GLOBAL_CONFIG_FILE_NAME),
-    type: "file",
-  });
+  try {
+    const globalConfigFileResource = createFsResource({
+      rootPath: GLOBAL_CONFIG_FOLDER_PATH,
+      path: appendPath(GLOBAL_CONFIG_FOLDER_PATH, GLOBAL_CONFIG_FILE_NAME),
+      type: "file",
+    });
 
-  const readResult = await parseFileRaw({
-    resource: globalConfigFileResource,
-  });
+    const readResult = await parseFileRaw({
+      resource: globalConfigFileResource,
+    });
 
-  if (readResult.type === "error") {
-    return readResult;
-  }
+    if (readResult.type === "error") {
+      return readResult;
+    }
 
-  const { content } = readResult;
-  const parsedContent = JSON.parse(content);
-  // @ts-ignore
-  if (parsedContent.version !== CORE_CONFIG_FILE_VERSION) {
-    const migratedConfig = await migrateGlobalConfig(parsedContent);
-    const writeResult = await writeContent(
-      globalConfigFileResource,
-      migratedConfig,
-      new GlobalConfigRecordFileType()
-    );
-    if (writeResult.type === "error") {
-      return writeResult;
+    const { content } = readResult;
+    const parsedContent: Static<typeof GlobalConfig> = JSON.parse(content);
+
+    if (parsedContent.version !== CORE_CONFIG_FILE_VERSION) {
+      const migratedConfig = await migrateGlobalConfig(parsedContent);
+      const writeResult = await writeContent(
+        globalConfigFileResource,
+        migratedConfig,
+        new GlobalConfigRecordFileType()
+      );
+      if (writeResult.type === "error") {
+        return writeResult;
+      }
+
+      return {
+        type: "success",
+        content: migratedConfig.workspaces,
+      };
     }
 
     return {
       type: "success",
-      content: migratedConfig.workspaces,
+      content: parsedContent.workspaces,
+    };
+  } catch (error: any) {
+    return {
+      type: "error",
+      error: {
+        message: error.message || "An unexpected error has occurred!",
+        path: GLOBAL_CONFIG_FOLDER_PATH,
+        fileType: FileTypeEnum.GLOBAL_CONFIG,
+      },
     };
   }
-
-  // @ts-ignore
-  return readResult.content.workspaces as FileSystemResult<
-    Static<typeof GlobalConfig>["workspaces"]
-  >;
 }
 
 export function getParentFolderPath(fsResource: FsResource) {
