@@ -42,9 +42,10 @@ export class Electron {
     // const debugPort = await getPort({ port: proxyPort });
     const debugPort = proxyPort;
     const { pathToApplication } = options;
-    const cmd = isAppBundle(pathToApplication)
-      ? await findExecutableInApp(pathToApplication)
-      : pathToApplication;
+    // const cmd = isAppBundle(pathToApplication)
+    //   ? await findExecutableInApp(pathToApplication)
+    //   : pathToApplication;
+    const cmd = await findExecutableInApp(pathToApplication);
     const appProcess = spawn(cmd, [`--inspect-brk=${debugPort}`], {
       stdio: "inherit",
       env: Object.assign(
