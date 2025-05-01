@@ -1,7 +1,7 @@
 {
   "name": "requestly",
   "productName": "Requestly",
-  "version": "25.4.13",
+  "version": "25.5.1",
   "private": true,
   "description": "Intercept & Modify HTTP Requests",
   "main": "./dist/main/main.js",
@@ -30,6 +30,5 @@
   "resolutions": {
     "bufferutil": "4.0.3",
     "utf-8-validate": "5.0.6"
-    
   }
 }
