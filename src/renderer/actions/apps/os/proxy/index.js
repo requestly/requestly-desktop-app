@@ -1,7 +1,13 @@
 import { getCurrentProxyPort } from "renderer/actions/storage/cacheUtils";
 
-const { applyProxyOsx, removeProxyOsx } = require("./osx");
-const { applyProxyWindows, removeProxyWindows } = require("./windows");
+let applyProxyOsx, removeProxyOsx, applyProxyWindows, removeProxyWindows;
+
+if (process.platform === "darwin") {
+  ({ applyProxyOsx, removeProxyOsx } = require("./osx"));
+}
+else if (process.platform === "win32") {
+  ({ applyProxyWindows, removeProxyWindows } = require("./windows"));
+}
 
 const applyProxy = (port) => {
   const targetPort = port ? port : getCurrentProxyPort()
