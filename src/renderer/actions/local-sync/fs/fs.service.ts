@@ -1,29 +1,38 @@
 /* eslint-disable */
 import { Abortable } from "node:events";
-import fs, { Mode, ObjectEncodingOptions, OpenMode, PathLike, PathOrFileDescriptor, StatOptions } from "node:fs";
+import fs, {
+  Mode,
+  ObjectEncodingOptions,
+  OpenMode,
+  PathLike,
+  PathOrFileDescriptor,
+  StatOptions,
+} from "node:fs";
 import fsp, { FileHandle } from "node:fs/promises";
 import { Stream } from "node:stream";
+import { AccessFallback } from "./access-fallback.decorator";
+import { SudoCommandExecutor } from "../sudoCommandExecutor";
 
 export class FsService {
-
   static readFileSync(
     path: PathOrFileDescriptor,
     options?: {
       encoding?: null | undefined;
       flag?: string | undefined;
-  } | null) {
+    } | null
+  ) {
     return fs.readFileSync(path, options);
   }
 
   static readFile(
     path: PathLike | FileHandle,
     options?:
-        | ({
-              encoding?: null | undefined;
-              flag?: OpenMode | undefined;
-          } & Abortable)
-        | null
-    ) {
+      | ({
+          encoding?: null | undefined;
+          flag?: OpenMode | undefined;
+        } & Abortable)
+      | null
+  ) {
     return fsp.readFile(path, options);
   }
 
@@ -31,7 +40,7 @@ export class FsService {
     path: PathLike,
     options?:
       | (ObjectEncodingOptions & {
-            withFileTypes?: false | undefined;
+          withFileTypes?: false | undefined;
         })
       | BufferEncoding
       | null
@@ -57,16 +66,23 @@ export class FsService {
     return fsp.lstat(path, opts);
   }
 
+  @AccessFallback(SudoCommandExecutor.writeFile)
   static writeFile(
     file: PathLike | FileHandle,
-    data: string | NodeJS.ArrayBufferView | Iterable<string | NodeJS.ArrayBufferView> | AsyncIterable<string | NodeJS.ArrayBufferView> | Stream,
+    data:
+      | string
+      | NodeJS.ArrayBufferView
+      | Iterable<string | NodeJS.ArrayBufferView>
+      | AsyncIterable<string | NodeJS.ArrayBufferView>
+      | Stream,
     options?:
       | (ObjectEncodingOptions & {
-            mode?: Mode | undefined;
-            flag?: OpenMode | undefined;
+          mode?: Mode | undefined;
+          flag?: OpenMode | undefined;
         } & Abortable)
       | BufferEncoding
-      | null) {
+      | null
+  ) {
     return fsp.writeFile(file, data, options);
   }
 
@@ -74,6 +90,7 @@ export class FsService {
     return fsp.unlink(...params);
   }
 
+  @AccessFallback(SudoCommandExecutor.mkdir)
   static mkdir(...params: Parameters<typeof fsp.mkdir>) {
     return fsp.mkdir(...params);
   }

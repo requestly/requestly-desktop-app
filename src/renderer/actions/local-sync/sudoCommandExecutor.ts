@@ -1,5 +1,6 @@
 import { FsUnix } from "./fs-unix";
-import { FsWindows } from "./fs-windows";
+import { type FsService } from "./fs/fs.service";
+import { FsCommandProvider } from "./types";
 
 const sudo = require("@vscode/sudo-prompt");
 
@@ -7,71 +8,65 @@ const options = {
   name: "Requestly",
 };
 
-function getProvider() {
-  return process.platform === "win32" ? FsWindows : FsUnix;
+function getProvider(): FsCommandProvider {
+  if (process.platform === "darwin" || process.platform === "linux") {
+    return FsUnix;
+  }
+  throw new Error(`Unsupported platform ${process.platform}`);
 }
 
 export class SudoCommandExecutor {
-  static execCommand(command: string) {
-    return new Promise((resolve, reject) => {
-      sudo.exec(command, options, (error: any) => {
-        if (error) return reject(error);
-        return resolve({ success: true });
+  private static execCommand(command: string) {
+    return new Promise<string>((resolve, reject) => {
+      sudo.exec(command, options, (error: any, stdout: string) => {
+        if (error) {
+          console.error("DBG error rejecting:", error);
+          return reject(error);
+        }
+        return resolve(stdout);
       });
     });
   }
 
-  static async writeFile(filePath: string, content: string) {
-    try {
-      const command = getProvider().writeFile(filePath, content) as string;
-      return this.execCommand(command);
-    } catch (error) {
-      return error;
-    }
+  static async writeFile(
+    ...params: Parameters<typeof FsService.writeFile>
+  ): ReturnType<typeof FsService.writeFile> {
+    const command = getProvider().writeFile(...params);
+    await this.execCommand(command);
   }
 
-  static async unlink(filePath: string) {
-    try {
-      const command = getProvider().unlink(filePath) as string;
-      return this.execCommand(command);
-    } catch (error) {
-      return error;
-    }
+  static async unlink(
+    ...params: Parameters<typeof FsService.unlink>
+  ): ReturnType<typeof FsService.unlink> {
+    const command = getProvider().unlink(...params);
+    await this.execCommand(command);
   }
 
-  static async mkdir(dirPath: string) {
-    try {
-      const command = getProvider().mkdir(dirPath) as string;
-      return this.execCommand(command);
-    } catch (error) {
-      return error;
-    }
+  static async mkdir(
+    ...params: Parameters<typeof FsService.mkdir>
+  ): ReturnType<typeof FsService.mkdir> {
+    const command = getProvider().mkdir(...params);
+    return this.execCommand(command);
   }
 
-  static async rmdir(dirPath: string) {
-    try {
-      const command = getProvider().rmdir(dirPath) as string;
-      return this.execCommand(command);
-    } catch (error) {
-      return error;
-    }
+  static async rmdir(
+    ...params: Parameters<typeof FsService.rmdir>
+  ): ReturnType<typeof FsService.rmdir> {
+    const command = getProvider().rmdir(...params);
+    await this.execCommand(command);
   }
 
-  static async rename(oldPath: string, newPath: string) {
-    try {
-      const command = getProvider().rename(oldPath, newPath) as string;
-      return this.execCommand(command);
-    } catch (error) {
-      return error;
-    }
+  static async rename(
+    ...params: Parameters<typeof FsService.rename>
+  ): ReturnType<typeof FsService.rename> {
+    const command = getProvider().rename(...params);
+    await this.execCommand(command);
   }
 
-  static async cp(sourcePath: string, destPath: string) {
-    try {
-      const command = getProvider().cp(sourcePath, destPath) as string;
-      return this.execCommand(command);
-    } catch (error) {
-      return error;
-    }
+  static async cp(
+    ...params: Parameters<typeof FsService.cp>
+  ): ReturnType<typeof FsService.cp> {
+    const command = getProvider().cp(...params);
+    await this.execCommand(command);
   }
 }

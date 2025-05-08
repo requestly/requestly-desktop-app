@@ -1,25 +1,27 @@
+import { type FsService } from "./fs/fs.service";
+
 export class FsUnix {
-  static writeFile(filePath: string, content: string): string {
-    return `echo ${JSON.stringify(content)} > ${JSON.stringify(filePath)}`;
+  static writeFile(...params: Parameters<typeof FsService.writeFile>): string {
+    return `echo "${params[1]}" > "${params[0]}"`;
   }
 
-  static unlink(filePath: string): string {
-    return `rm -f ${JSON.stringify(filePath)}`;
+  static unlink(...params: Parameters<typeof FsService.unlink>): string {
+    return `rm -f "${params[0]}"`;
   }
 
-  static mkdir(dirPath: string): string {
-    return `mkdir -p ${JSON.stringify(dirPath)}`;
+  static mkdir(...params: Parameters<typeof FsService.mkdir>): string {
+    return `mkdir -p "${params[0]}"`;
   }
 
-  static rmdir(dirPath: string): string {
-    return `rm -rf ${JSON.stringify(dirPath)}`;
+  static rmdir(...params: Parameters<typeof FsService.rmdir>): string {
+    return `rm -rf "${params[0]}"`;
   }
 
-  static rename(oldPath: string, newPath: string): string {
-    return `mv ${JSON.stringify(oldPath)} ${JSON.stringify(newPath)}`;
+  static rename(...params: Parameters<typeof FsService.rename>): string {
+    return `mv "${params[0]}" "${params[1]}"`;
   }
 
-  static cp(sourcePath: string, destPath: string): string {
-    return `cp -r ${JSON.stringify(sourcePath)} ${JSON.stringify(destPath)}`;
+  static cp(...params: Parameters<typeof FsService.cp>): string {
+    return `cp -r ${JSON.stringify(params[0])} ${JSON.stringify(params[1])}`;
   }
 }
