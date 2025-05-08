@@ -178,3 +178,12 @@ export function removeUndefinedFromRoot(
     }
   });
 }
+
+/**
+ * Checks whether given value has a then function.
+ * @param wat A value to be checked.
+ */
+export function isThenable(wat: any): wat is Promise<any> {
+  // eslint-disable-next-line
+  return Boolean(wat?.then && typeof wat.then === 'function');
+}
