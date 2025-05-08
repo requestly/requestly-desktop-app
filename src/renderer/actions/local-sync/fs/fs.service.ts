@@ -90,8 +90,12 @@ export class FsService {
     return fsp.unlink(...params);
   }
 
-  @AccessFallback(SudoCommandExecutor.mkdir)
   static mkdir(...params: Parameters<typeof fsp.mkdir>) {
+    return fsp.mkdir(...params);
+  }
+
+  @AccessFallback(SudoCommandExecutor.mkdir)
+  static mkdirWithElevatedAccess(...params: Parameters<typeof fsp.mkdir>) {
     return fsp.mkdir(...params);
   }
 
