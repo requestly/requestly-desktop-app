@@ -67,6 +67,7 @@ import {
   ReadmeRecordFileType,
 } from "./file-types/file-types";
 import { isEmpty } from "lodash";
+import { FsService } from "./fs/fs.service";
 
 export class FsManager {
   private rootPath: string;
@@ -83,7 +84,7 @@ export class FsManager {
       id: getIdFromPath(appendPath(this.rootPath, CONFIG_FILE)),
       type: "file",
     });
-    const rawConfig = fs.readFileSync(configFile.path).toString();
+    const rawConfig = FsService.readFileSync(configFile.path).toString();
     const parsedConfig = parseJsonContent(rawConfig, Config);
     if (parsedConfig.type === "error") {
       throw new Error(
@@ -112,11 +113,11 @@ export class FsManager {
   private async parseFolder(rootPath: string, type: APIEntity["type"]) {
     const container: FsResource[] = [];
     const recursiveParser = async (path: string) => {
-      const children = await fsp.readdir(path);
+      const children = await FsService.readdir(path);
       // eslint-disable-next-line
       for (const child of children) {
         const resourcePath = appendPath(path, child);
-        const resourceMetadata = await fsp.stat(resourcePath);
+        const resourceMetadata = await FsService.stat(resourcePath);
 
         if (resourceMetadata.isDirectory()) {
           container.push(

@@ -1,4 +1,3 @@
-import fsp from "node:fs/promises";
 import { v4 as uuidv4 } from "uuid";
 import {
   API,
@@ -51,12 +50,13 @@ import {
   ReadmeRecordFileType,
 } from "./file-types/file-types";
 import path from "node:path";
+import { FsService } from "./fs/fs.service";
 
 export async function getFsResourceStats(
   resource: FsResource
 ): Promise<FileSystemResult<Stats>> {
   try {
-    const pathStats = await fsp.lstat(resource.path);
+    const pathStats = await FsService.lstat(resource.path);
     return {
       type: "success",
       content: pathStats,
@@ -101,7 +101,7 @@ export async function deleteFsResource(
           },
         };
       }
-      await fsp.unlink(resource.path);
+      await FsService.unlink(resource.path);
     } else {
       const exists = await getIfFolderExists(resource);
       if (!exists) {
@@ -112,7 +112,7 @@ export async function deleteFsResource(
           },
         };
       }
-      await fsp.rmdir(resource.path, { recursive: true });
+      await FsService.rmdir(resource.path, { recursive: true });
     }
     return {
       type: "success",
@@ -142,7 +142,7 @@ export async function createFolder(
       statsResult.type === "error" ? false : statsResult.content.isDirectory();
 
     if (!doesFolderExist) {
-      await fsp.mkdir(resource.path, { recursive: true });
+      await FsService.mkdir(resource.path, { recursive: true });
     } else if (errorIfDoesNotExist) {
       return {
         type: "error",
@@ -176,7 +176,7 @@ export async function rename<T extends FsResource>(
   newResource: T
 ): Promise<FileSystemResult<T>> {
   try {
-    await fsp.rename(oldResource.path, newResource.path);
+    await FsService.rename(oldResource.path, newResource.path);
     return {
       type: "success",
       content: newResource,
@@ -198,7 +198,7 @@ export async function copyRecursive<T extends FsResource>(
   destinationResource: T
 ): Promise<FileSystemResult<T>> {
   try {
-    await fsp.cp(sourceResource.path, destinationResource.path, {
+    await FsService.cp(sourceResource.path, destinationResource.path, {
       recursive: true,
     });
     return {
@@ -244,7 +244,7 @@ export async function writeContent(
 
     console.log("writing at", resource.path);
     const serializedContent = serializeContentForWriting(content);
-    await fsp.writeFile(resource.path, serializedContent);
+    await FsService.writeFile(resource.path, serializedContent);
     return {
       type: "success",
       content: {
@@ -271,7 +271,7 @@ export async function writeContentRaw(
     const serializedContent = serializeContentForWriting(content);
 
     console.log("writing at", resource.path);
-    await fsp.writeFile(resource.path, serializedContent);
+    await FsService.writeFile(resource.path, serializedContent);
     return {
       type: "success",
       content: {
@@ -299,7 +299,7 @@ export async function parseFile<
 }): Promise<FileSystemResult<Static<F["validator"]>>> {
   const { resource, fileType } = params;
   try {
-    const content = (await fsp.readFile(resource.path)).toString();
+    const content = (await FsService.readFile(resource.path)).toString();
     const parsedContentResult = fileType.parse(content);
     if (parsedContentResult.type === "error") {
       return {
@@ -329,7 +329,7 @@ export async function parseFileRaw(params: {
 }): Promise<FileSystemResult<string>> {
   const { resource } = params;
   try {
-    const content = (await fsp.readFile(resource.path)).toString();
+    const content = (await FsService.readFile(resource.path)).toString();
     return {
       type: "success",
       content,
@@ -571,8 +571,7 @@ async function getCollectionVariables(
   folder: FolderResource
 ): Promise<FileSystemResult<Static<typeof Variables>>> {
   const varsPath = appendPath(folder.path, COLLECTION_VARIABLES_FILE);
-  const collectionVariablesExist = await fsp
-    .lstat(varsPath)
+  const collectionVariablesExist = await FsService.lstat(varsPath)
     .then((stats) => stats.isFile())
     .catch(() => false);
 
@@ -598,8 +597,7 @@ async function getCollectionDescription(
   folder: FolderResource
 ): Promise<FileSystemResult<string>> {
   const descriptionPath = appendPath(folder.path, DESCRIPTION_FILE);
-  const descriptionFileExists = await fsp
-    .lstat(descriptionPath)
+  const descriptionFileExists = await FsService.lstat(descriptionPath)
     .then((stats) => stats.isFile())
     .catch(() => false);
 
@@ -625,8 +623,7 @@ async function getCollectionAuthData(
   folder: FolderResource
 ): Promise<FileSystemResult<Static<typeof Auth>>> {
   const authPath = appendPath(folder.path, COLLECTION_AUTH_FILE);
-  const authFileExists = await fsp
-    .lstat(authPath)
+  const authFileExists = await FsService.lstat(authPath)
     .then((stats) => stats.isFile())
     .catch(() => false);
 
