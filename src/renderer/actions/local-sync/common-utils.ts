@@ -185,5 +185,5 @@ export function removeUndefinedFromRoot(
  */
 export function isThenable(wat: any): wat is Promise<any> {
   // eslint-disable-next-line
-  return Boolean(wat?.then && typeof wat.then === 'function');
+  return Boolean(wat?.then && typeof wat.then === "function");
 }
