@@ -1,11 +1,12 @@
 import { FsUnix } from "./fs-unix";
-import { type FsService } from "./fs/fs.service";
-import { FsCommandProvider } from "./types";
+import { type FsService } from "./fs.service";
+import { FsCommandProvider } from "../types";
 
 const sudo = require("@vscode/sudo-prompt");
 
 const options = {
   name: "Requestly",
+  icns: "/Applications/Requestly.app/Contents/Resources/icon.icns",
 };
 
 function getProvider(): FsCommandProvider {
@@ -68,5 +69,12 @@ export class SudoCommandExecutor {
   ): ReturnType<typeof FsService.cp> {
     const command = getProvider().cp(...params);
     await SudoCommandExecutor.execCommand(command);
+  }
+
+  static async readFile(
+    ...params: Parameters<typeof FsService.readFile>
+  ): ReturnType<typeof FsService.readFile> {
+    const command = getProvider().readFile(...params);
+    return SudoCommandExecutor.execCommand(command);
   }
 }

@@ -126,4 +126,5 @@ export interface FsCommandProvider {
   rmdir: (...params: Parameters<typeof FsService.rmdir>) => string;
   rename: (...params: Parameters<typeof FsService.rename>) => string;
   cp: (...params: Parameters<typeof FsService.cp>) => string;
+  readFile: (...params: Parameters<typeof FsService.readFile>) => string;
 }

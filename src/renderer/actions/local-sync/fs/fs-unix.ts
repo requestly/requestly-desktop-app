@@ -1,5 +1,5 @@
 import { PathLike } from "node:fs";
-import { type FsService } from "./fs/fs.service";
+import { type FsService } from "./fs.service";
 import { FileHandle } from "node:fs/promises";
 
 function sanitizePath(rawPath: PathLike | FileHandle) {
@@ -20,7 +20,7 @@ function sanitizePath(rawPath: PathLike | FileHandle) {
 
 /*
 @TODO: This needs to consume string | NodeJS.ArrayBufferView | Iterable<string | NodeJS.ArrayBufferView> | AsyncIterable<string | NodeJS.ArrayBufferView> | internal.Stream
- and convert it into string that can be used in a shell command 
+ and convert it into string that can be used in a shell command
  */
 
 export class FsUnix {
@@ -53,5 +53,10 @@ export class FsUnix {
   static cp(...params: Parameters<typeof FsService.cp>): string {
     const path = sanitizePath(params[0]);
     return `cp -r ${path} ${params[1]}`;
+  }
+
+  static readFile(...params: Parameters<typeof FsService.readFile>): string {
+    const path = sanitizePath(params[0]);
+    return `cat ${path}`;
   }
 }

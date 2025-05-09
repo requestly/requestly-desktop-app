@@ -508,7 +508,10 @@ export async function createWorkspaceFolder(
       rootPath: sanitizedWorkspacePath,
       path: sanitizedWorkspacePath,
       type: "folder",
-    })
+    }),
+    {
+      createWithElevatedAccess: true,
+    }
   );
 
   if (folderCreationResult.type === "error") {
@@ -522,6 +525,9 @@ export async function createWorkspaceFolder(
     }),
     {
       version: "0.0.1",
+    },
+    {
+      writeWithElevatedAccess: true,
     }
   );
   if (configFileCreationResult.type === "error") {

@@ -11,7 +11,7 @@ import fs, {
 import fsp, { FileHandle } from "node:fs/promises";
 import { Stream } from "node:stream";
 import { AccessFallback } from "./access-fallback.decorator";
-import { SudoCommandExecutor } from "../sudoCommandExecutor";
+import { SudoCommandExecutor } from "./sudoCommandExecutor";
 
 export class FsService {
   static readFileSync(
@@ -32,8 +32,15 @@ export class FsService {
           flag?: OpenMode | undefined;
         } & Abortable)
       | null
-  ) {
+  ): Promise<string | Buffer> {
     return fsp.readFile(path, options);
+  }
+
+  @AccessFallback(SudoCommandExecutor.readFile)
+  static readFileWithElevatedAccess(
+    ...params: Parameters<typeof FsService.readFile>
+  ) {
+    return FsService.readFile(...params);
   }
 
   static readdir(
@@ -87,22 +94,9 @@ export class FsService {
 
   @AccessFallback(SudoCommandExecutor.writeFile)
   static writeFileWithElevatedAccess(
-    file: PathLike | FileHandle,
-    data:
-      | string
-      | NodeJS.ArrayBufferView
-      | Iterable<string | NodeJS.ArrayBufferView>
-      | AsyncIterable<string | NodeJS.ArrayBufferView>
-      | Stream,
-    options?:
-      | (ObjectEncodingOptions & {
-          mode?: Mode | undefined;
-          flag?: OpenMode | undefined;
-        } & Abortable)
-      | BufferEncoding
-      | null
+    ...params: Parameters<typeof FsService.writeFile>
   ) {
-    return fsp.writeFile(file, data, options);
+    return FsService.writeFile(...params);
   }
 
   static unlink(...params: Parameters<typeof fsp.unlink>) {
@@ -115,7 +109,7 @@ export class FsService {
 
   @AccessFallback(SudoCommandExecutor.mkdir)
   static mkdirWithElevatedAccess(...params: Parameters<typeof fsp.mkdir>) {
-    return fsp.mkdir(...params);
+    return FsService.mkdir(...params);
   }
 
   static rmdir(...params: Parameters<typeof fsp.rmdir>) {
