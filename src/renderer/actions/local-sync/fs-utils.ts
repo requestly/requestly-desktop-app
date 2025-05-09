@@ -52,6 +52,11 @@ import {
 import path from "node:path";
 import { FsService } from "./fs/fs.service";
 
+// TODO: Fix the delimiters added by electron on file paths
+function sanitizePath(rawPath: string) {
+  return rawPath;
+}
+
 export async function getFsResourceStats(
   resource: FsResource
 ): Promise<FileSystemResult<Stats>> {
@@ -134,15 +139,26 @@ export async function deleteFsResource(
 
 export async function createFolder(
   resource: FolderResource,
-  errorIfDoesNotExist = false
+  options?: {
+    errorIfDoesNotExist?: boolean;
+    createWithElevatedAccess?: boolean;
+  }
 ): Promise<FileSystemResult<{ resource: FolderResource }>> {
+  const { errorIfDoesNotExist = false, createWithElevatedAccess = false } =
+    options || {};
   try {
     const statsResult = await getFsResourceStats(resource);
     const doesFolderExist =
       statsResult.type === "error" ? false : statsResult.content.isDirectory();
 
     if (!doesFolderExist) {
-      await FsService.mkdir(resource.path, { recursive: true });
+      if (createWithElevatedAccess) {
+        await FsService.mkdirWithElevatedAccess(resource.path, {
+          recursive: true,
+        });
+      } else {
+        await FsService.mkdir(resource.path, { recursive: true });
+      }
     } else if (errorIfDoesNotExist) {
       return {
         type: "error",
@@ -227,9 +243,13 @@ export function serializeContentForWriting(content: string | Record<any, any>) {
 export async function writeContent(
   resource: FileResource,
   content: Record<any, any> | string,
-  fileType: FileType<any>
+  fileType: FileType<any>,
+  options?: {
+    writeWithElevatedAccess?: boolean;
+  }
 ): Promise<FileSystemResult<{ resource: FileResource }>> {
   try {
+    const { writeWithElevatedAccess = false } = options || {};
     const parsedContentResult = parseRaw(content, fileType.validator);
     if (parsedContentResult.type === "error") {
       return {
@@ -244,7 +264,14 @@ export async function writeContent(
 
     console.log("writing at", resource.path);
     const serializedContent = serializeContentForWriting(content);
-    await FsService.writeFile(resource.path, serializedContent);
+    if (writeWithElevatedAccess) {
+      await FsService.writeFileWithElevatedAccess(
+        resource.path,
+        serializedContent
+      );
+    } else {
+      await FsService.writeFile(resource.path, serializedContent);
+    }
     return {
       type: "success",
       content: {
@@ -265,13 +292,24 @@ export async function writeContent(
 
 export async function writeContentRaw(
   resource: FileResource,
-  content: Record<any, any> | string
+  content: Record<any, any> | string,
+  options?: {
+    writeWithElevatedAccess?: boolean;
+  }
 ): Promise<FileSystemResult<{ resource: FileResource }>> {
   try {
+    const { writeWithElevatedAccess = false } = options || {};
     const serializedContent = serializeContentForWriting(content);
 
     console.log("writing at", resource.path);
-    await FsService.writeFile(resource.path, serializedContent);
+    if (writeWithElevatedAccess) {
+      await FsService.writeFileWithElevatedAccess(
+        resource.path,
+        serializedContent
+      );
+    } else {
+      await FsService.writeFile(resource.path, serializedContent);
+    }
     return {
       type: "success",
       content: {
@@ -355,7 +393,10 @@ export async function createGlobalConfigFolder(): Promise<
         rootPath: GLOBAL_CONFIG_FOLDER_PATH,
         path: GLOBAL_CONFIG_FOLDER_PATH,
         type: "folder",
-      })
+      }),
+      {
+        createWithElevatedAccess: true,
+      }
     );
   } catch (e: any) {
     return {
@@ -411,7 +452,10 @@ export async function addWorkspaceToGlobalConfig(params: {
     const result = await writeContent(
       globalConfigFileResource,
       config,
-      fileType
+      fileType,
+      {
+        writeWithElevatedAccess: true,
+      }
     );
     if (result.type === "error") {
       return result;
@@ -439,7 +483,10 @@ export async function addWorkspaceToGlobalConfig(params: {
   const writeResult = await writeContent(
     globalConfigFileResource,
     updatedConfig,
-    fileType
+    fileType,
+    {
+      writeWithElevatedAccess: true,
+    }
   );
   if (writeResult.type === "error") {
     return writeResult;
@@ -455,10 +502,11 @@ export async function createWorkspaceFolder(
   name: string,
   workspacePath: string
 ): Promise<FileSystemResult<{ name: string; id: string; path: string }>> {
+  const sanitizedWorkspacePath = sanitizePath(workspacePath);
   const folderCreationResult = await createFolder(
     createFsResource({
-      rootPath: workspacePath,
-      path: workspacePath,
+      rootPath: sanitizedWorkspacePath,
+      path: sanitizedWorkspacePath,
       type: "folder",
     })
   );
@@ -468,8 +516,8 @@ export async function createWorkspaceFolder(
   }
   const configFileCreationResult = await writeContentRaw(
     createFsResource({
-      rootPath: workspacePath,
-      path: appendPath(workspacePath, "requestly.json"),
+      rootPath: sanitizedWorkspacePath,
+      path: appendPath(sanitizedWorkspacePath, "requestly.json"),
       type: "file",
     }),
     {
@@ -482,7 +530,7 @@ export async function createWorkspaceFolder(
 
   return addWorkspaceToGlobalConfig({
     name,
-    path: workspacePath,
+    path: sanitizedWorkspacePath,
   });
 }
 

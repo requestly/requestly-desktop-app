@@ -66,8 +66,27 @@ export class FsService {
     return fsp.lstat(path, opts);
   }
 
-  @AccessFallback(SudoCommandExecutor.writeFile)
   static writeFile(
+    file: PathLike | FileHandle,
+    data:
+      | string
+      | NodeJS.ArrayBufferView
+      | Iterable<string | NodeJS.ArrayBufferView>
+      | AsyncIterable<string | NodeJS.ArrayBufferView>
+      | Stream,
+    options?:
+      | (ObjectEncodingOptions & {
+          mode?: Mode | undefined;
+          flag?: OpenMode | undefined;
+        } & Abortable)
+      | BufferEncoding
+      | null
+  ) {
+    return fsp.writeFile(file, data, options);
+  }
+
+  @AccessFallback(SudoCommandExecutor.writeFile)
+  static writeFileWithElevatedAccess(
     file: PathLike | FileHandle,
     data:
       | string

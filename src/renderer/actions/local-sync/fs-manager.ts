@@ -249,7 +249,6 @@ export class FsManager {
       this.rootPath,
       "environment"
     );
-    console.log("ENV CONTAINER", { resourceContainer });
     const entities: Environment[] = [];
     const erroredRecords: ErroredRecord[] = [];
     // eslint-disable-next-line
@@ -414,7 +413,9 @@ export class FsManager {
         path,
         type: "folder",
       });
-      const createResult = await createFolder(resource, true);
+      const createResult = await createFolder(resource, {
+        errorIfDoesNotExist: true,
+      });
       if (createResult.type === "error") {
         return createResult;
       }
@@ -515,20 +516,16 @@ export class FsManager {
           },
         };
       }
-      console.log("rename 1", id);
       const folderResource = this.createResource({
         id,
         type: "folder",
       });
       const parentPath = getParentFolderPath(folderResource);
-      console.log("rename 2", parentPath, newName);
 
       const newFolderResource = this.createResource({
         id: getIdFromPath(appendPath(parentPath, newName)),
         type: "folder",
       });
-
-      console.log("rename 3", newFolderResource);
 
       const renameResult = await rename(folderResource, newFolderResource);
       if (renameResult.type === "error") {
