@@ -2,6 +2,7 @@
 /* eslint-disable no-shadow */
 import { Static } from "@sinclair/typebox";
 import { Auth, EnvironmentVariableType } from "./schemas";
+import { type FsService } from "./fs/fs.service";
 
 export enum FileTypeEnum {
   API = "api",
@@ -117,3 +118,13 @@ export type ErroredRecord = {
 };
 
 export type AnyRecord = Record<any, any>;
+
+export interface FsCommandProvider {
+  writeFile: (...params: Parameters<typeof FsService.writeFile>) => string;
+  unlink: (...params: Parameters<typeof FsService.unlink>) => string;
+  mkdir: (...params: Parameters<typeof FsService.mkdir>) => string;
+  rmdir: (...params: Parameters<typeof FsService.rmdir>) => string;
+  rename: (...params: Parameters<typeof FsService.rename>) => string;
+  cp: (...params: Parameters<typeof FsService.cp>) => string;
+  readFile: (...params: Parameters<typeof FsService.readFile>) => string;
+}

@@ -1,7 +1,4 @@
 import { type Static } from "@sinclair/typebox";
-
-import fs from "node:fs";
-import fsp from "node:fs/promises";
 import { v4 as uuidv4 } from "uuid";
 import {
   appendPath,
@@ -67,6 +64,7 @@ import {
   ReadmeRecordFileType,
 } from "./file-types/file-types";
 import { isEmpty } from "lodash";
+import { FsService } from "./fs/fs.service";
 
 export class FsManager {
   private rootPath: string;
@@ -83,7 +81,7 @@ export class FsManager {
       id: getIdFromPath(appendPath(this.rootPath, CONFIG_FILE)),
       type: "file",
     });
-    const rawConfig = fs.readFileSync(configFile.path).toString();
+    const rawConfig = FsService.readFileSync(configFile.path).toString();
     const parsedConfig = parseJsonContent(rawConfig, Config);
     if (parsedConfig.type === "error") {
       throw new Error(
@@ -112,11 +110,11 @@ export class FsManager {
   private async parseFolder(rootPath: string, type: APIEntity["type"]) {
     const container: FsResource[] = [];
     const recursiveParser = async (path: string) => {
-      const children = await fsp.readdir(path);
+      const children = await FsService.readdir(path);
       // eslint-disable-next-line
       for (const child of children) {
         const resourcePath = appendPath(path, child);
-        const resourceMetadata = await fsp.stat(resourcePath);
+        const resourceMetadata = await FsService.stat(resourcePath);
 
         if (resourceMetadata.isDirectory()) {
           container.push(
@@ -251,7 +249,6 @@ export class FsManager {
       this.rootPath,
       "environment"
     );
-    console.log("ENV CONTAINER", { resourceContainer });
     const entities: Environment[] = [];
     const erroredRecords: ErroredRecord[] = [];
     // eslint-disable-next-line
@@ -416,7 +413,9 @@ export class FsManager {
         path,
         type: "folder",
       });
-      const createResult = await createFolder(resource, true);
+      const createResult = await createFolder(resource, {
+        errorIfDoesNotExist: true,
+      });
       if (createResult.type === "error") {
         return createResult;
       }
@@ -517,20 +516,16 @@ export class FsManager {
           },
         };
       }
-      console.log("rename 1", id);
       const folderResource = this.createResource({
         id,
         type: "folder",
       });
       const parentPath = getParentFolderPath(folderResource);
-      console.log("rename 2", parentPath, newName);
 
       const newFolderResource = this.createResource({
         id: getIdFromPath(appendPath(parentPath, newName)),
         type: "folder",
       });
-
-      console.log("rename 3", newFolderResource);
 
       const renameResult = await rename(folderResource, newFolderResource);
       if (renameResult.type === "error") {
