@@ -14,8 +14,19 @@ function sanitizePath(rawPath: PathLike | FileHandle) {
   }
 
   return path
-    .replace(/[\\'":$*?&|;<>`]/g, "") // Remove all special characters
-    .replace(/\s+/g, ""); // Remove all whitespace
+    .replace(/\\/g, "\\\\") // Escape backslashes first
+    .replace(/'/g, "\\'") // Escape single quotes
+    .replace(/"/g, '\\"') // Escape double quotes
+    .replace(/ /g, "\\ ") // Escape spaces
+    .replace(/\$/g, "\\$") // Escape dollar sign
+    .replace(/\*/g, "\\*") // Escape asterisk
+    .replace(/\?/g, "\\?") // Escape question mark
+    .replace(/&/g, "\\&") // Escape ampersand
+    .replace(/\|/g, "\\|") // Escape pipe
+    .replace(/;/g, "\\;") // Escape semicolon
+    .replace(/</g, "\\<") // Escape less than
+    .replace(/>/g, "\\>") // Escape greater than
+    .replace(/`/g, "\\`"); // Escape backtick
 }
 
 /*
