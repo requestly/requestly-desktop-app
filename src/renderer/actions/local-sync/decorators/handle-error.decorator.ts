@@ -3,15 +3,15 @@ import { isThenable } from "../common-utils";
 import { ErrorCode, FileSystemError, FileTypeEnum } from "../types";
 
 export function HandleError(
-  target: any,
+  _target: any,
   _propertyKey: string | symbol,
-  descriptor: PropertyDescriptor,
+  descriptor: PropertyDescriptor
 ) {
   const originalMethod = descriptor.value!;
 
   descriptor.value = function (...args: any[]) {
     try {
-      const possiblePromiseResult = originalMethod.apply(target, args);
+      const possiblePromiseResult = originalMethod.apply(this, args);
       if (isThenable<FileSystemError>(possiblePromiseResult)) {
         return possiblePromiseResult.catch((e) => {
           return {
