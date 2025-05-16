@@ -164,6 +164,7 @@ const initEventHandlers = () => {
   });
 
   ipcRenderer.on("rq-storage:storage-updated", async (event, payload) => {
+    console.log("DBG-1: renderer store update listener", payload);
     storageCacheService.updateCache(payload?.storeName);
   });
 

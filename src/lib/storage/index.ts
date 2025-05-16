@@ -2,10 +2,12 @@ import AccessedFilesProcessor from "./action-processors/accessed-files";
 import BaseActionProcessor from "./action-processors/base";
 import SSLProxyingActionProcessor from "./action-processors/ssl-proxying";
 import UserPreferenceActionProcessor from "./action-processors/user-preference";
+import LogConfigActionProcessor from "./action-processors/offline-log-config";
 import { STORE_NAME } from "./constants";
 import { userPreferenceSchema } from "./schemas/userPreferenceSchema";
 import StoreWrapper from "./store-wrapper";
 import { StorageAction } from "./types/storage-action";
+import { offlinelogConfigSchema } from "./schemas/offlineLogConfigSchema";
 
 class StorageService {
   actionProcessors: BaseActionProcessor[];
@@ -16,11 +18,15 @@ class StorageService {
 
   accesssedFileStore!: StoreWrapper;
 
+  offlineLogConfigStore!: StoreWrapper;
+
   sslProxyingActionProcessor!: BaseActionProcessor;
 
   userPreferenceActionProcessor!: BaseActionProcessor;
 
   accessFileActionProcessor!: BaseActionProcessor;
+
+  offlineLogConfigActionProcessor!: BaseActionProcessor;
 
   constructor() {
     this.actionProcessors = [];
@@ -31,6 +37,7 @@ class StorageService {
     this.initSSLProxying();
     this.initUserPreferences();
     this.initAccessFileStore();
+    this.initOfflineLogConfigStore();
   };
 
   initSSLProxying = () => {
@@ -62,6 +69,18 @@ class StorageService {
     );
     this.actionProcessors.push(this.accessFileActionProcessor);
   };
+
+  initOfflineLogConfigStore = () => {
+    const storeName = STORE_NAME.OFFLINE_LOG_CONFIG;
+    this.offlineLogConfigStore = new StoreWrapper(
+      storeName,
+      offlinelogConfigSchema
+    );
+    this.offlineLogConfigActionProcessor = new LogConfigActionProcessor(
+      this.offlineLogConfigStore
+    );
+    this.actionProcessors.push(this.offlineLogConfigActionProcessor);
+  }
 
   /**
    *
