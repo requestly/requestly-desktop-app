@@ -13,6 +13,7 @@ class StorageCacheService {
   init = () => {
     this.updateCache(STORE_NAME.SSL_PROXYING);
     this.updateCache(STORE_NAME.USER_PREFERENCE);
+    this.updateCache(STORE_NAME.OFFLINE_LOG_CONFIG)
   };
 
   updateCache = (storeName: string) => {
@@ -40,6 +41,12 @@ class StorageCacheService {
         // might not be necessary when other user preference attributes are added
         this.restartProxyServer(newUserPreferences?.defaultPort)
         break;
+      case STORE_NAME.OFFLINE_LOG_CONFIG:
+        global.rq.offlineLogConfig = storageService.processAction({
+          type: ACTION_TYPES.OFFLINE_LOG_CONFIG.GET_ALL,
+        });
+        console.log(`Updated ${storeName} cache`);
+        break;
       default:
         console.log(`${storeName} cache not found`);
     }
@@ -55,6 +62,8 @@ class StorageCacheService {
         return global.rq.sslProxyingStorage;
       case STORE_NAME.USER_PREFERENCE:
         return global.rq.userPreferences;
+      case STORE_NAME.OFFLINE_LOG_CONFIG:
+        return global.rq.offlineLogConfig;
       default:
         console.log(`${storeName} cache not found`);
     }
