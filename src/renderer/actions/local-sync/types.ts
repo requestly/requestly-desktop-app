@@ -14,20 +14,25 @@ export enum FileTypeEnum {
   UNKNOWN = "unknown",
 }
 
+export enum ErrorCode {
+  WrongInput = "wrong_input",
+  PermissionDenied = "permission_denied",
+  UNKNOWN = "unknown",
+}
+
 export type FileSystemError = {
-  message: string;
-  path: string;
-  fileType: FileTypeEnum;
+  type: "error";
+  error: {
+    message: string;
+    path: string;
+    fileType: FileTypeEnum;
+    code: ErrorCode;
+  };
 };
 export type ContentfulSuccess<T> = T extends void
   ? { type: "success" }
   : { type: "success"; content: T };
-export type FileSystemResult<T> =
-  | ContentfulSuccess<T>
-  | {
-      type: "error";
-      error: FileSystemError;
-    };
+export type FileSystemResult<T> = ContentfulSuccess<T> | FileSystemError;
 export type ContentParseError = { message: string };
 export type ContentParseResult<T> =
   | ContentfulSuccess<T>
