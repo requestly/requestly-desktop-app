@@ -989,6 +989,7 @@ export class FsManager {
 
     if (
       collection.data.auth &&
+      !isEmpty(collection.data.auth) &&
       collection.data.auth.currentAuthType !== AuthType.NO_AUTH
     ) {
       const authFile = this.createResource({
