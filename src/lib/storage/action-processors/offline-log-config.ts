@@ -11,7 +11,6 @@ class offlineLogConfigActionProcessor extends BaseActionProcessor {
   process = ({ type, payload }: StorageAction) => {
     switch(type) {
       case OFFLINE_LOG_CONFIG.GET_ALL:
-        console.log("DBG: get all config", this.store.getAll())
         return this.store.getAll()
 
       // case OFFLINE_LOG_CONFIG.ALL:
@@ -38,7 +37,6 @@ class offlineLogConfigActionProcessor extends BaseActionProcessor {
       case OFFLINE_LOG_CONFIG.SET_IS_LOGGING_ENABLED:
         // @ts-ignore
         let isEnabled = payload?.data?.isEnabled
-        console.log("DBG-2: set isEnabled", isEnabled)
         if (typeof isEnabled === "boolean") {
           this.store.set({"isEnabled": isEnabled})
         }
@@ -62,13 +60,11 @@ class offlineLogConfigActionProcessor extends BaseActionProcessor {
       case OFFLINE_LOG_CONFIG.SET_STORE_PATH:
         // @ts-ignore
         const storePath = payload?.data?.storePath
-        console.log("DBG-2: set storePath", storePath)
         this.store.set({"storePath": storePath})
         break;
       case OFFLINE_LOG_CONFIG.SET_FILTER:
         // @ts-ignore
         const filter = payload?.data?.filter
-        console.log("DBG-2: set filter", filter)
         this.store.set({"filter": filter})
         break;
 

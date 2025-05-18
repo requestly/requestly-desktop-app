@@ -48,7 +48,6 @@ class StoreWrapper {
     this.store.onDidAnyChange(() => {
       // @ts-ignore
       if (global.backgroundWindow)
-        console.log("DBG: store updated", this.storeName);
         // @ts-ignore
         global.backgroundWindow.send("rq-storage:storage-updated", {
           storeName: this.storeName,
