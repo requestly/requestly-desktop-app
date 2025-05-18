@@ -69,7 +69,7 @@ class offlineLogConfigActionProcessor extends BaseActionProcessor {
         break;
 
       default:
-        console.log("unexpected user preference action", type, payload)
+        console.log("unexpected offline log config action", type, payload)
     }
   };
 }
