@@ -19,24 +19,6 @@ function saveLogToOfflineStore(log) {
     }
   }
 
-  function getFilePathFromLogConfig(logConfig) {
-    if (logConfig && logConfig.storePath) {
-      const fileName = getFormattedDate() + ".jsonl";
-      const filePath = logConfig.storePath + "/" + fileName;
-      return filePath;
-    }
-    return null;
-
-    // dd-mm-yyyy
-    function getFormattedDate() {
-      const date = new Date();
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
-      const year = date.getFullYear();
-      return `${day}-${month}-${year}`;
-    }
-  }
-
   function doesLogMatchConfig(log, logConfig) {
     const logURL = getURLFromLog(log);
     if(logURL) {
@@ -71,6 +53,32 @@ function saveLogToOfflineStore(log) {
       });
     } catch (error) {
       console.error("Error writing to log file:", error);
+    }
+  }
+}
+
+function getFilePathFromLogConfig(logConfig) {
+  if (logConfig && logConfig.storePath) {
+    const fileName = "logs.jsonl";
+    const filePath = logConfig.storePath + "/" + fileName;
+    return filePath;
+  }
+  return null;
+}
+
+export function clearStoredLogs() {
+  console.log("Clearing stored logs...");
+  const logConfig = storageCacheService.getCache(STORE_NAME.OFFLINE_LOG_CONFIG);
+  if (logConfig && logConfig.storePath) {
+    const filePath = getFilePathFromLogConfig(logConfig);
+    if (filePath && fs.existsSync(filePath)) {
+      fs.truncate(filePath, 0, (err) => {
+        if (err) {
+          console.error("Error clearing log file:", err);
+        } else {
+          console.log("Log file cleared successfully.");
+        }
+      });
     }
   }
 }

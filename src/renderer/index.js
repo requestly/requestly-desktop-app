@@ -13,6 +13,7 @@ import initGroupsCache from "./actions/storage/initGroupsCache";
 import { initAppManager } from "./actions/apps";
 import "./types";
 import { FsManagerBuilderRPCService } from "./actions/local-sync/fs-manager-builder.rpc-service";
+import { clearStoredLogs } from "./lib/proxy-interface/loggerService";
 
 // initPrimaryStorageCache();
 initRulesCache();
@@ -20,6 +21,8 @@ initGroupsCache();
 /** IPC  **/
 initEventHandlers();
 initAppManager();
+/* stored logs */
+clearStoredLogs();
 
 // import "../utils/sentryInit";
 // const LocalFileSyncer = new LocalFileSync();
