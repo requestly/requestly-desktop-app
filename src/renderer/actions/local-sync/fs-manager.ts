@@ -31,8 +31,11 @@ import {
   parseFileToEnv,
   parseFolderToCollection,
   parseToEnvironmentEntity,
+  readdir,
+  readFileSync,
   rename,
   sanitizeFsResourceList,
+  stat,
   writeContent,
   writeContentRaw,
 } from "./fs-utils";
@@ -65,7 +68,6 @@ import {
   ReadmeRecordFileType,
 } from "./file-types/file-types";
 import { isEmpty } from "lodash";
-import { FsService } from "./fs/fs.service";
 import { HandleError } from "./decorators/handle-error.decorator";
 
 export class FsManager {
@@ -83,8 +85,13 @@ export class FsManager {
       id: getIdFromPath(appendPath(this.rootPath, CONFIG_FILE)),
       type: "file",
     });
-    const rawConfig = FsService.readFileSync(configFile.path).toString();
-    const parsedConfig = parseJsonContent(rawConfig, Config);
+    const rawConfig = readFileSync(configFile.path);
+    if (rawConfig.type === "error") {
+      throw new Error(
+        `Could not load config from ${CONFIG_FILE}. ${rawConfig.error.message}`
+      );
+    }
+    const parsedConfig = parseJsonContent(rawConfig.content, Config);
     if (parsedConfig.type === "error") {
       throw new Error(
         `Could not load config from ${CONFIG_FILE}. ${parsedConfig.error.message}`
@@ -109,16 +116,25 @@ export class FsManager {
     });
   }
 
-  private async parseFolder(rootPath: string, type: APIEntity["type"]) {
+  private async parseFolder(
+    rootPath: string,
+    type: APIEntity["type"]
+  ): Promise<FileSystemResult<FsResource[]>> {
     const container: FsResource[] = [];
     const recursiveParser = async (path: string) => {
-      const children = await FsService.readdir(path);
+      const childrenResult = await readdir(path);
+      if (childrenResult.type === "error") {
+        return childrenResult;
+      }
       // eslint-disable-next-line
-      for (const child of children) {
+      for (const child of childrenResult.content) {
         const resourcePath = appendPath(path, child);
-        const resourceMetadata = await FsService.stat(resourcePath);
+        const resourceMetadataResult = await stat(resourcePath);
+        if (resourceMetadataResult.type === "error") {
+          return resourceMetadataResult;
+        }
 
-        if (resourceMetadata.isDirectory()) {
+        if (resourceMetadataResult.content.isDirectory()) {
           container.push(
             this.createResource({
               id: getIdFromPath(resourcePath),
@@ -135,10 +151,17 @@ export class FsManager {
           );
         }
       }
+      return undefined;
     };
 
-    await recursiveParser(rootPath);
-    return sanitizeFsResourceList(rootPath, container, type);
+    const error = await recursiveParser(rootPath);
+    if (error) {
+      return error;
+    }
+    return {
+      type: "success",
+      content: sanitizeFsResourceList(rootPath, container, type),
+    };
   }
 
   // eslint-disable-next-line
@@ -194,11 +217,17 @@ export class FsManager {
       erroredRecords: ErroredRecord[];
     }>
   > {
-    const resourceContainer = await this.parseFolder(this.rootPath, "api");
+    const resourceContainerResult = await this.parseFolder(
+      this.rootPath,
+      "api"
+    );
+    if (resourceContainerResult.type === "error") {
+      return resourceContainerResult;
+    }
     const entities: APIEntity[] = [];
     const erroredRecords: ErroredRecord[] = [];
     // eslint-disable-next-line
-    for (const resource of resourceContainer) {
+    for (const resource of resourceContainerResult.content) {
       const entityParsingResult: FileSystemResult<APIEntity> | undefined =
         await (async () => {
           if (resource.type === "folder") {
@@ -251,14 +280,17 @@ export class FsManager {
     }>
   > {
     const fileType = new EnvironmentRecordFileType();
-    const resourceContainer = await this.parseFolder(
+    const resourceContainerResult = await this.parseFolder(
       this.rootPath,
       "environment"
     );
+    if (resourceContainerResult.type === "error") {
+      return resourceContainerResult;
+    }
     const entities: Environment[] = [];
     const erroredRecords: ErroredRecord[] = [];
     // eslint-disable-next-line
-    for (const resource of resourceContainer) {
+    for (const resource of resourceContainerResult.content) {
       if (resource.type === "file") {
         const parsedResult = await parseFile({
           resource,
