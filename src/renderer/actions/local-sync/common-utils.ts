@@ -1,6 +1,13 @@
 import { Static, TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
-import { ContentParseResult, FileSystemResult, FsResource } from "./types";
+import {
+  ContentParseResult,
+  ErrorCode,
+  FileSystemError,
+  FileSystemResult,
+  FileTypeEnum,
+  FsResource,
+} from "./types";
 
 export class FsResourceCreationError extends Error {
   path: string;
@@ -183,7 +190,30 @@ export function removeUndefinedFromRoot(
  * Checks whether given value has a then function.
  * @param wat A value to be checked.
  */
-export function isThenable(wat: any): wat is Promise<any> {
+export function isThenable<T = any>(wat: any): wat is Promise<T> {
   // eslint-disable-next-line
   return Boolean(wat?.then && typeof wat.then === "function");
+}
+
+export function isAccessError(error: any) {
+  return error.code === "EACCES";
+}
+
+export function createFileSystemError(
+  error: { message: string },
+  path: string,
+  fileType: FileTypeEnum
+): FileSystemError {
+  const errorCode = isAccessError(error)
+    ? ErrorCode.PermissionDenied
+    : ErrorCode.UNKNOWN;
+  return {
+    type: "error",
+    error: {
+      code: errorCode,
+      message: error.message || "An unexpected error has occurred!",
+      path,
+      fileType,
+    },
+  };
 }

@@ -50,6 +50,7 @@ import {
   CollectionRecord,
   Environment,
   EnvironmentVariableValue,
+  ErrorCode,
   ErroredRecord,
   FileSystemResult,
   FileTypeEnum,
@@ -65,6 +66,7 @@ import {
 } from "./file-types/file-types";
 import { isEmpty } from "lodash";
 import { FsService } from "./fs/fs.service";
+import { HandleError } from "./decorators/handle-error.decorator";
 
 export class FsManager {
   private rootPath: string;
@@ -152,6 +154,7 @@ export class FsManager {
     return envFolderPath;
   }
 
+  @HandleError
   async getRecord(id: string): Promise<FileSystemResult<API>> {
     const resource = this.createResource({
       id,
@@ -173,6 +176,7 @@ export class FsManager {
     return parseResult;
   }
 
+  @HandleError
   async getCollection(id: string): Promise<FileSystemResult<Collection>> {
     const resource = this.createResource({
       id,
@@ -183,6 +187,7 @@ export class FsManager {
     return parseResult;
   }
 
+  @HandleError
   async getAllRecords(): Promise<
     FileSystemResult<{
       records: APIEntity[];
@@ -238,6 +243,7 @@ export class FsManager {
     };
   }
 
+  @HandleError
   async getAllEnvironments(): Promise<
     FileSystemResult<{
       environments: Environment[];
@@ -287,103 +293,74 @@ export class FsManager {
     };
   }
 
+  @HandleError
   async createRecord(
     content: Static<typeof ApiRecord>,
     collectionId?: string
   ): Promise<FileSystemResult<API>> {
-    try {
-      const folderResource = this.createResource({
-        id: collectionId || getIdFromPath(this.rootPath),
-        type: "folder",
-      });
+    const folderResource = this.createResource({
+      id: collectionId || getIdFromPath(this.rootPath),
+      type: "folder",
+    });
 
-      const path = appendPath(folderResource.path, this.generateFileName());
-      const resource = createFsResource({
-        rootPath: this.rootPath,
-        path,
-        type: "file",
-      });
-      const writeResult = await writeContent(
-        resource,
-        content,
-        new ApiRecordFileType()
-      );
-      if (writeResult.type === "error") {
-        return writeResult;
-      }
-
-      return parseFileToApi(this.rootPath, resource);
-    } catch (e: any) {
-      return {
-        type: "error",
-        error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
-          fileType: FileTypeEnum.UNKNOWN,
-        },
-      };
+    const path = appendPath(folderResource.path, this.generateFileName());
+    const resource = createFsResource({
+      rootPath: this.rootPath,
+      path,
+      type: "file",
+    });
+    const writeResult = await writeContent(
+      resource,
+      content,
+      new ApiRecordFileType()
+    );
+    if (writeResult.type === "error") {
+      return writeResult;
     }
+
+    return parseFileToApi(this.rootPath, resource);
   }
 
+  @HandleError
   async createRecordWithId(
     content: Static<typeof ApiRecord>,
     id: string
   ): Promise<FileSystemResult<API>> {
-    try {
-      const resource = createFsResource({
-        rootPath: this.rootPath,
-        path: id,
-        type: "file",
-      });
-      const writeResult = await writeContent(
-        resource,
-        content,
-        new ApiRecordFileType()
-      );
-      if (writeResult.type === "error") {
-        return writeResult;
-      }
-
-      return parseFileToApi(this.rootPath, resource);
-    } catch (e: any) {
-      return {
-        type: "error",
-        error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
-          fileType: FileTypeEnum.UNKNOWN,
-        },
-      };
+    const resource = createFsResource({
+      rootPath: this.rootPath,
+      path: id,
+      type: "file",
+    });
+    const writeResult = await writeContent(
+      resource,
+      content,
+      new ApiRecordFileType()
+    );
+    if (writeResult.type === "error") {
+      return writeResult;
     }
+
+    return parseFileToApi(this.rootPath, resource);
   }
 
+  @HandleError
   async deleteRecord(id: string): Promise<FileSystemResult<void>> {
-    try {
-      const resource = createFsResource({
-        rootPath: this.rootPath,
-        path: id,
-        type: "file",
-      });
-      const deleteResult = await deleteFsResource(resource);
-      if (deleteResult.type === "error") {
-        return deleteResult;
-      }
-
-      return {
-        type: "success",
-      };
-    } catch (e: any) {
-      return {
-        type: "error",
-        error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
-          fileType: FileTypeEnum.UNKNOWN,
-        },
-      };
+    const resource = createFsResource({
+      rootPath: this.rootPath,
+      path: id,
+      type: "file",
+    });
+    const deleteResult = await deleteFsResource(resource);
+    if (deleteResult.type === "error") {
+      return deleteResult;
     }
+
+    return {
+      type: "success",
+    };
   }
 
+  @HandleError
   async deleteRecords(ids: string[]): Promise<FileSystemResult<void>> {
     // eslint-disable-next-line no-restricted-syntax
     for (const id of ids) {
@@ -398,94 +375,65 @@ export class FsManager {
     };
   }
 
+  @HandleError
   async createCollection(
     name: string,
     collectionId?: string
   ): Promise<FileSystemResult<Collection>> {
-    try {
-      const folderResource = this.createResource({
-        id: collectionId || getIdFromPath(this.rootPath),
-        type: "folder",
-      });
-      const path = appendPath(folderResource.path, name);
-      const resource = createFsResource({
-        rootPath: this.rootPath,
-        path,
-        type: "folder",
-      });
-      const createResult = await createFolder(resource, {
-        errorIfDoesNotExist: true,
-      });
-      if (createResult.type === "error") {
-        return createResult;
-      }
-      return parseFolderToCollection(this.rootPath, resource);
-    } catch (e: any) {
-      return {
-        type: "error",
-        error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
-          fileType: FileTypeEnum.UNKNOWN,
-        },
-      };
+    const folderResource = this.createResource({
+      id: collectionId || getIdFromPath(this.rootPath),
+      type: "folder",
+    });
+    const path = appendPath(folderResource.path, name);
+    const resource = createFsResource({
+      rootPath: this.rootPath,
+      path,
+      type: "folder",
+    });
+    const createResult = await createFolder(resource, {
+      errorIfDoesNotExist: true,
+    });
+    if (createResult.type === "error") {
+      return createResult;
     }
+    return parseFolderToCollection(this.rootPath, resource);
   }
 
+  @HandleError
   async createCollectionWithId(
     id: string
   ): Promise<FileSystemResult<Collection>> {
-    try {
-      const resource = createFsResource({
-        rootPath: this.rootPath,
-        path: id,
-        type: "folder",
-      });
-      const createResult = await createFolder(resource);
-      if (createResult.type === "error") {
-        return createResult;
-      }
-
-      return parseFolderToCollection(this.rootPath, resource);
-    } catch (e: any) {
-      return {
-        type: "error",
-        error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
-          fileType: FileTypeEnum.UNKNOWN,
-        },
-      };
+    const resource = createFsResource({
+      rootPath: this.rootPath,
+      path: id,
+      type: "folder",
+    });
+    const createResult = await createFolder(resource);
+    if (createResult.type === "error") {
+      return createResult;
     }
+
+    return parseFolderToCollection(this.rootPath, resource);
   }
 
+  @HandleError
   async deleteCollection(id: string): Promise<FileSystemResult<void>> {
-    try {
-      const resource = createFsResource({
-        rootPath: this.rootPath,
-        path: id,
-        type: "folder",
-      });
-      const deleteResult = await deleteFsResource(resource);
-      if (deleteResult.type === "error") {
-        return deleteResult;
-      }
-
-      return {
-        type: "success",
-      };
-    } catch (e: any) {
-      return {
-        type: "error",
-        error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
-          fileType: FileTypeEnum.UNKNOWN,
-        },
-      };
+    const resource = createFsResource({
+      rootPath: this.rootPath,
+      path: id,
+      type: "folder",
+    });
+    const deleteResult = await deleteFsResource(resource);
+    if (deleteResult.type === "error") {
+      return deleteResult;
     }
+
+    return {
+      type: "success",
+    };
   }
 
+  @HandleError
   async deleteCollections(ids: string[]): Promise<FileSystemResult<void>> {
     // eslint-disable-next-line no-restricted-syntax
     for (const id of ids) {
@@ -500,177 +448,139 @@ export class FsManager {
     };
   }
 
+  @HandleError
   async renameCollection(
     id: string,
     newName: string
   ): Promise<FileSystemResult<Collection>> {
-    try {
-      const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/g;
-      if (specialCharRegex.test(newName)) {
-        return {
-          type: "error",
-          error: {
-            message: "Collection name should not contain special characters.",
-            path: id,
-            fileType: FileTypeEnum.UNKNOWN,
-          },
-        };
-      }
-      const folderResource = this.createResource({
-        id,
-        type: "folder",
-      });
-      const parentPath = getParentFolderPath(folderResource);
-
-      const newFolderResource = this.createResource({
-        id: getIdFromPath(appendPath(parentPath, newName)),
-        type: "folder",
-      });
-
-      const renameResult = await rename(folderResource, newFolderResource);
-      if (renameResult.type === "error") {
-        return renameResult;
-      }
-
-      return parseFolderToCollection(this.rootPath, renameResult.content);
-    } catch (e: any) {
+    const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/g;
+    if (specialCharRegex.test(newName)) {
       return {
         type: "error",
         error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
+          code: ErrorCode.WrongInput,
+          message: "Collection name should not contain special characters.",
+          path: id,
           fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
+    const folderResource = this.createResource({
+      id,
+      type: "folder",
+    });
+    const parentPath = getParentFolderPath(folderResource);
+
+    const newFolderResource = this.createResource({
+      id: getIdFromPath(appendPath(parentPath, newName)),
+      type: "folder",
+    });
+
+    const renameResult = await rename(folderResource, newFolderResource);
+    if (renameResult.type === "error") {
+      return renameResult;
+    }
+
+    return parseFolderToCollection(this.rootPath, renameResult.content);
   }
 
+  @HandleError
   async updateCollectionDescription(
     id: string,
     description: string
   ): Promise<FileSystemResult<string>> {
-    try {
-      const descriptionFileResource = this.createResource({
-        id: getIdFromPath(appendPath(id, DESCRIPTION_FILE)),
-        type: "file",
-      });
-      if (!description.length) {
-        const deleteResult = await deleteFsResource(descriptionFileResource);
-        if (deleteResult.type === "error") {
-          return deleteResult;
-        }
-        return {
-          type: "success",
-          content: "",
-        };
-      }
-
-      const writeResult = await writeContent(
-        descriptionFileResource,
-        description,
-        new ReadmeRecordFileType()
-      );
-      if (writeResult.type === "error") {
-        return writeResult;
+    const descriptionFileResource = this.createResource({
+      id: getIdFromPath(appendPath(id, DESCRIPTION_FILE)),
+      type: "file",
+    });
+    if (!description.length) {
+      const deleteResult = await deleteFsResource(descriptionFileResource);
+      if (deleteResult.type === "error") {
+        return deleteResult;
       }
       return {
         type: "success",
-        content: description,
-      };
-    } catch (e: any) {
-      return {
-        type: "error",
-        error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
-          fileType: FileTypeEnum.UNKNOWN,
-        },
+        content: "",
       };
     }
+
+    const writeResult = await writeContent(
+      descriptionFileResource,
+      description,
+      new ReadmeRecordFileType()
+    );
+    if (writeResult.type === "error") {
+      return writeResult;
+    }
+    return {
+      type: "success",
+      content: description,
+    };
   }
 
+  @HandleError
   async updateCollectionAuthData(
     id: string,
     authData: Static<typeof Auth>
   ): Promise<FileSystemResult<Static<typeof Auth>>> {
-    try {
-      const authFileResource = this.createResource({
-        id: getIdFromPath(appendPath(id, COLLECTION_AUTH_FILE)),
-        type: "file",
-      });
+    const authFileResource = this.createResource({
+      id: getIdFromPath(appendPath(id, COLLECTION_AUTH_FILE)),
+      type: "file",
+    });
 
-      if (authData.currentAuthType === AuthType.NO_AUTH) {
-        const deleteResult = await deleteFsResource(authFileResource);
-        if (deleteResult.type === "error") {
-          return deleteResult;
-        }
-        return {
-          type: "success",
-          content: {
-            authConfigStore: {},
-            currentAuthType: AuthType.NO_AUTH,
-          },
-        };
-      }
-      const writeResult = await writeContent(
-        authFileResource,
-        authData,
-        new AuthRecordFileType()
-      );
-      if (writeResult.type === "error") {
-        return writeResult;
+    if (authData.currentAuthType === AuthType.NO_AUTH) {
+      const deleteResult = await deleteFsResource(authFileResource);
+      if (deleteResult.type === "error") {
+        return deleteResult;
       }
       return {
         type: "success",
-        content: authData,
-      };
-    } catch (e: any) {
-      return {
-        type: "error",
-        error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
-          fileType: FileTypeEnum.UNKNOWN,
+        content: {
+          authConfigStore: {},
+          currentAuthType: AuthType.NO_AUTH,
         },
       };
     }
+    const writeResult = await writeContent(
+      authFileResource,
+      authData,
+      new AuthRecordFileType()
+    );
+    if (writeResult.type === "error") {
+      return writeResult;
+    }
+    return {
+      type: "success",
+      content: authData,
+    };
   }
 
+  @HandleError
   async moveCollection(
     id: string,
     newParentId: string
   ): Promise<FileSystemResult<Collection>> {
-    try {
-      const parentPath = newParentId.length ? newParentId : this.rootPath;
-      const folderResource = this.createResource({
-        id,
-        type: "folder",
-      });
-      const resourceName = getNameOfResource(folderResource);
+    const parentPath = newParentId.length ? newParentId : this.rootPath;
+    const folderResource = this.createResource({
+      id,
+      type: "folder",
+    });
+    const resourceName = getNameOfResource(folderResource);
 
-      const newFolderResource = this.createResource({
-        id: getIdFromPath(appendPath(parentPath, resourceName)),
-        type: "folder",
-      });
+    const newFolderResource = this.createResource({
+      id: getIdFromPath(appendPath(parentPath, resourceName)),
+      type: "folder",
+    });
 
-      const renameResult = await rename(folderResource, newFolderResource);
-      if (renameResult.type === "error") {
-        return renameResult;
-      }
-
-      return parseFolderToCollection(this.rootPath, renameResult.content);
-    } catch (e: any) {
-      return {
-        type: "error",
-        error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
-          fileType: FileTypeEnum.UNKNOWN,
-        },
-      };
+    const renameResult = await rename(folderResource, newFolderResource);
+    if (renameResult.type === "error") {
+      return renameResult;
     }
+
+    return parseFolderToCollection(this.rootPath, renameResult.content);
   }
 
+  @HandleError
   async moveCollections(
     ids: string[],
     newParentId: string
@@ -691,41 +601,32 @@ export class FsManager {
     };
   }
 
+  @HandleError
   async moveRecord(
     id: string,
     newParentId: string
   ): Promise<FileSystemResult<API>> {
-    try {
-      const parentPath = newParentId.length ? newParentId : this.rootPath;
-      const fileResource = this.createResource({
-        id,
-        type: "file",
-      });
-      const resourceName = getNameOfResource(fileResource);
+    const parentPath = newParentId.length ? newParentId : this.rootPath;
+    const fileResource = this.createResource({
+      id,
+      type: "file",
+    });
+    const resourceName = getNameOfResource(fileResource);
 
-      const newFileResource = this.createResource({
-        id: getIdFromPath(appendPath(parentPath, resourceName)),
-        type: "file",
-      });
+    const newFileResource = this.createResource({
+      id: getIdFromPath(appendPath(parentPath, resourceName)),
+      type: "file",
+    });
 
-      const renameResult = await rename(fileResource, newFileResource);
-      if (renameResult.type === "error") {
-        return renameResult;
-      }
-
-      return parseFileToApi(this.rootPath, renameResult.content);
-    } catch (e: any) {
-      return {
-        type: "error",
-        error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
-          fileType: FileTypeEnum.UNKNOWN,
-        },
-      };
+    const renameResult = await rename(fileResource, newFileResource);
+    if (renameResult.type === "error") {
+      return renameResult;
     }
+
+    return parseFileToApi(this.rootPath, renameResult.content);
   }
 
+  @HandleError
   async moveRecords(
     ids: string[],
     newParentId: string
@@ -746,226 +647,176 @@ export class FsManager {
     };
   }
 
+  @HandleError
   async copyCollection(
     id: string,
     newId: string
   ): Promise<FileSystemResult<Collection>> {
-    try {
-      const sourceFolderResource = this.createResource({
-        id,
-        type: "folder",
-      });
+    const sourceFolderResource = this.createResource({
+      id,
+      type: "folder",
+    });
 
-      const destinationFolderResource = this.createResource({
-        id: newId,
-        type: "folder",
-      });
+    const destinationFolderResource = this.createResource({
+      id: newId,
+      type: "folder",
+    });
 
-      const renameResult = await copyRecursive(
-        sourceFolderResource,
-        destinationFolderResource
-      );
-      if (renameResult.type === "error") {
-        return renameResult;
-      }
-
-      return parseFolderToCollection(this.rootPath, renameResult.content);
-    } catch (e: any) {
-      return {
-        type: "error",
-        error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
-          fileType: FileTypeEnum.UNKNOWN,
-        },
-      };
+    const renameResult = await copyRecursive(
+      sourceFolderResource,
+      destinationFolderResource
+    );
+    if (renameResult.type === "error") {
+      return renameResult;
     }
+
+    return parseFolderToCollection(this.rootPath, renameResult.content);
   }
 
+  @HandleError
   async setCollectionVariables(
     id: string,
     variables: Record<string, EnvironmentVariableValue>
   ): Promise<FileSystemResult<Collection>> {
-    try {
-      const folder = this.createResource({
-        id,
-        type: "folder",
-      });
-      const varsPath = appendPath(folder.path, COLLECTION_VARIABLES_FILE);
-      const file = this.createResource({
-        id: getIdFromPath(varsPath),
-        type: "file",
-      });
+    const folder = this.createResource({
+      id,
+      type: "folder",
+    });
+    const varsPath = appendPath(folder.path, COLLECTION_VARIABLES_FILE);
+    const file = this.createResource({
+      id: getIdFromPath(varsPath),
+      type: "file",
+    });
 
-      if (!Object.keys(variables).length) {
-        const deleteResult = await deleteFsResource(file);
-        if (deleteResult.type === "error") {
-          return deleteResult;
-        }
-
-        return parseFolderToCollection(this.rootPath, folder);
-      }
-
-      const parsedVariables = parseToEnvironmentEntity(variables);
-
-      const writeResult = await writeContent(
-        file,
-        parsedVariables,
-        new CollectionVariablesRecordFileType()
-      );
-      if (writeResult.type === "error") {
-        return writeResult;
+    if (!Object.keys(variables).length) {
+      const deleteResult = await deleteFsResource(file);
+      if (deleteResult.type === "error") {
+        return deleteResult;
       }
 
       return parseFolderToCollection(this.rootPath, folder);
-    } catch (e: any) {
-      return {
-        type: "error",
-        error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
-          fileType: FileTypeEnum.UNKNOWN,
-        },
-      };
     }
+
+    const parsedVariables = parseToEnvironmentEntity(variables);
+
+    const writeResult = await writeContent(
+      file,
+      parsedVariables,
+      new CollectionVariablesRecordFileType()
+    );
+    if (writeResult.type === "error") {
+      return writeResult;
+    }
+
+    return parseFolderToCollection(this.rootPath, folder);
   }
 
+  @HandleError
   async updateRecord(
     patch: Partial<Static<typeof ApiRecord>>,
     id: string
   ): Promise<FileSystemResult<API>> {
     const fileType = new ApiRecordFileType();
-    try {
-      removeUndefinedFromRoot(patch);
-      const fileResource = this.createResource({
-        id,
-        type: "file",
-      });
-      const parsedRecordResult = await parseFile({
-        resource: fileResource,
-        fileType,
-      });
+    removeUndefinedFromRoot(patch);
+    const fileResource = this.createResource({
+      id,
+      type: "file",
+    });
+    const parsedRecordResult = await parseFile({
+      resource: fileResource,
+      fileType,
+    });
 
-      if (parsedRecordResult.type === "error") {
-        return parsedRecordResult;
-      }
-      const { content: currentRecord } = parsedRecordResult;
-      const updatedRecord: Static<typeof ApiRecord> = {
-        ...currentRecord,
-        ...patch,
-      };
-      const writeResult = await writeContent(
-        fileResource,
-        updatedRecord,
-        fileType
-      );
-      if (writeResult.type === "error") {
-        return writeResult;
-      }
-
-      return parseFileToApi(this.rootPath, fileResource);
-    } catch (e: any) {
-      return {
-        type: "error",
-        error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
-          fileType: FileTypeEnum.UNKNOWN,
-        },
-      };
+    if (parsedRecordResult.type === "error") {
+      return parsedRecordResult;
     }
+    const { content: currentRecord } = parsedRecordResult;
+    const updatedRecord: Static<typeof ApiRecord> = {
+      ...currentRecord,
+      ...patch,
+    };
+    const writeResult = await writeContent(
+      fileResource,
+      updatedRecord,
+      fileType
+    );
+    if (writeResult.type === "error") {
+      return writeResult;
+    }
+
+    return parseFileToApi(this.rootPath, fileResource);
   }
 
+  @HandleError
   async writeRawRecord(
     id: string,
     rawRecord: string,
     rawfileType: string
   ): Promise<FileSystemResult<unknown>> {
-    try {
-      const fileResource = this.createResource({
-        id,
-        type: "file",
-      });
-      const fileType = parseFileType(rawfileType);
-      const parsedRecord = fileType.parse(rawRecord);
-      if (parsedRecord.type === "error") {
-        return {
-          type: "error",
-          error: {
-            message: parsedRecord.error.message,
-            path: fileResource.path,
-            fileType: fileType.type,
-          },
-        };
-      }
-
-      const writeResult = await writeContentRaw(
-        fileResource,
-        parsedRecord.content
-      );
-      return writeResult;
-    } catch (e: any) {
+    const fileResource = this.createResource({
+      id,
+      type: "file",
+    });
+    const fileType = parseFileType(rawfileType);
+    const parsedRecord = fileType.parse(rawRecord);
+    if (parsedRecord.type === "error") {
       return {
         type: "error",
         error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
-          fileType: FileTypeEnum.UNKNOWN,
+          code: ErrorCode.UNKNOWN,
+          message: parsedRecord.error.message,
+          path: fileResource.path,
+          fileType: fileType.type,
         },
       };
     }
+
+    const writeResult = await writeContentRaw(
+      fileResource,
+      parsedRecord.content
+    );
+    return writeResult;
   }
 
+  @HandleError
   async createEnvironment(
     environmentName: string,
     isGlobal: boolean
   ): Promise<FileSystemResult<Environment>> {
-    try {
-      const environmentFolderPath = this.getEnvironmentsFolderPath();
-      const environmentFolderResource = this.createResource({
-        id: getIdFromPath(environmentFolderPath),
-        type: "folder",
-      });
-      const folderCreationResult = await createFolder(
-        environmentFolderResource
-      );
-      if (folderCreationResult.type === "error") {
-        return folderCreationResult;
-      }
-
-      const envFile = this.createResource({
-        id: appendPath(
-          environmentFolderPath,
-          isGlobal ? GLOBAL_ENV_FILE : this.generateFileName()
-        ),
-        type: "file",
-      });
-      const content = {
-        name: environmentName,
-        variables: {},
-      };
-
-      const writeResult = await writeContent(
-        envFile,
-        content,
-        new EnvironmentRecordFileType()
-      );
-      if (writeResult.type === "error") {
-        return writeResult;
-      }
-      return parseFileToEnv(envFile);
-    } catch (e: any) {
-      return {
-        type: "error",
-        error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
-          fileType: FileTypeEnum.UNKNOWN,
-        },
-      };
+    const environmentFolderPath = this.getEnvironmentsFolderPath();
+    const environmentFolderResource = this.createResource({
+      id: getIdFromPath(environmentFolderPath),
+      type: "folder",
+    });
+    const folderCreationResult = await createFolder(environmentFolderResource);
+    if (folderCreationResult.type === "error") {
+      return folderCreationResult;
     }
+
+    const envFile = this.createResource({
+      id: appendPath(
+        environmentFolderPath,
+        isGlobal ? GLOBAL_ENV_FILE : this.generateFileName()
+      ),
+      type: "file",
+    });
+    const content = {
+      name: environmentName,
+      variables: {},
+    };
+
+    const writeResult = await writeContent(
+      envFile,
+      content,
+      new EnvironmentRecordFileType()
+    );
+    if (writeResult.type === "error") {
+      return writeResult;
+    }
+    return parseFileToEnv(envFile);
   }
 
+  @HandleError
   async updateEnvironment(
     id: string,
     patch:
@@ -973,155 +824,126 @@ export class FsManager {
       | { variables: Record<string, EnvironmentVariableValue> }
   ): Promise<FileSystemResult<Environment>> {
     const fileType = new EnvironmentRecordFileType();
-    try {
-      removeUndefinedFromRoot(patch);
-      const fileResource = this.createResource({
-        id,
-        type: "file",
-      });
-      const parsedRecordResult = await parseFile({
-        resource: fileResource,
-        fileType,
-      });
+    removeUndefinedFromRoot(patch);
+    const fileResource = this.createResource({
+      id,
+      type: "file",
+    });
+    const parsedRecordResult = await parseFile({
+      resource: fileResource,
+      fileType,
+    });
 
-      if (parsedRecordResult.type === "error") {
-        return parsedRecordResult;
-      }
-      const { content } = parsedRecordResult;
-
-      const updatedRecord: Static<typeof EnvironmentRecord> = {
-        ...content,
-      };
-
-      if ("variables" in patch) {
-        updatedRecord.variables = parseToEnvironmentEntity(patch.variables);
-      }
-      if ("name" in patch) {
-        updatedRecord.name = patch.name;
-      }
-
-      const writeResult = await writeContent(
-        fileResource,
-        updatedRecord,
-        fileType
-      );
-      if (writeResult.type === "error") {
-        return writeResult;
-      }
-
-      return parseFileToEnv(fileResource);
-    } catch (e: any) {
-      return {
-        type: "error",
-        error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
-          fileType: FileTypeEnum.UNKNOWN,
-        },
-      };
+    if (parsedRecordResult.type === "error") {
+      return parsedRecordResult;
     }
+    const { content } = parsedRecordResult;
+
+    const updatedRecord: Static<typeof EnvironmentRecord> = {
+      ...content,
+    };
+
+    if ("variables" in patch) {
+      updatedRecord.variables = parseToEnvironmentEntity(patch.variables);
+    }
+    if ("name" in patch) {
+      updatedRecord.name = patch.name;
+    }
+
+    const writeResult = await writeContent(
+      fileResource,
+      updatedRecord,
+      fileType
+    );
+    if (writeResult.type === "error") {
+      return writeResult;
+    }
+
+    return parseFileToEnv(fileResource);
   }
 
+  @HandleError
   async copyEnvironment(
     id: string,
     newId: string
   ): Promise<FileSystemResult<Environment>> {
-    try {
-      const sourceFileResource = this.createResource({
-        id,
-        type: "file",
-      });
+    const sourceFileResource = this.createResource({
+      id,
+      type: "file",
+    });
 
-      const destinationFileResource = this.createResource({
-        id: newId,
-        type: "file",
-      });
+    const destinationFileResource = this.createResource({
+      id: newId,
+      type: "file",
+    });
 
-      const result = await copyRecursive(
-        sourceFileResource,
-        destinationFileResource
-      );
-      if (result.type === "error") {
-        return result;
-      }
-
-      return parseFileToEnv(result.content);
-    } catch (e: any) {
-      return {
-        type: "error",
-        error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
-          fileType: FileTypeEnum.UNKNOWN,
-        },
-      };
+    const result = await copyRecursive(
+      sourceFileResource,
+      destinationFileResource
+    );
+    if (result.type === "error") {
+      return result;
     }
+
+    return parseFileToEnv(result.content);
   }
 
+  @HandleError
   async duplicateEnvironment(
     id: string
   ): Promise<FileSystemResult<Environment>> {
     const fileType = new EnvironmentRecordFileType();
-    try {
-      const fileResource = this.createResource({
-        id,
-        type: "file",
-      });
-      if (fileResource.path.endsWith(GLOBAL_ENV_FILE)) {
-        return {
-          type: "error",
-          error: {
-            message: "Global environment cannnot be copied!",
-            path: fileResource.path,
-            fileType: FileTypeEnum.UNKNOWN,
-          },
-        };
-      }
-      const originalEnvironment = await parseFile({
-        resource: fileResource,
-        fileType,
-      });
-
-      if (originalEnvironment.type === "error") {
-        return originalEnvironment;
-      }
-
-      const { content } = originalEnvironment;
-
-      const newEnvironmentContent: Static<typeof EnvironmentRecord> = {
-        name: `${content.name} (copy)`,
-        variables: content.variables,
-      };
-      const path = appendPath(
-        this.getEnvironmentsFolderPath(),
-        this.generateFileName()
-      );
-      const resource = this.createResource({
-        id: getIdFromPath(path),
-        type: "file",
-      });
-      const writeResult = await writeContent(
-        resource,
-        newEnvironmentContent,
-        fileType
-      );
-      if (writeResult.type === "error") {
-        return writeResult;
-      }
-
-      return parseFileToEnv(resource);
-    } catch (e: any) {
+    const fileResource = this.createResource({
+      id,
+      type: "file",
+    });
+    if (fileResource.path.endsWith(GLOBAL_ENV_FILE)) {
       return {
         type: "error",
         error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
+          code: ErrorCode.UNKNOWN,
+          message: "Global environment cannnot be copied!",
+          path: fileResource.path,
           fileType: FileTypeEnum.UNKNOWN,
         },
       };
     }
+    const originalEnvironment = await parseFile({
+      resource: fileResource,
+      fileType,
+    });
+
+    if (originalEnvironment.type === "error") {
+      return originalEnvironment;
+    }
+
+    const { content } = originalEnvironment;
+
+    const newEnvironmentContent: Static<typeof EnvironmentRecord> = {
+      name: `${content.name} (copy)`,
+      variables: content.variables,
+    };
+    const path = appendPath(
+      this.getEnvironmentsFolderPath(),
+      this.generateFileName()
+    );
+    const resource = this.createResource({
+      id: getIdFromPath(path),
+      type: "file",
+    });
+    const writeResult = await writeContent(
+      resource,
+      newEnvironmentContent,
+      fileType
+    );
+    if (writeResult.type === "error") {
+      return writeResult;
+    }
+
+    return parseFileToEnv(resource);
   }
 
+  @HandleError
   async getRawFileData(id: string): Promise<FileSystemResult<string>> {
     const fileResource = this.createResource({
       id,
@@ -1136,81 +958,72 @@ export class FsManager {
     return parsedRecordResult;
   }
 
+  @HandleError
   async createCollectionFromCompleteRecord(
     collection: CollectionRecord,
     id: string
   ): Promise<FileSystemResult<Collection>> {
-    try {
-      const collectionFolder = this.createResource({
-        id,
-        type: "folder",
-      });
-      const createResult = await createFolder(collectionFolder);
-      if (createResult.type === "error") {
-        return createResult;
-      }
-
-      if (collection.description?.length) {
-        const descriptionFile = this.createResource({
-          id: appendPath(collectionFolder.path, DESCRIPTION_FILE),
-          type: "file",
-        });
-        const writeResult = await writeContent(
-          descriptionFile,
-          collection.description,
-          new ReadmeRecordFileType()
-        );
-        if (writeResult.type === "error") {
-          return writeResult;
-        }
-      }
-
-      if (
-        collection.data.auth &&
-        collection.data.auth.currentAuthType !== AuthType.NO_AUTH
-      ) {
-        const authFile = this.createResource({
-          id: appendPath(collectionFolder.path, COLLECTION_AUTH_FILE),
-          type: "file",
-        });
-        const writeResult = await writeContent(
-          authFile,
-          collection.data.auth,
-          new AuthRecordFileType()
-        );
-        if (writeResult.type === "error") {
-          return writeResult;
-        }
-      }
-
-      if (!isEmpty(collection.data.variables)) {
-        const variablesFile = this.createResource({
-          id: appendPath(collectionFolder.path, COLLECTION_VARIABLES_FILE),
-          type: "file",
-        });
-        const parsedVariables = parseToEnvironmentEntity(
-          collection.data.variables
-        );
-        const writeResult = await writeContent(
-          variablesFile,
-          parsedVariables,
-          new CollectionVariablesRecordFileType()
-        );
-        if (writeResult.type === "error") {
-          return writeResult;
-        }
-      }
-
-      return parseFolderToCollection(this.rootPath, collectionFolder);
-    } catch (e: any) {
-      return {
-        type: "error",
-        error: {
-          message: e.message || "An unexpected error has occured!",
-          path: e.path || "Unknown path",
-          fileType: FileTypeEnum.UNKNOWN,
-        },
-      };
+    const collectionFolder = this.createResource({
+      id,
+      type: "folder",
+    });
+    const createResult = await createFolder(collectionFolder);
+    if (createResult.type === "error") {
+      return createResult;
     }
+
+    if (collection.description?.length) {
+      const descriptionFile = this.createResource({
+        id: appendPath(collectionFolder.path, DESCRIPTION_FILE),
+        type: "file",
+      });
+      const writeResult = await writeContent(
+        descriptionFile,
+        collection.description,
+        new ReadmeRecordFileType()
+      );
+      if (writeResult.type === "error") {
+        return writeResult;
+      }
+    }
+
+    if (
+      collection.data.auth &&
+      !isEmpty(collection.data.auth) &&
+      collection.data.auth.currentAuthType !== AuthType.NO_AUTH
+    ) {
+      const authFile = this.createResource({
+        id: appendPath(collectionFolder.path, COLLECTION_AUTH_FILE),
+        type: "file",
+      });
+      const writeResult = await writeContent(
+        authFile,
+        collection.data.auth,
+        new AuthRecordFileType()
+      );
+      if (writeResult.type === "error") {
+        return writeResult;
+      }
+    }
+
+    if (!isEmpty(collection.data.variables)) {
+      const variablesFile = this.createResource({
+        id: appendPath(collectionFolder.path, COLLECTION_VARIABLES_FILE),
+        type: "file",
+      });
+      const parsedVariables = parseToEnvironmentEntity(
+        collection.data.variables
+      );
+      const writeResult = await writeContent(
+        variablesFile,
+        parsedVariables,
+        new CollectionVariablesRecordFileType()
+      );
+      if (writeResult.type === "error") {
+        return writeResult;
+      }
+    }
+
+    return parseFolderToCollection(this.rootPath, collectionFolder);
   }
 }

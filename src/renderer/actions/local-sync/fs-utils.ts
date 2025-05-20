@@ -13,6 +13,7 @@ import {
 } from "./types";
 import {
   appendPath,
+  createFileSystemError,
   createFsResource,
   getIdFromPath,
   getNameOfResource,
@@ -67,14 +68,7 @@ export async function getFsResourceStats(
       content: pathStats,
     };
   } catch (e: any) {
-    return {
-      type: "error",
-      error: {
-        message: e.message || "An unexpected error has occured!",
-        path: resource.path,
-        fileType: FileTypeEnum.UNKNOWN,
-      },
-    };
+    return createFileSystemError(e, resource.path, FileTypeEnum.UNKNOWN);
   }
 }
 
@@ -126,14 +120,7 @@ export async function deleteFsResource(
       },
     };
   } catch (e: any) {
-    return {
-      type: "error",
-      error: {
-        message: e.message || "An unexpected error has occured!",
-        path: resource.path,
-        fileType: FileTypeEnum.UNKNOWN,
-      },
-    };
+    return createFileSystemError(e, resource.path, FileTypeEnum.UNKNOWN);
   }
 }
 
@@ -160,14 +147,11 @@ export async function createFolder(
         await FsService.mkdir(resource.path, { recursive: true });
       }
     } else if (errorIfDoesNotExist) {
-      return {
-        type: "error",
-        error: {
-          message: "Folder already exists!",
-          path: resource.path,
-          fileType: FileTypeEnum.UNKNOWN,
-        },
-      };
+      return createFileSystemError(
+        { message: "Folder already exists!" },
+        resource.path,
+        FileTypeEnum.UNKNOWN
+      );
     }
     return {
       type: "success",
@@ -176,14 +160,7 @@ export async function createFolder(
       },
     };
   } catch (e: any) {
-    return {
-      type: "error",
-      error: {
-        message: e.message || "An unexpected error has occured!",
-        path: resource.path,
-        fileType: FileTypeEnum.UNKNOWN,
-      },
-    };
+    return createFileSystemError(e, resource.path, FileTypeEnum.UNKNOWN);
   }
 }
 
@@ -198,14 +175,7 @@ export async function rename<T extends FsResource>(
       content: newResource,
     } as FileSystemResult<T>;
   } catch (e: any) {
-    return {
-      type: "error",
-      error: {
-        message: e.message || "An unexpected error has occured!",
-        path: oldResource.path,
-        fileType: FileTypeEnum.UNKNOWN,
-      },
-    };
+    return createFileSystemError(e, oldResource.path, FileTypeEnum.UNKNOWN);
   }
 }
 
@@ -222,14 +192,7 @@ export async function copyRecursive<T extends FsResource>(
       content: destinationResource,
     } as FileSystemResult<T>;
   } catch (e: any) {
-    return {
-      type: "error",
-      error: {
-        message: e.message || "An unexpected error has occured!",
-        path: sourceResource.path,
-        fileType: FileTypeEnum.UNKNOWN,
-      },
-    };
+    return createFileSystemError(e, sourceResource.path, FileTypeEnum.UNKNOWN);
   }
 }
 
@@ -252,14 +215,11 @@ export async function writeContent(
     const { writeWithElevatedAccess = false } = options || {};
     const parsedContentResult = parseRaw(content, fileType.validator);
     if (parsedContentResult.type === "error") {
-      return {
-        type: "error",
-        error: {
-          message: parsedContentResult.error.message,
-          path: resource.path,
-          fileType: fileType.type,
-        },
-      };
+      return createFileSystemError(
+        { message: parsedContentResult.error.message },
+        resource.path,
+        fileType.type
+      );
     }
 
     console.log("writing at", resource.path);
@@ -279,14 +239,7 @@ export async function writeContent(
       },
     };
   } catch (e: any) {
-    return {
-      type: "error",
-      error: {
-        message: e.message || "An unexpected error has occurred!",
-        path: resource.path,
-        fileType: fileType.type,
-      },
-    };
+    return createFileSystemError(e, resource.path, fileType.type);
   }
 }
 
@@ -317,14 +270,7 @@ export async function writeContentRaw(
       },
     };
   } catch (e: any) {
-    return {
-      type: "error",
-      error: {
-        message: e.message || "An unexpected error has occurred!",
-        path: resource.path,
-        fileType: FileTypeEnum.UNKNOWN,
-      },
-    };
+    return createFileSystemError(e, resource.path, FileTypeEnum.UNKNOWN);
   }
 }
 
@@ -340,25 +286,15 @@ export async function parseFile<
     const content = (await FsService.readFile(resource.path)).toString();
     const parsedContentResult = fileType.parse(content);
     if (parsedContentResult.type === "error") {
-      return {
-        type: "error",
-        error: {
-          message: parsedContentResult.error.message,
-          path: resource.path,
-          fileType: fileType.type,
-        },
-      };
+      return createFileSystemError(
+        { message: parsedContentResult.error.message },
+        resource.path,
+        fileType.type
+      );
     }
     return parsedContentResult;
   } catch (e: any) {
-    return {
-      type: "error",
-      error: {
-        message: e.message || "An unexpected error has occurred!",
-        path: resource.path,
-        fileType: FileTypeEnum.UNKNOWN,
-      },
-    };
+    return createFileSystemError(e, resource.path, FileTypeEnum.UNKNOWN);
   }
 }
 
@@ -373,14 +309,7 @@ export async function parseFileRaw(params: {
       content,
     };
   } catch (e: any) {
-    return {
-      type: "error",
-      error: {
-        message: e.message || "An unexpected error has occurred!",
-        path: resource.path,
-        fileType: FileTypeEnum.UNKNOWN,
-      },
-    };
+    return createFileSystemError(e, resource.path, FileTypeEnum.UNKNOWN);
   }
 }
 
@@ -399,14 +328,11 @@ export async function createGlobalConfigFolder(): Promise<
       }
     );
   } catch (e: any) {
-    return {
-      type: "error",
-      error: {
-        message: e.message || "An unexpected error has occured!",
-        path: GLOBAL_CONFIG_FOLDER_PATH,
-        fileType: FileTypeEnum.UNKNOWN,
-      },
-    };
+    return createFileSystemError(
+      e,
+      GLOBAL_CONFIG_FOLDER_PATH,
+      FileTypeEnum.UNKNOWN
+    );
   }
 }
 
@@ -594,14 +520,11 @@ export async function getAllWorkspaces(): Promise<
       content: parsedContent.workspaces,
     };
   } catch (error: any) {
-    return {
-      type: "error",
-      error: {
-        message: error.message || "An unexpected error has occurred!",
-        path: GLOBAL_CONFIG_FOLDER_PATH,
-        fileType: FileTypeEnum.GLOBAL_CONFIG,
-      },
-    };
+    return createFileSystemError(
+      error,
+      GLOBAL_CONFIG_FOLDER_PATH,
+      FileTypeEnum.GLOBAL_CONFIG
+    );
   }
 }
 

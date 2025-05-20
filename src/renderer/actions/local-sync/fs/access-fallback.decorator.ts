@@ -1,9 +1,5 @@
 /* eslint-disable */
-import { isThenable } from "../common-utils";
-
-function isAccessError(error: any) {
-  return error.code === "EACCES";
-}
+import { isAccessError, isThenable } from "../common-utils";
 
 export function AccessFallback<TArgs extends any[], TReturn>(
   fallback: (...args: TArgs) => TReturn
