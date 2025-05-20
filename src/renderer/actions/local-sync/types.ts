@@ -133,3 +133,5 @@ export interface FsCommandProvider {
   cp: (...params: Parameters<typeof FsService.cp>) => string;
   readFile: (...params: Parameters<typeof FsService.readFile>) => string;
 }
+
+export type UnwrappedPromise<T> = T extends Promise<infer R> ? R : T;

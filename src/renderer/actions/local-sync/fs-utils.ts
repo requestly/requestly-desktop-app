@@ -10,6 +10,7 @@ import {
   FileTypeEnum,
   FolderResource,
   FsResource,
+  UnwrappedPromise,
 } from "./types";
 import {
   appendPath,
@@ -271,6 +272,45 @@ export async function writeContentRaw(
     };
   } catch (e: any) {
     return createFileSystemError(e, resource.path, FileTypeEnum.UNKNOWN);
+  }
+}
+
+export function readFileSync(pathToRead: string): FileSystemResult<string> {
+  try {
+    return {
+      type: "success",
+      content: FsService.readFileSync(pathToRead).toString(),
+    };
+  } catch (e: any) {
+    return createFileSystemError(e, pathToRead, FileTypeEnum.UNKNOWN);
+  }
+}
+
+export async function readdir(
+  pathToRead: string
+): Promise<
+  FileSystemResult<UnwrappedPromise<ReturnType<typeof FsService.readdir>>>
+> {
+  try {
+    return {
+      type: "success",
+      content: await FsService.readdir(pathToRead),
+    };
+  } catch (e: any) {
+    return createFileSystemError(e, pathToRead, FileTypeEnum.UNKNOWN);
+  }
+}
+
+export async function stat(
+  pathToRead: string
+): Promise<FileSystemResult<Stats>> {
+  try {
+    return {
+      type: "success",
+      content: await FsService.stat(pathToRead),
+    };
+  } catch (e: any) {
+    return createFileSystemError(e, pathToRead, FileTypeEnum.UNKNOWN);
   }
 }
 
