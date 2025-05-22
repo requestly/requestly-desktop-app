@@ -5,11 +5,11 @@ import { getLocalFileLogConfig } from "renderer/actions/storage/cacheUtils";
 
 
 function saveLogToLocalFile(log) {
+  if(!log || log.requestState !== "COMPLETE") return;
+
   const logConfig = getLocalFileLogConfig();
 
-  if(!log || !logConfig || log.requestState !== "COMPLETE") {
-    return;
-  }
+  if(!logConfig) return;
 
   if (logConfig.isEnabled) {
     const logFilePath = getFilePathFromLogConfig(logConfig);
