@@ -1,12 +1,11 @@
 import { ipcRenderer } from "electron";
-import { STORE_NAME } from "lib/storage/constants";
-import storageCacheService from "renderer/services/storage-cache";
 import fs from "fs";
 import path from "path";
+import { getLocalFileLogConfig } from "renderer/actions/storage/cacheUtils";
 
 
-function saveLogToOfflineStore(log) {
-  const logConfig = storageCacheService.getCache(STORE_NAME.OFFLINE_LOG_CONFIG)
+function saveLogToLocalFile(log) {
+  const logConfig = getLocalFileLogConfig();
 
   if(!log || !logConfig || log.requestState !== "COMPLETE") {
     return;
@@ -68,7 +67,7 @@ function getFilePathFromLogConfig(logConfig) {
 
 export function clearStoredLogs() {
   console.log("Clearing stored logs...");
-  const logConfig = storageCacheService.getCache(STORE_NAME.OFFLINE_LOG_CONFIG);
+  const logConfig = getLocalFileLogConfig();
   if (logConfig && logConfig.storePath) {
     const filePath = getFilePathFromLogConfig(logConfig);
     if (filePath && fs.existsSync(filePath)) {
@@ -90,7 +89,7 @@ class LoggerService {
     ipcRenderer.send("log-network-request-v2", log);
 
     // save to file if config is preset
-    saveLogToOfflineStore(log);
+    saveLogToLocalFile(log);
   };
 }
 

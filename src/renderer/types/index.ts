@@ -1,4 +1,3 @@
-import { LogConfig } from "lib/storage/types/offline-log-config";
 import { SSLProxyingJsonObj } from "lib/storage/types/ssl-proxying";
 import { UserPreferenceObj } from "lib/storage/types/user-preference";
 
@@ -11,7 +10,6 @@ interface RQBgGlobalNamespace {
   sslProxyingStorage?: SSLProxyingJsonObj;
   sslTunnelingSocketsMap?: SSLTunnelingSocketsMap;
   userPreferences?: UserPreferenceObj;
-  offlineLogConfig?: LogConfig;
 
   // local cache for background process
   proxyServerStatus?: ProxyServerObject

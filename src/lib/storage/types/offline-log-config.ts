@@ -3,9 +3,3 @@ export interface LogConfig {
     storePath: string;
     filter: string[]
 }
-
-export interface ISource {
-    isEnabled: boolean;
-    storePath: string;
-    filter: string[];
-}

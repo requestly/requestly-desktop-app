@@ -1,5 +1,4 @@
 // todo: move to some appropriate location
-import OfflineLogConfigFetcher from "renderer/lib/proxy-interface/offlineLogConfigFetcher";
 import UserPreferenceFetcher from "renderer/lib/proxy-interface/userPreferenceFetcher";
 
 export const getCurrentProxyPort = () => {
@@ -12,7 +11,13 @@ export const getDefaultProxyPort = () => {
   return userPreferences.getConfig().defaultPort;
 }
 
-export const getOfflineLogConfig = () => {
-  const offlineLogConfig = new OfflineLogConfigFetcher();
-  return offlineLogConfig.getConfig();
+export const getLocalFileLogConfig = () => {
+  const userPreferences = new UserPreferenceFetcher();
+  const userConfig = userPreferences.getConfig()
+  const localFileLogConfig = {
+    isEnabled: userConfig.isEnabled,
+    storePath: userConfig.storePath,
+    filter: userConfig.filter
+  }
+  return localFileLogConfig;
 }

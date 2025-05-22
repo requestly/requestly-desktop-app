@@ -1,16 +1,15 @@
 import { AccessedFile } from "../action-processors/accessed-files";
-import { ACCESSED_FILES, OFFLINE_LOG_CONFIG, SSL_PROXYING, USER_PREFERENCE } from "./action-types";
+import { ACCESSED_FILES, SSL_PROXYING, USER_PREFERENCE } from "./action-types";
 import { ISource as SSLSource } from "./ssl-proxying";
 import { ISource as UserPrefereceSource } from "./user-preference"
-import { ISource as OfflineLogConfigSource } from "./offline-log-config";
 
 
 export interface SourcePayload {
-  data: SSLSource | UserPrefereceSource;
+  data: SSLSource | Partial<UserPrefereceSource>;
 }
 
 export interface SourcesPayload {
-  data: SSLSource[] | UserPrefereceSource[] | AccessedFile | Partial<OfflineLogConfigSource>;
+  data: SSLSource[] | UserPrefereceSource[] | AccessedFile;
 }
 
 export interface DeletePayload {
@@ -20,6 +19,6 @@ export interface DeletePayload {
 type Payload = SourcePayload & SourcesPayload & DeletePayload;
 
 export interface StorageAction {
-  type: SSL_PROXYING | USER_PREFERENCE | ACCESSED_FILES | OFFLINE_LOG_CONFIG;
+  type: SSL_PROXYING | USER_PREFERENCE | ACCESSED_FILES ;
   payload?: Payload;
 }
