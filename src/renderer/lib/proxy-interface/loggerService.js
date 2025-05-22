@@ -43,7 +43,10 @@ function saveLogToLocalFile(log) {
   function addLogToFile(log, filePath) {
     try {
       const logFileDir = path.dirname(filePath);
-      if (!fs.existsSync(logFileDir)) return;
+      if (!fs.existsSync(logFileDir)) {
+        console.error("Log directory does not exist:", logFileDir);
+        return;
+      }
 
       fs.appendFile(filePath, `${JSON.stringify(log)} \n`, (err) => {
         if (err) {
@@ -88,8 +91,12 @@ class LoggerService {
     // send log to webapp
     ipcRenderer.send("log-network-request-v2", log);
 
-    // save to file if config is preset
-    saveLogToLocalFile(log);
+    try {
+      // save to file if config is preset
+      saveLogToLocalFile(log);
+    } catch (error) {
+      console.error("Error saving log to file:", error);
+    }
   };
 }
 

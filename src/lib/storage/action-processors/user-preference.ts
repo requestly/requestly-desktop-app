@@ -48,6 +48,9 @@ class UserPreferenceActionProcessor extends BaseActionProcessor {
       case USER_PREFERENCE.SET_IS_LOGGING_ENABLED: {
         // @ts-ignore
         let isEnabledPayload = payload?.data?.isLocalLoggingEnabled
+        if (typeof isEnabledPayload === "boolean") {
+          this.updateKeyInLogConfig("isEnabled", isEnabledPayload)
+        }
 
         if(typeof isEnabledPayload === "string") { // serialization in IPC
           if(
