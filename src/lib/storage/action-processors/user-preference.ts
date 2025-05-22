@@ -7,6 +7,22 @@ class UserPreferenceActionProcessor extends BaseActionProcessor {
   constructor(store: StoreWrapper) {
     super(store);
   }
+  private updateKeyInLogConfig = (key: any, value: any) => {
+    const loggingConfig = this.store.get("localFileLogConfig") ?? {}
+    this.store.set({
+      localFileLogConfig: {
+        ...loggingConfig,
+        [key]: value
+      }
+    })
+  }
+  private getKeyFromLogingConfig = (key: any) => {
+    const loggingConfig = this.store.get("localFileLogConfig")
+    if(loggingConfig) {
+      return loggingConfig[key]
+    }
+    return undefined;
+  }
   process = ({ type, payload }: StorageAction) => {
     switch(type) {
       case USER_PREFERENCE.GET_ALL:
@@ -17,51 +33,54 @@ class UserPreferenceActionProcessor extends BaseActionProcessor {
         this.store.set({"defaultPort": payload?.data})
         break;
       case USER_PREFERENCE.GET_COMPLETE_LOGGING_CONFIG:
-        return {
-          isEnabled: this.store.get("isEnabled"),
-          storePath: this.store.get("storePath"),
-          filter: this.store.get("filter")
-        }
+        return this.store.get("localFileLogConfig")
 
-      case USER_PREFERENCE.GET_IS_LOGGING_ENABLED:
-        return this.store.get("isEnabled")
-      case USER_PREFERENCE.GET_LOCAL_LOG_STORE_PATH:
-        return this.store.get("storePath")
-      case USER_PREFERENCE.GET_LOG_FILTER:
-        return this.store.get("filter")
+      case USER_PREFERENCE.GET_IS_LOGGING_ENABLED: {
+        return !!this.getKeyFromLogingConfig("isEnabled")
+      }
+      case USER_PREFERENCE.GET_LOCAL_LOG_STORE_PATH: {
+        return this.getKeyFromLogingConfig("storePath") ?? ""
+      }
+      case USER_PREFERENCE.GET_LOG_FILTER: {
+        return this.getKeyFromLogingConfig("filter") ?? []
+      }
       
-      case USER_PREFERENCE.SET_IS_LOGGING_ENABLED:
+      case USER_PREFERENCE.SET_IS_LOGGING_ENABLED: {
+        const setLogginEnabled = (isEnabled: boolean) => {
+          this.updateKeyInLogConfig("isEnabled", isEnabled)
+        }
         // @ts-ignore
-        let isEnabled = payload?.data?.isEnabled
-        if (typeof isEnabled === "boolean") {
-          this.store.set({"isEnabled": isEnabled})
+        let isEnabledPayload = payload?.data?.isLocalLoggingEnabled
+        if (typeof isEnabledPayload === "boolean") {
+          setLogginEnabled(isEnabledPayload)
         }
 
-        if(typeof isEnabled === "string") { // serialization in IPC
+        if(typeof isEnabledPayload === "string") { // serialization in IPC
           if(
-            isEnabled === "false" || 
-            isEnabled === "0"
+            isEnabledPayload === "false" || 
+            isEnabledPayload === "0"
           ) {
-            this.store.set({"isEnabled": false})
+            this.updateKeyInLogConfig("isEnabled", false)
           } else {
-            this.store.set({"isEnabled": true})
+            this.updateKeyInLogConfig("isEnabled", true)
           }
         }
 
-        if(!isEnabled) {
-          this.store.set({"isEnabled": false})
-        }
-
         break;
+      }
       case USER_PREFERENCE.SET_STORE_PATH:
         // @ts-ignore
-        const storePath = payload?.data?.storePath
-        this.store.set({"storePath": storePath})
+        const storePath = payload?.data?.logStorePath
+        if (storePath) {
+          this.updateKeyInLogConfig("storePath", storePath)
+        }
         break;
       case USER_PREFERENCE.SET_FILTER:
         // @ts-ignore
-        const filter = payload?.data?.filter
-        this.store.set({"filter": filter})
+        const filter = payload?.data?.localLogFilterfilter
+        if (filter) {
+          this.updateKeyInLogConfig("filter", filter)
+        }
         break;
 
       default:

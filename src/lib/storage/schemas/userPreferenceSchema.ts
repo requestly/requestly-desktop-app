@@ -6,19 +6,24 @@ export const userPreferenceSchema = {
     default: DEFAULT_PROXY_PORT
   },
 
-  isEnabled: {
+  localFileLogConfig: {
+    type: "object",
+    properties: {
+      isEnabled: {
         type: "boolean",
         default: false,
-    },
-    storePath: {
+      },
+      storePath: {
         type: "string",
         default: "",
-    },
-    filter: {
+      },
+      filter: {
         type: "array",
         items: {
-            type: "string",
+          type: "string",
         },
         default: [],
+      },
     },
+  }
 }

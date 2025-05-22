@@ -1,13 +1,15 @@
 export interface UserPreferenceObj {
   defaultPort: number;
-  isEnabled: boolean;
-  storePath: string;
-  filter: string[]
+  localFileLogConfig: {
+    isEnabled: boolean;
+    storePath: string;
+    filter: string[]
+  };
 }
 
 export interface ISource {
   defaultPort: number;
-  isEnabled: boolean;
-  storePath: string;
-  filter: string[]
+  isLocalLoggingEnabled: boolean;
+  logStorePath: string;
+  localLogFilterfilter: string[]
 }

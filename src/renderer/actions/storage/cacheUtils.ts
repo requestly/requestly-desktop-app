@@ -13,11 +13,9 @@ export const getDefaultProxyPort = () => {
 
 export const getLocalFileLogConfig = () => {
   const userPreferences = new UserPreferenceFetcher();
-  const userConfig = userPreferences.getConfig()
-  const localFileLogConfig = {
-    isEnabled: userConfig.isEnabled,
-    storePath: userConfig.storePath,
-    filter: userConfig.filter
+  const { localFileLogConfig }= userPreferences.getConfig()
+  if (!localFileLogConfig) {
+    return null;
   }
   return localFileLogConfig;
 }
