@@ -13,7 +13,7 @@ export enum STORE_NAME {
 
 export const DEFAULT_PROXY_PORT = 8281
 export const DEFAULT_LOCAL_FILE_LOG_CONFIG = {
-  isEnabled: true,
-  storePath: app.getPath("appData"),
+  isEnabled: false,
+  storePath: app.getPath("userData"),
   filter: [],
 }

@@ -61,7 +61,7 @@ function saveLogToLocalFile(log) {
 
 function getFilePathFromLogConfig(logConfig) {
   if (logConfig && logConfig.storePath) {
-    const fileName = "logs.jsonl";
+    const fileName = "interceptor_logs.jsonl";
     const filePath = logConfig.storePath + "/" + fileName;
     return filePath;
   }
