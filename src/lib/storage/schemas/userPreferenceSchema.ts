@@ -1,4 +1,4 @@
-import { DEFAULT_PROXY_PORT } from "../constants";
+import { DEFAULT_PROXY_PORT, DEFAULT_LOCAL_FILE_LOG_CONFIG } from "../constants";
 
 export const userPreferenceSchema = {
   defaultPort: {
@@ -11,19 +11,17 @@ export const userPreferenceSchema = {
     properties: {
       isEnabled: {
         type: "boolean",
-        default: false,
       },
       storePath: {
         type: "string",
-        default: "",
       },
       filter: {
         type: "array",
         items: {
           type: "string",
         },
-        default: [],
       },
     },
+    default: DEFAULT_LOCAL_FILE_LOG_CONFIG,
   }
 }
