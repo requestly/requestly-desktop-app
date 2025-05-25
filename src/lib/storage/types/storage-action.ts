@@ -5,7 +5,7 @@ import { ISource as UserPrefereceSource } from "./user-preference"
 
 
 export interface SourcePayload {
-  data: SSLSource | UserPrefereceSource;
+  data: SSLSource | Partial<UserPrefereceSource>;
 }
 
 export interface SourcesPayload {
@@ -19,6 +19,6 @@ export interface DeletePayload {
 type Payload = SourcePayload & SourcesPayload & DeletePayload;
 
 export interface StorageAction {
-  type: SSL_PROXYING | USER_PREFERENCE | ACCESSED_FILES;
+  type: SSL_PROXYING | USER_PREFERENCE | ACCESSED_FILES ;
   payload?: Payload;
 }
