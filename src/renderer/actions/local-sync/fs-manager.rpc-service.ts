@@ -9,6 +9,10 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
     this.fsManager = new FsManager(rootPath);
   }
 
+  reload() {
+    this.fsManager.reload();
+  }
+
   init() {
     this.exposeMethodOverIPC(
       "getAllRecords",

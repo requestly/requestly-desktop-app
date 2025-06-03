@@ -81,7 +81,12 @@ export class FsManager {
   constructor(rootPath: string) {
     this.rootPath = getNormalizedPath(rootPath);
     this.config = this.parseConfig();
-    this.fsIgnoreManager = new FsIgnoreManager(rootPath);
+    this.fsIgnoreManager = new FsIgnoreManager(this.rootPath, this.config);
+  }
+
+  reload() {
+    this.config = this.parseConfig();
+    this.fsIgnoreManager = new FsIgnoreManager(this.rootPath, this.config);
   }
 
   private parseConfig() {
