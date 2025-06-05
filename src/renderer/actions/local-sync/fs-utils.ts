@@ -29,6 +29,8 @@ import {
   DESCRIPTION_FILE,
   DS_STORE_FILE,
   ENVIRONMENT_VARIABLES_FOLDER,
+  GIT_FOLDER,
+  GIT_IGNORE_FILE,
   GLOBAL_CONFIG_FILE_NAME,
   GLOBAL_CONFIG_FOLDER_PATH,
 } from "./constants";
@@ -53,6 +55,7 @@ import {
 } from "./file-types/file-types";
 import path from "node:path";
 import { FsService } from "./fs/fs.service";
+import type { FsIgnoreManager } from "./fsIgnore-manager";
 
 // TODO: Fix the delimiters added by electron on file paths
 function sanitizePath(rawPath: string) {
@@ -755,7 +758,8 @@ export async function parseFileToApi(
 export function sanitizeFsResourceList(
   rootPath: string,
   resources: FsResource[],
-  type: APIEntity["type"]
+  type: APIEntity["type"],
+  fsIgnoreManager: FsIgnoreManager
 ) {
   // eslint-disable-next-line no-unused-vars
   const checks: ((resource: FsResource) => boolean)[] = [
@@ -764,6 +768,9 @@ export function sanitizeFsResourceList(
     (resource) => !resource.path.endsWith(DESCRIPTION_FILE),
     (resource) => !resource.path.endsWith(COLLECTION_AUTH_FILE),
     (resource) => !resource.path.includes(DS_STORE_FILE),
+    (resource) => !resource.path.includes(GIT_FOLDER),
+    (resource) => !resource.path.includes(GIT_IGNORE_FILE),
+    (resource) => !fsIgnoreManager.checkShouldIgnore(resource.path),
   ];
   if (type === "api") {
     checks.push(

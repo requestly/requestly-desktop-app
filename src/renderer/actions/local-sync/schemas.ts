@@ -4,6 +4,7 @@ import { Type } from "@sinclair/typebox";
 
 export const Config = Type.Object({
   version: Type.String(),
+  exclude: Type.Optional(Type.Array(Type.String())),
 });
 
 export enum EnvironmentVariableType {

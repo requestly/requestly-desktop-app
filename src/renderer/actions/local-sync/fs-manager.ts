@@ -69,15 +69,24 @@ import {
 } from "./file-types/file-types";
 import { isEmpty } from "lodash";
 import { HandleError } from "./decorators/handle-error.decorator";
+import { FsIgnoreManager } from "./fsIgnore-manager";
 
 export class FsManager {
   private rootPath: string;
 
   private config: Static<typeof Config>;
 
+  private fsIgnoreManager: FsIgnoreManager;
+
   constructor(rootPath: string) {
     this.rootPath = getNormalizedPath(rootPath);
     this.config = this.parseConfig();
+    this.fsIgnoreManager = new FsIgnoreManager(this.rootPath, this.config);
+  }
+
+  reload() {
+    this.config = this.parseConfig();
+    this.fsIgnoreManager = new FsIgnoreManager(this.rootPath, this.config);
   }
 
   private parseConfig() {
@@ -160,7 +169,12 @@ export class FsManager {
     }
     return {
       type: "success",
-      content: sanitizeFsResourceList(rootPath, container, type),
+      content: sanitizeFsResourceList(
+        rootPath,
+        container,
+        type,
+        this.fsIgnoreManager
+      ),
     };
   }
 
