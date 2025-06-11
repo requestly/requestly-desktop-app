@@ -2,6 +2,10 @@ import axios, { AxiosInstance } from "axios";
 import { readFileSync } from "fs";
 import { HttpsProxyAgent, HttpsProxyAgentOptions } from "https-proxy-agent";
 import { ClientRequest, RequestOptions } from "agent-base";
+import {
+  cookiesRequestInterceptor,
+  cookiesResponseInterceptor,
+} from "./cookiesHelpers";
 
 class PatchedHttpsProxyAgent extends HttpsProxyAgent {
   ca: unknown;
@@ -23,7 +27,20 @@ interface ProxyConfig {
 }
 
 let axiosInstance: AxiosInstance;
+let axiosInstanceWithCookies: AxiosInstance;
 let proxyConfig: ProxyConfig;
+
+function createAxiosInstance(config: ProxyConfig): AxiosInstance {
+  return axios.create({
+    proxy: false,
+    httpAgent: new HttpsProxyAgent(`http://${config.ip}:${config.port}`),
+    httpsAgent: new PatchedHttpsProxyAgent({
+      host: config.ip,
+      port: config.port,
+      ca: readFileSync(config.rootCertPath),
+    }),
+  });
+}
 
 export const createOrUpdateAxiosInstance = (
   newProxyConfig: ProxyConfig
@@ -34,17 +51,14 @@ export const createOrUpdateAxiosInstance = (
   };
 
   try {
-    axiosInstance = axios.create({
-      proxy: false,
-      httpAgent: new HttpsProxyAgent(
-        `http://${proxyConfig.ip}:${proxyConfig.port}`
-      ),
-      httpsAgent: new PatchedHttpsProxyAgent({
-        host: proxyConfig.ip,
-        port: proxyConfig.port,
-        ca: readFileSync(proxyConfig.rootCertPath),
-      }),
-    });
+    axiosInstance = createAxiosInstance(proxyConfig);
+    axiosInstanceWithCookies = createAxiosInstance(proxyConfig);
+    axiosInstanceWithCookies.interceptors.request.use(
+      cookiesRequestInterceptor
+    );
+    axiosInstanceWithCookies.interceptors.response.use(
+      cookiesResponseInterceptor
+    );
   } catch {
     /* Do nothing */
   }
@@ -52,12 +66,9 @@ export const createOrUpdateAxiosInstance = (
   return axiosInstance;
 };
 
-const getProxiedAxios = (): AxiosInstance => {
-  if (axiosInstance) {
-    return axiosInstance;
-  }
-
-  return axios;
+const getProxiedAxios = (withCookies = true): AxiosInstance => {
+  if (withCookies) return axiosInstanceWithCookies ?? axiosInstance ?? axios;
+  return axiosInstance ?? axios;
 };
 
 export default getProxiedAxios;
