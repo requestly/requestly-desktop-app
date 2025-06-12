@@ -1,4 +1,4 @@
-import { CookieJar } from "tough-cookie";
+import { Cookie, CookieJar } from "tough-cookie";
 import type { AxiosResponse, AxiosRequestConfig } from "axios";
 
 const cookieJar = new CookieJar();
@@ -21,7 +21,13 @@ export const addCookiesToRequest = (request: AxiosRequestConfig) => {
   const currentCookies = request.headers?.Cookie || request.headers?.cookie || "";
   const cookieString = storedCookies.map((cookie) => `${cookie.key}=${cookie.value}`).join("; ");
   const headers = request.headers || {};
-  headers.Cookie = [currentCookies, cookieString].filter(Boolean).join("; ");
+  const allCookies = [currentCookies, cookieString].filter(Boolean).join("; ");
+  const finalCookie = Cookie.parse(allCookies, {
+    // to allow key-less cookies (non-compliant to OG RFC 6265)
+    // https://github.com/httpwg/http-extensions/issues/159
+    loose: true,
+  });
+  headers.Cookie = finalCookie?.toString();
   request.headers = headers;
   return request;
 };
