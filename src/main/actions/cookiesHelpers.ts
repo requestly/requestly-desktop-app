@@ -3,29 +3,31 @@ import type { AxiosResponse, AxiosRequestConfig } from "axios";
 
 const cookieJar = new CookieJar();
 
-/* axios interceptors */
-export const cookiesResponseInterceptor = (
+export const storeCookiesFromResponse = (
   response: AxiosResponse
 ): AxiosResponse => {
-  const cookies = response.headers["set-cookie"];
-  if (cookies) {
-    cookies.forEach((cookie: string) => {
-      cookieJar.setCookieSync(cookie, response.config.url as string);
-    });
-  }
+  let cookies =
+    response.headers["set-cookie"] || response.headers["Set-Cookie"];
+  cookies = cookies ? (Array.isArray(cookies) ? cookies : [cookies]) : [];
+  cookies.forEach((cookie: string) => {
+    cookieJar.setCookieSync(cookie, response.config.url as string);
+  });
+  console.log("Stored cookies from response:", cookies);
   return response;
 };
 
-export const cookiesRequestInterceptor = (request: AxiosRequestConfig) => {
+export const addCookiesToRequest = (request: AxiosRequestConfig) => {
   if (!request || !request.url) return request;
   const { url } = request;
   const cookies = cookieJar.getCookiesSync(url);
-  if (cookies.length > 0) {
-    if (!request.headers) request.headers = {};
-    request.headers.Cookie = cookies
-      .map((cookie) => cookie.toString())
-      .join("; ");
-  }
+  const currentCookies = request.headers?.Cookie || request.headers?.cookie || "";
+  const cookieString = cookies
+    .map((cookie) => `${cookie.key}=${cookie.value}`)
+    .join("; ");
+  const headers = request.headers || {};
+  headers.Cookie = [currentCookies, cookieString].filter(Boolean).join("; ");
+  request.headers = headers;
+
+  console.log("Added cookies to request:", request.headers.Cookie);
   return request;
 };
-/* There are also error cases, but they get bypassed as we override validateStatus (and is rest is taken care of by proxy) */

@@ -3,8 +3,8 @@ import { readFileSync } from "fs";
 import { HttpsProxyAgent, HttpsProxyAgentOptions } from "https-proxy-agent";
 import { ClientRequest, RequestOptions } from "agent-base";
 import {
-  cookiesRequestInterceptor,
-  cookiesResponseInterceptor,
+  addCookiesToRequest,
+  storeCookiesFromResponse,
 } from "./cookiesHelpers";
 
 class PatchedHttpsProxyAgent extends HttpsProxyAgent {
@@ -26,12 +26,15 @@ interface ProxyConfig {
   rootCertPath: string;
 }
 
-let axiosInstance: AxiosInstance;
-let axiosInstanceWithCookies: AxiosInstance;
+let proxiedAxios: AxiosInstance;
+let proxiedAxiosWithSessionCookies: AxiosInstance;
 let proxyConfig: ProxyConfig;
 
-function createAxiosInstance(config: ProxyConfig): AxiosInstance {
-  return axios.create({
+function createAxiosInstance(
+  config: ProxyConfig,
+  addStoredCookies: boolean = false
+): AxiosInstance {
+  const instance = axios.create({
     proxy: false,
     httpAgent: new HttpsProxyAgent(`http://${config.ip}:${config.port}`),
     httpsAgent: new PatchedHttpsProxyAgent({
@@ -40,6 +43,12 @@ function createAxiosInstance(config: ProxyConfig): AxiosInstance {
       ca: readFileSync(config.rootCertPath),
     }),
   });
+
+  instance.interceptors.response.use(storeCookiesFromResponse);
+  if (addStoredCookies) {
+    instance.interceptors.request.use(addCookiesToRequest);
+  }
+  return instance;
 }
 
 export const createOrUpdateAxiosInstance = (
@@ -51,24 +60,27 @@ export const createOrUpdateAxiosInstance = (
   };
 
   try {
-    axiosInstance = createAxiosInstance(proxyConfig);
-    axiosInstanceWithCookies = createAxiosInstance(proxyConfig);
-    axiosInstanceWithCookies.interceptors.request.use(
-      cookiesRequestInterceptor
-    );
-    axiosInstanceWithCookies.interceptors.response.use(
-      cookiesResponseInterceptor
-    );
-  } catch {
+    proxiedAxios = createAxiosInstance(proxyConfig);
+    proxiedAxiosWithSessionCookies = createAxiosInstance(proxyConfig, true);
+  } catch (error) {
     /* Do nothing */
+    console.error("Error creating or updating Axios instance:", error);
   }
 
-  return axiosInstance;
+  return proxiedAxios;
 };
 
-const getProxiedAxios = (withCookies = true): AxiosInstance => {
-  if (withCookies) return axiosInstanceWithCookies ?? axiosInstance ?? axios;
-  return axiosInstance ?? axios;
+const getProxiedAxios = (
+  includeCredentials: undefined | boolean
+): AxiosInstance => {
+  /* 
+    [Intentional] default behaviour is to addCookies. In line with emulating browser behaviour.
+    The variable names are confusing because a flag called `withCredentials` has now been released for extension
+  */
+  const shouldAddCookies = includeCredentials ?? true;
+  if (shouldAddCookies)
+    return proxiedAxiosWithSessionCookies ?? proxiedAxios ?? axios;
+  return proxiedAxios ?? axios;
 };
 
 export default getProxiedAxios;
