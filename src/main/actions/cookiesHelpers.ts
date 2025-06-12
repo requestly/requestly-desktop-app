@@ -27,7 +27,9 @@ export const addCookiesToRequest = (request: AxiosRequestConfig) => {
     // https://github.com/httpwg/http-extensions/issues/159
     loose: true,
   });
-  headers.Cookie = finalCookie?.toString();
+  if (finalCookie) {
+    headers.Cookie = finalCookie?.toString();
+  }
   request.headers = headers;
   return request;
 };
