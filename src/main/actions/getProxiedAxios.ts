@@ -70,15 +70,13 @@ export const createOrUpdateAxiosInstance = (
   return proxiedAxios;
 };
 
-const getProxiedAxios = (
-  includeCredentials: undefined | boolean
-): AxiosInstance => {
-  /* 
-    [Intentional] default behaviour is to addCookies. In line with emulating browser behaviour.
-    The variable names are confusing because a flag called `withCredentials` has now been released for extension
-  */
-  const shouldAddCookies = includeCredentials ?? true;
-  if (shouldAddCookies)
+/* 
+  [Intentional] add cookies by default. In line with emulating browser behaviour.
+  A better name could be excludeCredentials=false .
+  did this because a flag called `withCredentials` has now been released for extension
+*/
+const getProxiedAxios = (includeCredentials: boolean = true): AxiosInstance => {
+  if (includeCredentials)
     return proxiedAxiosWithSessionCookies ?? proxiedAxios ?? axios;
   return proxiedAxios ?? axios;
 };
