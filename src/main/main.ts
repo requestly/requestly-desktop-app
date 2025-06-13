@@ -30,6 +30,7 @@ import EVENTS from "./actions/events/constants";
 import fs from "fs";
 import logger from "../utils/logger";
 import { setupIPCForwardingToWebApp } from "./actions/setupIPCForwarding";
+import { saveCookies } from "./actions/cookiesHelpers";
 
 // Init remote so that it could be consumed in renderer
 const remote = require("@electron/remote/main");
@@ -265,6 +266,7 @@ const createWindow = async () => {
     // Check if user has already asked to Quit app from here or somewhere else
     // @ts-expect-error
     if (global.isQuitActionConfirmed) {
+      saveCookies();
       app.quit();
       return;
     }

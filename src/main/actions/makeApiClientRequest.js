@@ -32,7 +32,7 @@ const makeApiClientRequest = async ({ apiRequest }) => {
     }
 
     const requestStartTime = performance.now();
-    const axios = getProxiedAxios();
+    const axios = getProxiedAxios(apiRequest.includeCredentials);
     const response = await axios({
       url,
       method,
