@@ -8,8 +8,12 @@ export const storeCookiesFromResponse = (
 ): AxiosResponse => {
   let cookies = response.headers["set-cookie"] || response.headers["Set-Cookie"];
   cookies = cookies ? (Array.isArray(cookies) ? cookies : [cookies]) : [];
+  const finalURL: string =
+    response.request?.res?.responseUrl || // to follow redirect
+    response.config.url ||
+    "";
   cookies.forEach((cookie: string) => {
-    cookieJar.setCookieSync(cookie, response.config.url as string);
+    cookieJar.setCookieSync(cookie, finalURL);
   });
   return response;
 };
