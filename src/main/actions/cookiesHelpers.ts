@@ -7,7 +7,6 @@ let cookieJar = new CookieJar(undefined, { looseMode: true });
 const offlineStore = new Store({
   name: "cookies",
   cwd: "storage",
-  watch: true,
   schema: {
     cookies: {
       type: "string",
@@ -24,7 +23,10 @@ export const loadCookies = () => {
     // @ts-ignore
     offlineJar = JSON.parse(rawCookieJarDump);
   }
-  if (!offlineJar || !offlineJar.cookies) return;
+  if (!offlineJar || !offlineJar.cookies) {
+    console.log("No cookies found in offline store.", !!offlineJar, offlineJar?.cookies);
+    return;
+  }
 
   // @ts-ignore
   cookieJar = CookieJar.fromJSON(offlineJar);
@@ -43,12 +45,8 @@ export const storeCookiesFromResponse = (
   let cookies =
     response.headers["set-cookie"] || response.headers["Set-Cookie"];
   cookies = cookies ? (Array.isArray(cookies) ? cookies : [cookies]) : [];
-  const finalURL: string =
-    response.request?.res?.responseUrl || // to follow redirect
-    response.config.url ||
-    "";
   cookies.forEach((cookie: string) => {
-    cookieJar.setCookieSync(cookie, finalURL);
+    cookieJar.setCookieSync(cookie, response.config.url as string);
   });
   return response;
 };
