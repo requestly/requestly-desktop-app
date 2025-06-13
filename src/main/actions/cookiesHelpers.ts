@@ -1,12 +1,47 @@
 import { Cookie, CookieJar } from "tough-cookie";
 import type { AxiosResponse, AxiosRequestConfig } from "axios";
+import Store from "electron-store";
 
-const cookieJar = new CookieJar();
+let cookieJar = new CookieJar(undefined, { looseMode: true });
+
+const offlineStore = new Store({
+  name: "cookies",
+  cwd: "storage",
+  watch: true,
+  schema: {
+    cookies: {
+      type: "string",
+      default: JSON.stringify({}),
+    },
+  },
+});
+
+export const loadCookies = () => {
+  console.log("Loading cookies from offline store...");
+  const rawCookieJarDump = offlineStore.get("cookies");
+  let offlineJar: any;
+  if (rawCookieJarDump) {
+    // @ts-ignore
+    offlineJar = JSON.parse(rawCookieJarDump);
+  }
+  if (!offlineJar || !offlineJar.cookies) return;
+
+  // @ts-ignore
+  cookieJar = CookieJar.fromJSON(offlineJar);
+};
+
+export const saveCookies = () => {
+  const cookiesToStore = JSON.stringify(cookieJar.toJSON());
+  offlineStore.set("cookies", cookiesToStore);
+};
+
+loadCookies();
 
 export const storeCookiesFromResponse = (
   response: AxiosResponse
 ): AxiosResponse => {
-  let cookies = response.headers["set-cookie"] || response.headers["Set-Cookie"];
+  let cookies =
+    response.headers["set-cookie"] || response.headers["Set-Cookie"];
   cookies = cookies ? (Array.isArray(cookies) ? cookies : [cookies]) : [];
   const finalURL: string =
     response.request?.res?.responseUrl || // to follow redirect
@@ -22,8 +57,11 @@ export const addCookiesToRequest = (request: AxiosRequestConfig) => {
   if (!request || !request.url) return request;
   const { url } = request;
   const storedCookies = cookieJar.getCookiesSync(url);
-  const currentCookies = request.headers?.Cookie || request.headers?.cookie || "";
-  const cookieString = storedCookies.map((cookie) => `${cookie.key}=${cookie.value}`).join("; ");
+  const currentCookies =
+    request.headers?.Cookie || request.headers?.cookie || "";
+  const cookieString = storedCookies
+    .map((cookie) => `${cookie.key}=${cookie.value}`)
+    .join("; ");
   const headers = request.headers || {};
   const allCookies = [currentCookies, cookieString].filter(Boolean).join("; ");
   const finalCookie = Cookie.parse(allCookies, {
