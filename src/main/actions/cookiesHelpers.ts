@@ -53,9 +53,15 @@ export const storeCookiesFromResponse = (
     response.request?.res?.responseUrl || // to follow redirect
     response.config.url ||
     "";
+  const setCookieErrors: any[] = []
   cookies.forEach((cookie: string) => {
+    try {
     cookieJar.setCookieSync(cookie, finalURL);
+    } catch (error) {
+      setCookieErrors.push(error)
+    }
   });
+  response.headers["x-rq-error"]  = `SET_COOKIE_ERR: ${setCookieErrors.map(err => err?.message). join(' ')}`
   return response;
 };
 
