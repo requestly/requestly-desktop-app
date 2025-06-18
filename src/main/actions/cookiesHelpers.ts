@@ -54,7 +54,7 @@ export const storeCookiesFromResponse = (
     response.config.url ||
     "";
   cookies.forEach((cookie: string) => {
-    cookieJar.setCookieSync(cookie, finalURL);
+    cookieJar.setCookieSync(cookie, finalURL, {ignoreError: true});
   });
   return response;
 };
