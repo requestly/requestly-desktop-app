@@ -8,6 +8,8 @@ module.exports = {
     "import/extensions": "off",
     "import/prefer-default-export": "off",
     "no-await-in-loop": "off",
+    "prettier/prettier": "off",
+    "no-nested-ternary": "off",
   },
   parserOptions: {
     ecmaVersion: 2020,
