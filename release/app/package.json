@@ -1,7 +1,7 @@
 {
   "name": "requestly",
   "productName": "Requestly",
-  "version": "25.6.19",
+  "version": "25.6.23",
   "private": true,
   "description": "Intercept & Modify HTTP Requests",
   "main": "./dist/main/main.js",
