@@ -8,17 +8,17 @@ on:
         required: true
         type: choice
         options:
-          - ubuntu-latest
-          - windows-2019
-          - macos-11
-        default: ubuntu-latest
+          # - ubuntu-latest
+          - windows-latest
+          # - macos-latest
+        default: windows-latest
 
 jobs:
   release:
     env:
       EP_GH_IGNORE_TIME: true
-      APPLE_ID: ${{ secrets.apple_id }}
-      APPLE_ID_PASS: ${{ secrets.apple_id_pass }}
+      # APPLE_ID: ${{ secrets.apple_id }}
+      # APPLE_ID_PASS: ${{ secrets.apple_id_pass }}
 
     if: github.ref == 'refs/heads/master'|| github.ref == 'refs/heads/production'
     runs-on: ${{ github.event.inputs.build_type }}
