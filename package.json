@@ -74,9 +74,9 @@
       "entitlementsInherit": "assets/entitlements.mac.plist",
       "gatekeeperAssess": false,
       "requirements": "assets/requirement.rqset",
-      "identity": "Sachin Jain (AFBT5Z9V94)",
+      "identity": "Browserstack Inc (YQ5FZQ855D)",
       "notarize": {
-        "teamId": "AFBT5Z9V94"
+        "teamId": "YQ5FZQ855D"
       },
       "target": [
         {
