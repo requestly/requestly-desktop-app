@@ -1,6 +1,6 @@
 import { RPCServiceOverIPC } from "renderer/lib/RPCServiceOverIPC";
-import { createWorkspaceFolder, getAllWorkspaces } from "./fs-utils";
 import { FsManagerRPCService } from "./fs-manager.rpc-service";
+import { CoreManager } from "./core-manager";
 
 export class FsManagerBuilderRPCService extends RPCServiceOverIPC {
   static NAMESPACE = "local_sync_builder";
@@ -13,19 +13,20 @@ export class FsManagerBuilderRPCService extends RPCServiceOverIPC {
   }
 
   init() {
-    this.exposeMethodOverIPC("createWorkspaceFolder", createWorkspaceFolder);
-    this.exposeMethodOverIPC("getAllWorkspaces", getAllWorkspaces);
+    this.exposeMethodOverIPC("createWorkspaceFolder", CoreManager.createWorkspaceFolder);
+    this.exposeMethodOverIPC("getAllWorkspaces", CoreManager.getAllWorkspaces);
     this.exposeMethodOverIPC("build", this.build.bind(this));
     this.exposeMethodOverIPC("reload", this.reload.bind(this));
   }
 
   async build(rootPath: string) {
     if (this.exposedWorkspacePaths.has(rootPath)) {
-      console.log("not building again");
+      const manager = this.exposedWorkspacePaths.get(rootPath)!;
+      await manager.healIfBroken();
       return;
     }
     const manager = new FsManagerRPCService(rootPath);
-    manager.init();
+    await manager.init();
     this.exposedWorkspacePaths.set(rootPath, manager);
   }
 
