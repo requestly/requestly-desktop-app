@@ -85,7 +85,7 @@ const startBackgroundProcess = async () => {
         return;
       }
 
-      event.preventDefault();
+      event.preventDefault(); // concerning here
     });
   });
 };

@@ -12,7 +12,7 @@
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 import path from "path";
-import { app, BrowserWindow, shell, dialog, Tray, Menu, clipboard } from "electron";
+import { app, BrowserWindow, shell, dialog, Tray, Menu, clipboard, ipcMain } from "electron";
 import log from "electron-log";
 import MenuBuilder from "./menu";
 import {
@@ -170,7 +170,7 @@ export default function createTrayMenu(ip?: string, port?: number) {
   tray.setContextMenu(trayMenu);
 }
 
-
+let triggered = false;
 const createWindow = async () => {
   if (isDevelopment) {
     await installExtensions();
@@ -262,56 +262,104 @@ const createWindow = async () => {
   //   webAppWindow = null;
   // });
 
-  webAppWindow.on("close", (e) => {
+  async function confirmUnsavedChanges() {
+    return new Promise((resolve) => {
+      // @ts-ignore
+      webAppWindow.webContents.send("check-unsaved-changes")
+      // @ts-ignore
+      if(!global.isQuitActionConfirmed) {
+        ipcMain.handleOnce("unsaved-changes-confirm", (_event, confirmClose) => {
+          console.log("DG-1 handler triggered", Date.now())
+          resolve(!!confirmClose)
+          triggered = false
+        })
+      }
+    })
+    
+  }
+
+  webAppWindow.on('close', async (event) => {
+    // @ts-ignore
+    console.log("DG-0: CLOSE TRIGGERED", global.isQuitActionConfirmed)
+
+    // @ts-ignore
+    if(global.isQuitActionConfirmed) return;
+    event.preventDefault();
+
+    if(triggered) {
+      return; // already being handled
+    }
+    console.log("DG-0: CLOSE TRIGGER passed")
+    triggered = true
+
+    const confirmed = await confirmUnsavedChanges();
+    console.log("DG-0 confirmed?? ", confirmed)
+    if(confirmed) {
+      console.log("DG-0: preventing event", Date.now())
+      // @ts-ignore
+      global.isQuitActionConfirmed = true
+      webAppWindow?.close()
+    }
+
+  })
+
+  webAppWindow.on("closed", () => {
+    console.log("DG-2: clos-ed triggered", Date.now())
     // Check if user has already asked to Quit app from here or somewhere else
     // @ts-expect-error
     if (global.isQuitActionConfirmed) {
       saveCookies();
-      app.quit();
+      if (webAppWindow) {
+        cleanupAndQuit();
+      } else {
+        app.quit();
+      }
       return;
     }
 
     if (webAppWindow) {
-      let message =
-        "Do you really want to quit? This would also stop the proxy server.";
+      //@ts-ignore
+      // global.isQuitActionConfirmed = true
+      // cleanupAndQuit();
+      // let message =
+      //   "Do you really want to quit? This would also stop the proxy server.";
 
-      // @ts-expect-error
-      if (global.quitAndInstall) {
-        message = "Confirm to restart & install update";
-        // @ts-expect-error
-        global.quitAndInstall = false;
-      }
+      // if (global.quitAndInstall) {
+      //   message = "Confirm to restart & install update";
+      //   // @ts-expect-error
+      //   global.quitAndInstall = false;
+      // }
 
-      const choice = dialog.showMessageBoxSync(webAppWindow, {
-        type: "question",
-        buttons: ["Yes, quit Requestly", "Minimize instead", "Cancel"],
-        title: "Quit Requestly",
-        message: message,
-      });
+      // const choice = dialog.showMessageBoxSync(webAppWindow, {
+      //   type: "question",
+      //   buttons: ["Yes, quit Requestly", "Minimize instead", "Cancel"],
+      //   title: "Quit Requestly",
+      //   message: message,
+      // });
 
-      switch (choice) {
-        // If Quit is clicked
-        case 0:
-          // Set flag to check next iteration
-          trackEventViaWebApp(webAppWindow, EVENTS.QUIT_APP)
-          // @ts-expect-error
-          global.isQuitActionConfirmed = true;
-          // Calling app.quit() would again invoke this function
-          e.preventDefault();
-          cleanupAndQuit();
-          break;
-        // If Minimize is clicked
-        case 1:
-          webAppWindow.minimize();
-          e.preventDefault();
-          break;
-        // If cancel is clicked
-        case 2:
-          e.preventDefault();
-          break;
-        default:
-          break;
-      }
+      // switch (choice) {
+      //   // If Quit is clicked
+      //   case 0:
+      //     // Set flag to check next iteration
+      //     trackEventViaWebApp(webAppWindow, EVENTS.QUIT_APP)
+      //     // @ts-expect-error
+      //     global.isQuitActionConfirmed = true;
+      //     // Calling app.quit() would again invoke this function
+      //     e.preventDefault();
+      //     cleanupAndQuit();
+      //     break;
+      //   // If Minimize is clicked
+      //   case 1:
+      //     webAppWindow.minimize();
+      //     e.preventDefault();
+      //     break;
+      //   // If cancel is clicked
+      //   case 2:
+      //     e.preventDefault();
+      //     break;
+      //   default:
+      //     break;
+      // }
     }
   });
 
