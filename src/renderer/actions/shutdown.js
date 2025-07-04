@@ -5,11 +5,6 @@ import * as Sentry from "@sentry/browser";
 
 const shutdownHandlers = [];
 
-export function registerShutdownHandler() {
-  process.on("SIGTERM", shutdown);
-  process.on("SIGINT", shutdown);
-}
-
 export function addShutdownHandler(handler) {
   shutdownHandlers.push(handler);
 }
@@ -29,7 +24,7 @@ export const shutdown = async () => {
 
   await Promise.race([
     shutdownPromises,
-    delay(2000), // After 2 seconds, we just close anyway, we're done.
+    delay(7500), // After 7.5 seconds, we just close anyway, we're done.
   ]);
   // process.exit(0);
 };
