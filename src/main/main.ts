@@ -151,7 +151,7 @@ export default function createTrayMenu(ip?: string, port?: number) {
     {
       label: "Quit",
       click: () => {
-        app.quit();
+        webAppWindow?.close();
       },
     },
   ]
@@ -259,16 +259,13 @@ const createWindow = async () => {
   });
 
   webAppWindow.on('close', async (event) => {
-    console.log("DG-1: close triggered", closingAccepted)
     if(!closingAccepted) {
-      console.log("DG-0: something else")
       event.preventDefault();
       webAppWindow?.webContents.send("intimate-app-close")
     }
   })
 
   webAppWindow.on('closed', () => {
-    console.log("DG-0: something", !!webAppWindow)
     saveCookies();
     cleanupAndQuit()
     return;
@@ -444,7 +441,6 @@ app
   });
 
 ipcMain.handle("quit-app", (_event) => {
-  console.log("DG-2: quitapp", closingAccepted)
   closingAccepted = true
   webAppWindow?.close();
 })
