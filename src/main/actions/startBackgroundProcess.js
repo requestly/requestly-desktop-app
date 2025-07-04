@@ -84,8 +84,6 @@ const startBackgroundProcess = async () => {
         console.log("BG quitting");
         return;
       }
-
-      event.preventDefault(); // concerning here
     });
   });
 };

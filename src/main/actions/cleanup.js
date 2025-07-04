@@ -1,6 +1,7 @@
 const { app, ipcMain } = require("electron");
 
 export const cleanupAndQuit = () => {
+  // eslint-disable-next-line no-use-before-define
   cleanup();
 
   if (global.backgroundWindow) {

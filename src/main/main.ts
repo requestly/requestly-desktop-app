@@ -170,7 +170,7 @@ export default function createTrayMenu(ip?: string, port?: number) {
   tray.setContextMenu(trayMenu);
 }
 
-let triggered = false;
+let closingAccepted = false
 const createWindow = async () => {
   if (isDevelopment) {
     await installExtensions();
@@ -258,111 +258,21 @@ const createWindow = async () => {
     }
   });
 
-  // webAppWindow.on('closed', () => {
-  //   webAppWindow = null;
-  // });
-
-  async function confirmUnsavedChanges() {
-    return new Promise((resolve) => {
-      // @ts-ignore
-      webAppWindow.webContents.send("check-unsaved-changes")
-      // @ts-ignore
-      if(!global.isQuitActionConfirmed) {
-        ipcMain.handleOnce("unsaved-changes-confirm", (_event, confirmClose) => {
-          console.log("DG-1 handler triggered", Date.now())
-          resolve(!!confirmClose)
-          triggered = false
-        })
-      }
-    })
-    
-  }
-
   webAppWindow.on('close', async (event) => {
-    // @ts-ignore
-    console.log("DG-0: CLOSE TRIGGERED", global.isQuitActionConfirmed)
-
-    // @ts-ignore
-    if(global.isQuitActionConfirmed) return;
-    event.preventDefault();
-
-    if(triggered) {
-      return; // already being handled
+    console.log("DG-1: close triggered", closingAccepted)
+    if(!closingAccepted) {
+      console.log("DG-0: something else")
+      event.preventDefault();
+      webAppWindow?.webContents.send("intimate-app-close")
     }
-    console.log("DG-0: CLOSE TRIGGER passed")
-    triggered = true
-
-    const confirmed = await confirmUnsavedChanges();
-    console.log("DG-0 confirmed?? ", confirmed)
-    if(confirmed) {
-      console.log("DG-0: preventing event", Date.now())
-      // @ts-ignore
-      global.isQuitActionConfirmed = true
-      webAppWindow?.close()
-    }
-
   })
 
-  webAppWindow.on("closed", () => {
-    console.log("DG-2: clos-ed triggered", Date.now())
-    // Check if user has already asked to Quit app from here or somewhere else
-    // @ts-expect-error
-    if (global.isQuitActionConfirmed) {
-      saveCookies();
-      if (webAppWindow) {
-        cleanupAndQuit();
-      } else {
-        app.quit();
-      }
-      return;
-    }
-
-    if (webAppWindow) {
-      //@ts-ignore
-      // global.isQuitActionConfirmed = true
-      // cleanupAndQuit();
-      // let message =
-      //   "Do you really want to quit? This would also stop the proxy server.";
-
-      // if (global.quitAndInstall) {
-      //   message = "Confirm to restart & install update";
-      //   // @ts-expect-error
-      //   global.quitAndInstall = false;
-      // }
-
-      // const choice = dialog.showMessageBoxSync(webAppWindow, {
-      //   type: "question",
-      //   buttons: ["Yes, quit Requestly", "Minimize instead", "Cancel"],
-      //   title: "Quit Requestly",
-      //   message: message,
-      // });
-
-      // switch (choice) {
-      //   // If Quit is clicked
-      //   case 0:
-      //     // Set flag to check next iteration
-      //     trackEventViaWebApp(webAppWindow, EVENTS.QUIT_APP)
-      //     // @ts-expect-error
-      //     global.isQuitActionConfirmed = true;
-      //     // Calling app.quit() would again invoke this function
-      //     e.preventDefault();
-      //     cleanupAndQuit();
-      //     break;
-      //   // If Minimize is clicked
-      //   case 1:
-      //     webAppWindow.minimize();
-      //     e.preventDefault();
-      //     break;
-      //   // If cancel is clicked
-      //   case 2:
-      //     e.preventDefault();
-      //     break;
-      //   default:
-      //     break;
-      // }
-    }
-  });
-
+  webAppWindow.on('closed', () => {
+    console.log("DG-0: something", !!webAppWindow)
+    saveCookies();
+    cleanupAndQuit()
+    return;
+  })
   const enableBGWindowDebug = () => {
     // Show bg window and toggle the devtools
     try {
@@ -532,3 +442,9 @@ app
   .catch((err) => {
     console.log(err);
   });
+
+ipcMain.handle("quit-app", (_event) => {
+  console.log("DG-2: quitapp", closingAccepted)
+  closingAccepted = true
+  webAppWindow?.close();
+})
