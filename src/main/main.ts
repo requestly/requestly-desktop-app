@@ -24,9 +24,7 @@ import {
 /** Storage - State */
 import "./actions/initGlobalState";
 import AutoUpdate from "../lib/autoupdate";
-import { cleanupAndQuit } from "./actions/cleanup";
-import { trackEventViaWebApp } from "./actions/events";
-import EVENTS from "./actions/events/constants";
+import { getReadyToQuitApp } from "./actions/cleanup";
 import fs from "fs";
 import logger from "../utils/logger";
 import { setupIPCForwardingToWebApp } from "./actions/setupIPCForwarding";
@@ -265,9 +263,10 @@ const createWindow = async () => {
     }
   })
 
-  webAppWindow.on('closed', () => {
+  webAppWindow.on('closed', async () => {
     saveCookies();
-    cleanupAndQuit()
+    await getReadyToQuitApp();
+    webAppWindow = null;
     return;
   })
   const enableBGWindowDebug = () => {
@@ -443,4 +442,20 @@ app
 ipcMain.handle("quit-app", (_event) => {
   closingAccepted = true
   webAppWindow?.close();
+})
+
+app.on("before-quit", () => {
+  // cleanup when quitting has been finalised
+  ipcMain.removeAllListeners();
+  webAppWindow?.removeAllListeners();
+  // @ts-expect-error BrowserWindow types are not being enforced for this variable
+  backgroundWindow?.removeAllListeners();
+
+  ipcMain.removeAllListeners();
+  process.on('uncaughtException', (err) => {
+    logger.error('Unhandled Exception while quitting:', err);
+  });
+  process.on('unhandledRejection', (err) => {
+    logger.error('Unhandled Rejection while quitting:', err);
+  });
 })

@@ -108,32 +108,32 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
 
   // Open handle for async source detection
   ipcMain.handle("app-detected", async (event, payload) => {
-    webAppWindow.send("app-detected", payload);
+    webAppWindow?.send("app-detected", payload);
   });
 
   ipcMain.handle("browser-connected", async (event, payload) => {
-    webAppWindow.send("browser-connected", payload);
+    webAppWindow?.send("browser-connected", payload);
   });
 
   ipcMain.handle("browser-disconnected", async (event, payload) => {
-    webAppWindow.send("browser-disconnected", payload);
+    webAppWindow?.send("browser-disconnected", payload);
   });
 
   // Open handle for async browser close
   ipcMain.handle("browser-closed", async (event, payload) => {
-    webAppWindow.send("browser-closed", payload);
+    webAppWindow?.send("browser-closed", payload);
   });
 
   // Open handle for async browser close
   ipcMain.handle("proxy-restarted", async (event, payload) => {
     createOrUpdateAxiosInstance(payload);
-    webAppWindow.send("proxy-restarted", payload);
+    webAppWindow?.send("proxy-restarted", payload);
   });
 
   // hacky implementation for syncing addition and deletion
   const resendAllNetworkLogs = async () => {
     const res = await getAllNetworkSessions();
-    webAppWindow.send("network-sessions-updated", res);
+    webAppWindow?.send("network-sessions-updated", res);
   };
 
   ipcMain.handle("get-all-network-sessions", async () => {
@@ -246,7 +246,7 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
   });
 
   ipcMain.handle("helper-server-hit", () => {
-    webAppWindow.send("helper-server-hit");
+    webAppWindow?.send("helper-server-hit");
   });
 };
 

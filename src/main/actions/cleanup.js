@@ -1,15 +1,18 @@
 const { app, ipcMain } = require("electron");
 
-export const cleanupAndQuit = () => {
-  // eslint-disable-next-line no-use-before-define
-  cleanup();
-
-  if (global.backgroundWindow) {
-    ipcMain.on("shutdown-success", () => {
-      console.log("shudown sucess");
-      app.quit();
-    });
-  }
+export const getReadyToQuitApp = async  () => {
+  return new Promise((resolve) => {
+    // eslint-disable-next-line no-use-before-define
+    cleanup();
+  
+    if (global.backgroundWindow) {
+      ipcMain.once("shutdown-success", () => {
+        console.log("shudown sucess");
+        global.backgroundWindow?.close();
+        resolve()
+      });
+    }
+  })
 };
 
 const cleanup = () => {
