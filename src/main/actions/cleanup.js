@@ -1,8 +1,17 @@
 const { app, ipcMain } = require("electron");
 
+const cleanup = () => {
+  if (global.backgroundWindow) {
+    global.backgroundWindow.webContents.send("shutdown");
+  } else {
+    // No backgroundWindow. Quit directly without cleanup
+    app.quit();
+  }
+};
+
+
 export const getReadyToQuitApp = async  () => {
   return new Promise((resolve) => {
-    // eslint-disable-next-line no-use-before-define
     cleanup();
   
     if (global.backgroundWindow) {
@@ -13,13 +22,4 @@ export const getReadyToQuitApp = async  () => {
       });
     }
   })
-};
-
-const cleanup = () => {
-  if (global.backgroundWindow) {
-    global.backgroundWindow.webContents.send("shutdown");
-  } else {
-    // No backgroundWindow. Quit directly without cleanup
-    app.quit();
-  }
 };

@@ -259,7 +259,7 @@ const createWindow = async () => {
   webAppWindow.on('close', async (event) => {
     if(!closingAccepted) {
       event.preventDefault();
-      webAppWindow?.webContents.send("intimate-app-close")
+      webAppWindow?.webContents.send("initiate-app-close")
     }
   })
 
