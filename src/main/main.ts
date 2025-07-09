@@ -83,7 +83,7 @@ export default function createTrayMenu(ip?: string, port?: number) {
     {
       label: "Show Requestly",
       click: () => {
-        if(webAppWindow) {
+        if(webAppWindow && !webAppWindow.isDestroyed()) {
           if(webAppWindow.isMinimized()) {
             webAppWindow.restore()
           }
@@ -322,7 +322,7 @@ function handleCustomProtocolURL(urlString: string) {
 
 // custom protocol (requestly) handler
 app.on("open-url", (_event, rqUrl) => {
-  if(webAppWindow) {
+  if(webAppWindow && !webAppWindow.isDestroyed()) {
     handleCustomProtocolURL(rqUrl)
   } else {
     onWebAppReadyHandlers.push(() => handleCustomProtocolURL(rqUrl))
@@ -355,7 +355,7 @@ async function handleFileOpen(filePath: string, webAppWindow?: BrowserWindow) {
 
 app.on('open-file', async (event, filePath) => {
   event.preventDefault();
-  if(webAppWindow) {
+  if(webAppWindow && !webAppWindow.isDestroyed()) {
     handleFileOpen(filePath, webAppWindow);
   } else {
     logger.log("webAppWindow not ready")

@@ -1,6 +1,6 @@
 const logNetworkRequestV2 = (event, message, webAppWindow) => {
   const newLog = message;
-  if (webAppWindow) {
+  if (webAppWindow && !webAppWindow.isDestroyed()) {
     webAppWindow.send("log-network-request-v2", newLog);
   }
 };
