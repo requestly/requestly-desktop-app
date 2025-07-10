@@ -93,7 +93,7 @@ class AutoUpdate {
     ipcMain.handle("quit-and-install", () => {
       log.info("recieved quit and install")
       global.quitAndInstall = true;
-      let res = autoUpdater.quitAndInstall();
+      const res = autoUpdater.quitAndInstall();
       log.info("finished quit and install", res)
     });
   };
