@@ -169,6 +169,15 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
     createOrUpdateAxiosInstance(payload);
   });
 
+  ipcMain.handle("does-file-exist", async (event, filePath) => {
+    try {
+      const exists = fs.existsSync(filePath);
+      return exists;
+    } catch (e) {
+      console.error("Error checking file existence", e);
+      return false;
+    }
+  })
   ipcMain.handle("get-api-response", async (event, payload) => {
     return makeApiClientRequest(payload);
   });
