@@ -6,7 +6,7 @@
   "description": "Intercept & Modify HTTP Requests",
   "main": "./dist/main/main.js",
   "author": {
-    "name": "RQ Labs, Inc.",
+    "name": "BrowserStack Inc.",
     "email": "contact@requestly.io",
     "url": "https://requestly.io/"
   },
