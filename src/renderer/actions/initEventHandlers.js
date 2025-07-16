@@ -27,7 +27,10 @@ import { getAvailableAndroidDevices } from "./apps/mobile/utils";
 import { sendMessageToExtension } from "./helperSocketServer";
 import IosSimulatorDevice from "./apps/mobile/iosSimulator";
 
+
 const initEventHandlers = () => {
+  console.log("[Debug] Init Event Handlers");
+  ipcRenderer.send("background-process-started", "Testing");
   ipcRenderer.on("start-proxy-server", async () => {
     const PROXY_RESULT = await startProxyServer();
     ipcRenderer.send("reply-start-proxy-server", PROXY_RESULT);
@@ -158,7 +161,9 @@ const initEventHandlers = () => {
     setState("rulesCache", newRules);
   });
 
+  console.log("[Debug] IPC");
   ipcRenderer.on("shutdown", async () => {
+    console.log("[Debug] Shutdown");
     await shutdown();
     ipcRenderer.send("shutdown-success");
   });
