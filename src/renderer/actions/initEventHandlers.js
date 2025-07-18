@@ -29,7 +29,6 @@ import IosSimulatorDevice from "./apps/mobile/iosSimulator";
 
 
 const initEventHandlers = () => {
-  console.log("[Debug] Init Event Handlers");
   ipcRenderer.send("background-process-started", "Testing");
   ipcRenderer.on("start-proxy-server", async () => {
     const PROXY_RESULT = await startProxyServer();
@@ -161,9 +160,7 @@ const initEventHandlers = () => {
     setState("rulesCache", newRules);
   });
 
-  console.log("[Debug] IPC");
   ipcRenderer.on("shutdown", async () => {
-    console.log("[Debug] Shutdown");
     await shutdown();
     ipcRenderer.send("shutdown-success");
   });
