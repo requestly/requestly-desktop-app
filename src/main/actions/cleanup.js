@@ -1,10 +1,14 @@
 const { app, ipcMain } = require("electron");
 
 const cleanup = () => {
-  if (global.backgroundWindow) {
-    global.backgroundWindow.webContents.send("shutdown");
+  if(global.backgroundProcessStarted) {
+    if (global.backgroundWindow) {
+      global.backgroundWindow.webContents.send("shutdown");
+    } else {
+      // No backgroundWindow. Quit directly without cleanup
+      app.quit();
+    }
   } else {
-    // No backgroundWindow. Quit directly without cleanup
     app.quit();
   }
 };

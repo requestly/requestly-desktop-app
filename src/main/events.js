@@ -68,6 +68,9 @@ function removeFileFromAccessRecords(filePath) {
 
 // These events do not require the browser window
 export const registerMainProcessEvents = () => {
+  ipcMain.on("background-process-started", () => {
+    global.backgroundProcessStarted = true;
+  });
   ipcMain.handle("start-background-process", startBackgroundProcess);
   /** Main Process State Management */
   ipcMain.handle("get-state", getState);
