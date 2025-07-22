@@ -10,6 +10,13 @@ module.exports = {
     "no-await-in-loop": "off",
     "prettier/prettier": "off",
     "no-nested-ternary": "off",
+    "no-unused-vars": [
+      "warn",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ],
   },
   parserOptions: {
     ecmaVersion: 2020,
