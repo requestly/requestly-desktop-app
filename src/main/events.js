@@ -177,7 +177,27 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
       console.error("Error checking file existence", e);
       return false;
     }
-  })
+  });
+
+  ipcMain.handle("get-file-size", async (event, filePath) => {
+    try {
+      const { size } = fs.statSync(filePath);
+
+      const formatBytes = (bytes) => {
+        if (bytes === 0) return "0 B";
+        const k = 1024;
+        const sizes = ["B", "KB", "MB", "GB", "TB"];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+        return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
+      };
+      return formatBytes(size);
+    } catch (e) {
+      console.error("Error getting file size", e);
+      return "0 B";
+    }
+  });
+
   ipcMain.handle("get-api-response", async (event, payload) => {
     return makeApiClientRequest(payload);
   });
