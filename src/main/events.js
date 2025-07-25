@@ -177,7 +177,8 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
       console.error("Error checking file existence", e);
       return false;
     }
-  })
+  });
+
   ipcMain.handle("get-api-response", async (event, payload) => {
     return makeApiClientRequest(payload);
   });
@@ -262,7 +263,19 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
 export const registerMainProcessCommonEvents = () => {
   ipcMain.handle("open-file-dialog", async (event, options) => {
     const fileDialogPromise = dialog.showOpenDialog(options ?? {});
-    return fileDialogPromise;
+    return fileDialogPromise.then(result => {
+      const { canceled, filePaths } = result;
+      if (canceled || !filePaths?.length) {
+        return {canceled: true, files: []};
+      }
+      const files = []
+      for (const filePath of filePaths) {
+        const { size } = fs.statSync(filePath);
+        const name = path.basename(filePath);
+        files.push({ path: filePath, name, size });
+      }
+      return { canceled, files };
+    }).catch(console.error)
   });
 
   ipcMain.handle("open-folder-dialog", async (event, options = {}) => {

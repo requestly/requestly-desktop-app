@@ -10,6 +10,7 @@ module.exports = {
     "no-await-in-loop": "off",
     "prettier/prettier": "off",
     "no-nested-ternary": "off",
+    "no-restricted-syntax": "off",
   },
   parserOptions: {
     ecmaVersion: 2020,
