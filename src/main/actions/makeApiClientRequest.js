@@ -1,9 +1,12 @@
 import getProxiedAxios from "./getProxiedAxios";
+import AdvancedFormData from "form-data";
+
+const fs = require("fs");
 
 const makeApiClientRequest = async ({ apiRequest }) => {
   try {
     const { method = "GET" } = apiRequest;
-    const headers = {};
+    let headers = {};
     let { body, url } = apiRequest;
 
     if (apiRequest?.queryParams.length) {
@@ -29,6 +32,38 @@ const makeApiClientRequest = async ({ apiRequest }) => {
         formData.append(key, value);
       });
       body = new URLSearchParams(formData);
+    }
+
+    if (apiRequest.body && apiRequest.contentType === "multipart/form-data") {
+      const formData = new AdvancedFormData();
+      apiRequest.body.forEach(({ key, value }) => {
+        if (Array.isArray(value)) {
+          const files = value.map((entry) =>  {
+            const stream = entry?.path ? fs.createReadStream(entry.path) : null;
+            if(stream) {
+              return {
+                stream,
+                fileName: entry.name || entry.path.split("/").pop(),
+              };
+            }
+            return null;
+          }).filter(Boolean)
+          files.forEach(({stream, fileName}) => {
+            try {
+              formData.append(key, stream, fileName);
+            } catch (error) {
+              console.error(`Error appending file to formData for key ${key}:`, error);
+            }
+          });
+        } else {
+          formData.append(key, value);
+        }
+      });
+      body = formData;
+      headers = {
+        'content-type': `${formData.getHeaders()}`,
+        ...headers,
+      }
     }
 
     const requestStartTime = performance.now();
