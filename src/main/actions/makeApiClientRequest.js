@@ -3,12 +3,6 @@ import AdvancedFormData from "form-data";
 
 const fs = require("fs");
 
-function isMultipartFormRequest(apiRequest) {
-  // fix-me: will be finalised once UI changes for forwarding multipart/form-data requests are complete
-  return apiRequest.body && typeof apiRequest.body === "object"
-    && apiRequest.contentType === "multipart/form-data";// hoping to rely on this later once the prettified header case is figured out in UI
-}
-
 const makeApiClientRequest = async ({ apiRequest }) => {
   try {
     const { method = "GET" } = apiRequest;
@@ -40,7 +34,7 @@ const makeApiClientRequest = async ({ apiRequest }) => {
       body = new URLSearchParams(formData);
     }
 
-    if (isMultipartFormRequest(apiRequest)) {
+    if (apiRequest.body && apiRequest.contentType === "multipart/form-data") {
       const formData = new AdvancedFormData();
       apiRequest.body.forEach(({ key, value }) => {
         if (Array.isArray(value)) {
