@@ -39,22 +39,10 @@ const getShellScript = (port) => `
     echo 'Requestly interception enabled'
 `;
 
-let helperServer;
-
-export const stopHelperServer = async () => {
-  if(helperServer) {
-    helperServer?.close();
-    helperServer = null;
-  }
-}
-
-
 const startHelperServer = async (helperServerPort) => {
-  if(helperServer) {
-    stopHelperServer();
-  }
   return new Promise((resolve) => {
-    helperServer = http.createServer((req, res) => {
+    const server = http.createServer((req, res) => {
+      // create web server
       console.log(window.proxy.httpPort);
       if (req.url === "/tpsetup") {
         const shellScript = getShellScript(window.proxy.httpPort);
@@ -65,7 +53,7 @@ const startHelperServer = async (helperServerPort) => {
         res.end();
       } else res.end("Invalid Request!");
     });
-    helperServer.listen(helperServerPort, () => {
+    server.listen(helperServerPort, () => {
       resolve(true);
     });
   });
