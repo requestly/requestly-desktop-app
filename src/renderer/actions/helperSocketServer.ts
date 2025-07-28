@@ -4,7 +4,6 @@ import { installCert } from "./apps/os/ca";
 import { ipcRenderer } from "electron";
 
 const activeSockets = new Map<string, webSocket>();
-let helperSocketServer: webSocket.Server;
 
 export const sendMessageToExtension = (
   clientId: string,
@@ -94,23 +93,10 @@ const sendHeartbeat = () => {
   }, 20000);
 };
 
-export const stopHelperSocketServer = () => {
-  if (helperSocketServer) {
-    helperSocketServer.close(() => {
-      console.log("Helper socket server stopped");
-    });
-    activeSockets.clear();
-  }
-}
-
-
 export const startHelperSocketServer = (port: number): webSocket.Server => {
-  if(helperSocketServer) {
-    stopHelperSocketServer();
-  }
-  helperSocketServer = new webSocket.Server({ port });
+  const server = new webSocket.Server({ port });
 
-  helperSocketServer.on("connection", (socket: webSocket, req) => {
+  server.on("connection", (socket: webSocket, req) => {
     const clientId = `${req.socket.remoteAddress}:${req.socket.remotePort}`;
     console.log(`Client connected: ${clientId}`);
 
@@ -135,5 +121,5 @@ export const startHelperSocketServer = (port: number): webSocket.Server => {
     });
   });
 
-  return helperSocketServer;
+  return server;
 };
