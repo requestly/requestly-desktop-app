@@ -1,7 +1,7 @@
 {
   "name": "requestly",
   "productName": "Requestly",
-  "version": "25.7.9",
+  "version": "25.7.21",
   "main": "src/main/main.ts",
   "private": true,
   "description": "Intercept & Modify HTTP Requests",
@@ -15,7 +15,7 @@
     "deploy": "npm run build && electron-builder build --publish always",
     "postinstall": "ts-node .erb/scripts/check-native-dep.js && electron-builder install-app-deps && cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.dev.dll.ts",
     "start": "ts-node ./.erb/scripts/check-port-in-use.js && npm run start:renderer",
-    "start:main": "cross-env NODE_ENV=development electron -r ts-node/register/transpile-only ./src/main/main.ts --trace-warnings",
+    "start:main": "cross-env NODE_ENV=development electron --inspect=9229 -r ts-node/register/transpile-only ./src/main/main.ts --trace-warnings",
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
     "test": "jest",
     "debug-prod-build": "cross-env DEBUG_PROD=true && npm run build",
@@ -145,13 +145,13 @@
     "url": "git+https://github.com/requestly/requestly-desktop-app.git"
   },
   "author": {
-    "name": "RQ Labs, Inc.",
+    "name": "BrowserStack Inc.",
     "email": "contact@requestly.io",
     "url": "https://requestly.io/"
   },
   "contributors": [
     {
-      "name": "RQ Labs, Inc.",
+      "name": "BrowserStack Inc.",
       "email": "contact@requestly.io",
       "url": "https://requestly.io/"
     }

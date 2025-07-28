@@ -11,6 +11,13 @@ module.exports = {
     "prettier/prettier": "off",
     "no-nested-ternary": "off",
     "no-restricted-syntax": "off",
+    "no-unused-vars": [
+      "warn",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ],
   },
   parserOptions: {
     ecmaVersion: 2020,
