@@ -78,10 +78,10 @@ const formData = Type.Object({
 });
 
 export const RequestBody = Type.Union([
-  Type.String(), // JSON, RAW, HTML, XML, JavaScript
+  Type.String(),
   Type.Array(KeyValuePair),
   Type.Array(formData),
-  Type.Null(), // Allow null values for cases where no body is provided
+  Type.Null(),
 ]);
 
 export const RequestBodyContainer = Type.Object({
