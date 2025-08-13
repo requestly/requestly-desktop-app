@@ -33,15 +33,16 @@ import {
   GIT_IGNORE_FILE,
   GLOBAL_CONFIG_FILE_NAME,
   GLOBAL_CONFIG_FOLDER_PATH,
+  WORKSPACE_CONFIG_FILE_VERSION,
 } from "./constants";
 import { Static, TSchema } from "@sinclair/typebox";
 import {
-  ApiMethods,
   EnvironmentRecord,
   Variables,
   EnvironmentVariableType,
   Auth,
   GlobalConfig,
+  ApiRecord,
 } from "./schemas";
 import { Stats } from "node:fs";
 import { FileType } from "./file-types/file-type.interface";
@@ -493,7 +494,7 @@ export async function createWorkspaceFolder(
       type: "file",
     }),
     {
-      version: "0.0.1",
+      version: WORKSPACE_CONFIG_FILE_VERSION,
     },
     {
       writeWithElevatedAccess: true,
@@ -717,22 +718,22 @@ export async function parseFolderToCollection(
 export function parseFileResultToApi(
   rootPath: string,
   file: FileResource,
-  parsedFileResult: FileSystemResult<{
-    name: string;
-    url: string;
-    method: ApiMethods;
-  }>
+  parsedFileResult: FileSystemResult<Static<typeof ApiRecord>>
 ) {
   if (parsedFileResult.type === "error") {
     return parsedFileResult;
   }
 
   const { content: record } = parsedFileResult;
+
   const api: API = {
     type: "api",
     collectionId: getCollectionId(rootPath, file),
     id: getIdFromPath(file.path),
-    request: record,
+    data: {
+      name: record.name,
+      request: record.request,
+    },
   };
 
   const result: FileSystemResult<API> = {

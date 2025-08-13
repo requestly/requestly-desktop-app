@@ -17,6 +17,7 @@ import {
   DESCRIPTION_FILE,
   ENVIRONMENT_VARIABLES_FOLDER,
   GLOBAL_ENV_FILE,
+  WORKSPACE_CONFIG_FILE_VERSION,
 } from "./constants";
 import {
   copyRecursive,
@@ -45,6 +46,9 @@ import {
   Config,
   EnvironmentRecord,
   AuthType,
+  ApiEntryType,
+  RequestContentType,
+  ApiMethods,
 } from "./schemas";
 import {
   API,
@@ -107,11 +111,137 @@ export class FsManager {
       );
     }
     const { content: config } = parsedConfig;
-    console.log(config);
-    if (config.version !== "0.0.1") {
-      throw new Error(`Unsupported version in ${CONFIG_FILE}!`);
+    if (config.version !== WORKSPACE_CONFIG_FILE_VERSION) {
+      this.migrateWorkspace(config.version);
     }
     return config;
+  }
+
+  private async migrateWorkspace(currentVersion: string) {
+    try {
+      if (currentVersion === "0.0.1") {
+        await this.migrateFromV1ToV2();
+      } else return;
+    } catch (error: any) {
+      throw new Error(`Failed to migrate workspace records: ${error.message}`);
+    }
+  }
+
+  private async migrateFromV1ToV2() {
+    const allRecordsResult = await this.getAllRecords();
+    if (allRecordsResult.type === "error") {
+      throw new Error(`Failed to get records`);
+    }
+
+    const { erroredRecords } = allRecordsResult.content;
+
+    const apiRecordsToMigrate = erroredRecords.filter(
+      (record) => record.type === "api"
+    );
+
+    for (const record of apiRecordsToMigrate) {
+      try {
+        await this.migrateApiRecord(record.path);
+      } catch (error) {
+        console.error(`Failed to migrate API record ${record.path}:`, error);
+      }
+    }
+    await this.updateWorkspaceConfigVersion(WORKSPACE_CONFIG_FILE_VERSION);
+  }
+
+  private async migrateApiRecord(path: string) {
+    const fileResource = this.createResource({
+      id: path,
+      type: "file",
+    });
+
+    const rawContentResult = await parseFileRaw({
+      resource: fileResource,
+    });
+
+    if (rawContentResult.type === "error") {
+      throw new Error(
+        `Failed to read file for migration: ${rawContentResult.error.message}`
+      );
+    }
+
+    const rawContent = rawContentResult.content;
+    let oldRecordData: any;
+
+    try {
+      oldRecordData = JSON.parse(rawContent);
+    } catch (error: any) {
+      throw new Error(`Failed to parse record data: ${error.message}`);
+    }
+
+    const newRecordData: Static<typeof ApiRecord> = {
+      name: oldRecordData.name,
+      request: {
+        url: oldRecordData.url,
+        auth: oldRecordData.auth || {
+          authConfigStore: {},
+          currentAuthType: AuthType.INHERIT,
+        },
+        scripts: oldRecordData.scripts || {
+          preRequest: "",
+          postResponse: "",
+        },
+        type: ApiEntryType.HTTP,
+        headers: oldRecordData.headers || [],
+        queryParams: oldRecordData.queryParams || [],
+        method: oldRecordData.method || ApiMethods.GET,
+        body: oldRecordData.body || null,
+        contentType: oldRecordData.contentType || RequestContentType.RAW,
+        includeCredentials: oldRecordData.includeCredentials || false,
+      },
+    };
+
+    const writeResult = await writeContent(
+      fileResource,
+      newRecordData,
+      new ApiRecordFileType()
+    );
+    if (writeResult.type === "error") {
+      throw new Error(
+        `Failed to write migrated record: ${writeResult.error.message}`
+      );
+    }
+  }
+
+  private async updateWorkspaceConfigVersion(newVersion: string) {
+    const configFile = this.createResource({
+      id: getIdFromPath(appendPath(this.rootPath, CONFIG_FILE)),
+      type: "file",
+    });
+
+    const rawConfig = readFileSync(configFile.path);
+    if (rawConfig.type === "error") {
+      throw new Error(
+        `Failed to read config for version update: ${rawConfig.error.message}`
+      );
+    }
+
+    const configData = parseJsonContent(rawConfig.content, Config);
+    if (configData.type === "error") {
+      throw new Error(
+        `Failed to parse config for version update: ${configData.error.message}`
+      );
+    }
+
+    const newConfig: Static<typeof Config> = {
+      ...configData.content,
+      version: newVersion,
+    };
+
+    const writeResult = await writeContentRaw(
+      configFile,
+      JSON.stringify(newConfig, null, 2)
+    );
+    if (writeResult.type === "error") {
+      throw new Error(
+        `Failed to update config version: ${writeResult.error.message}`
+      );
+    }
   }
 
   private createResource<T extends FsResource["type"]>(params: {

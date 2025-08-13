@@ -14,6 +14,11 @@ export enum EnvironmentVariableType {
   Secret = "secret",
 }
 
+export enum ApiEntryType {
+  HTTP = "http",
+  GRAPHQL = "graphql",
+}
+
 export enum ApiMethods {
   GET = "GET",
   POST = "POST",
@@ -24,6 +29,16 @@ export enum ApiMethods {
   OPTIONS = "OPTIONS",
 }
 
+export enum RequestContentType {
+  RAW = "text/plain",
+  JSON = "application/json",
+  FORM = "application/x-www-form-urlencoded",
+  MULTIPART_FORM = "multipart/form-data",
+  HTML = "text/html",
+  XML = "application/xml",
+  JAVASCRIPT = "application/javascript",
+}
+
 export enum AuthType {
   INHERIT = "INHERIT",
   NO_AUTH = "NO_AUTH",
@@ -32,24 +47,48 @@ export enum AuthType {
   BASIC_AUTH = "BASIC_AUTH",
 }
 
-interface KeyValuePair {
-  id: number;
-  key: string;
-  value: string;
-  isEnabled: boolean;
-  type?: string;
-}
+const KeyValuePair = Type.Object({
+  id: Type.Number(),
+  key: Type.String(),
+  value: Type.String(),
+  isEnabled: Type.Boolean(),
+  type: Type.Optional(Type.String()),
+});
 
-type RequestBodyContainer = {
-  text?: string;
-  form?: KeyValuePair[];
-};
+const formData = Type.Object({
+  id: Type.Number(),
+  key: Type.String(),
+  value: Type.Union([
+    Type.String(),
+    Type.Array(
+      Type.Object({
+        id: Type.String(),
+        name: Type.String(),
+        path: Type.String(),
+        size: Type.Number(),
+        source: Type.Union([
+          Type.Literal("extension"),
+          Type.Literal("desktop"),
+        ]),
+      })
+    ),
+  ]),
+  isEnabled: Type.Boolean(),
+  type: Type.Optional(Type.String()),
+});
 
-export enum RequestContentType {
-  RAW = "text/plain",
-  JSON = "application/json",
-  FORM = "application/x-www-form-urlencoded",
-}
+export const RequestBody = Type.Union([
+  Type.String(), // JSON, RAW, HTML, XML, JavaScript
+  Type.Array(KeyValuePair),
+  Type.Array(formData),
+  Type.Null(), // Allow null values for cases where no body is provided
+]);
+
+export const RequestBodyContainer = Type.Object({
+  text: Type.Optional(Type.String()),
+  form: Type.Optional(Type.Array(KeyValuePair)),
+  multipartForm: Type.Optional(Type.Array(formData)),
+});
 
 export const Auth = Type.Object({
   authConfigStore: Type.Object({
@@ -77,42 +116,47 @@ export const Auth = Type.Object({
 
 export const Description = Type.String();
 
-export const ApiRecord = Type.Object({
-  name: Type.String(),
+export const BaseRequest = Type.Object({
   url: Type.String(),
-  method: Type.Enum(ApiMethods),
-  queryParams: Type.Optional(
-    Type.Array(
-      Type.Object({
-        id: Type.Number(),
-        key: Type.String(),
-        value: Type.Optional(Type.String()),
-        isEnabled: Type.Boolean(),
-        type: Type.Optional(Type.String()),
-      })
-    )
-  ),
-  headers: Type.Optional(
-    Type.Array(
-      Type.Object({
-        id: Type.Number(),
-        key: Type.String(),
-        value: Type.Optional(Type.String()),
-        isEnabled: Type.Boolean(),
-        type: Type.Optional(Type.String()),
-      })
-    )
-  ),
-  body: Type.Optional(Type.Any()),
-  bodyContainer: Type.Optional(Type.Any()),
-  contentType: Type.Optional(Type.Enum(RequestContentType)),
-  auth: Type.Optional(Auth),
+  auth: Auth,
   scripts: Type.Optional(
     Type.Object({
       preRequest: Type.String(),
       postResponse: Type.String(),
     })
   ),
+});
+
+export const HttpRequest = Type.Intersect([
+  BaseRequest,
+  Type.Object({
+    type: Type.Literal(ApiEntryType.HTTP),
+    headers: Type.Optional(Type.Array(KeyValuePair)),
+    queryParams: Type.Optional(Type.Array(KeyValuePair)),
+    method: Type.Enum(ApiMethods),
+    body: Type.Optional(RequestBody),
+    bodyContainer: Type.Optional(RequestBodyContainer),
+    contentType: Type.Optional(Type.Enum(RequestContentType)),
+    includeCredentials: Type.Optional(Type.Boolean()),
+  }),
+]);
+
+export const GraphQLRequest = Type.Intersect([
+  BaseRequest,
+  Type.Object({
+    type: Type.Literal(ApiEntryType.GRAPHQL),
+    headers: Type.Optional(Type.Array(KeyValuePair)),
+    operation: Type.String(),
+    variables: Type.String(),
+    operationName: Type.Optional(Type.String()),
+  }),
+]);
+
+export const ApiRequest = Type.Union([HttpRequest, GraphQLRequest]);
+
+export const ApiRecord = Type.Object({
+  name: Type.String(),
+  request: ApiRequest,
 });
 
 export const Variables = Type.Record(

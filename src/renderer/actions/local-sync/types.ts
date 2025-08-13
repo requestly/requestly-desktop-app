@@ -1,7 +1,12 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable no-shadow */
 import { Static } from "@sinclair/typebox";
-import { Auth, EnvironmentVariableType } from "./schemas";
+import {
+  Auth,
+  EnvironmentVariableType,
+  ApiEntryType,
+  ApiRequest,
+} from "./schemas";
 import { type FsService } from "./fs/fs.service";
 
 export enum FileTypeEnum {
@@ -29,11 +34,15 @@ export type FileSystemError = {
     code: ErrorCode;
   };
 };
+
 export type ContentfulSuccess<T> = T extends void
   ? { type: "success" }
   : { type: "success"; content: T };
+
 export type FileSystemResult<T> = ContentfulSuccess<T> | FileSystemError;
+
 export type ContentParseError = { message: string };
+
 export type ContentParseResult<T> =
   | ContentfulSuccess<T>
   | {
@@ -45,6 +54,7 @@ export type FolderResource = {
   type: "folder";
   path: string;
 } & { readonly __tag: unique symbol };
+
 export type FileResource = {
   type: "file";
   path: string;
@@ -62,14 +72,14 @@ export type Collection = {
   auth?: Static<typeof Auth>;
 };
 
+// Protocol-agnostic API types
 export type API = {
   type: "api";
   collectionId?: string;
   id: string;
-  request: {
+  data: {
     name: string;
-    url: string;
-    method: string;
+    request: Static<typeof ApiRequest>;
   };
 };
 
@@ -115,6 +125,7 @@ export type CollectionRecord = {
     };
   };
 };
+
 export type ErroredRecord = {
   name: string;
   path: string;
