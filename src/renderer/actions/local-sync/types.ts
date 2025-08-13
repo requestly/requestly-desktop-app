@@ -72,7 +72,6 @@ export type Collection = {
   auth?: Static<typeof Auth>;
 };
 
-// Protocol-agnostic API types
 export type API = {
   type: "api";
   collectionId?: string;
