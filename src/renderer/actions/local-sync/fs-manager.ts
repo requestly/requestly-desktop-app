@@ -141,7 +141,7 @@ export class FsManager {
 
     for (const record of apiRecordsToMigrate) {
       try {
-        await this.migrateApiRecord(record.path);
+        await this.migrateApiRecordToV2(record.path);
       } catch (error) {
         console.error(`Failed to migrate API record ${record.path}:`, error);
       }
@@ -149,7 +149,7 @@ export class FsManager {
     await this.updateWorkspaceConfigVersion(WORKSPACE_CONFIG_FILE_VERSION);
   }
 
-  private async migrateApiRecord(path: string) {
+  private async migrateApiRecordToV2(path: string) {
     const fileResource = this.createResource({
       id: path,
       type: "file",
@@ -242,6 +242,7 @@ export class FsManager {
         `Failed to update config version: ${writeResult.error.message}`
       );
     }
+    this.config = newConfig;
   }
 
   private createResource<T extends FsResource["type"]>(params: {
