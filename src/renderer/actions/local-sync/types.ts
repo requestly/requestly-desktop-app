@@ -22,6 +22,7 @@ export enum FileTypeEnum {
 export enum ErrorCode {
   WrongInput = "wrong_input",
   PermissionDenied = "permission_denied",
+  MigrationFailed = "migration_failed",
   UNKNOWN = "unknown",
 }
 

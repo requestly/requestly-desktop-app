@@ -13,7 +13,17 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
     this.fsManager.reload();
   }
 
-  init() {
+  async init(): Promise<void> {
+    try {
+      await this.fsManager.init();
+    } catch (error) {
+      throw new Error(
+        `Failed to initialize FsManager for ${this.rootPath}: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+
     this.exposeMethodOverIPC(
       "getAllRecords",
       this.fsManager.getAllRecords.bind(this.fsManager)
