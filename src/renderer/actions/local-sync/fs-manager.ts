@@ -1,5 +1,6 @@
 import { type Static } from "@sinclair/typebox";
 import { v4 as uuidv4 } from "uuid";
+import semver from "semver";
 import {
   appendPath,
   createFsResource,
@@ -17,6 +18,7 @@ import {
   DESCRIPTION_FILE,
   ENVIRONMENT_VARIABLES_FOLDER,
   GLOBAL_ENV_FILE,
+  WORKSPACE_CONFIG_FILE_VERSION,
 } from "./constants";
 import {
   copyRecursive,
@@ -45,6 +47,9 @@ import {
   Config,
   EnvironmentRecord,
   AuthType,
+  ApiEntryType,
+  RequestContentType,
+  ApiMethods,
 } from "./schemas";
 import {
   API,
@@ -80,8 +85,26 @@ export class FsManager {
 
   constructor(rootPath: string) {
     this.rootPath = getNormalizedPath(rootPath);
-    this.config = this.parseConfig();
+    this.config = {} as Static<typeof Config>;
     this.fsIgnoreManager = new FsIgnoreManager(this.rootPath, this.config);
+  }
+
+  async init() {
+    try {
+      this.config = this.parseConfig();
+      const migrationResult =
+        await this.checkAndMigrateWorkspaceToLatestVersion(this.config);
+      if (migrationResult.type === "error") {
+        throw new Error(`Migration failed: ${migrationResult.error.message}`);
+      }
+      this.fsIgnoreManager = new FsIgnoreManager(this.rootPath, this.config);
+    } catch (error) {
+      throw new Error(
+        `Failed to initialize FsManager: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
   }
 
   reload() {
@@ -107,11 +130,220 @@ export class FsManager {
       );
     }
     const { content: config } = parsedConfig;
-    console.log(config);
-    if (config.version !== "0.0.1") {
-      throw new Error(`Unsupported version in ${CONFIG_FILE}!`);
-    }
+
     return config;
+  }
+
+  private async checkAndMigrateWorkspaceToLatestVersion(
+    config: Static<typeof Config>
+  ): Promise<FileSystemResult<void>> {
+    try {
+      if (!semver.valid(config.version)) {
+        throw new Error(`Invalid version format: ${config.version}`);
+      }
+
+      if (semver.lt(config.version, WORKSPACE_CONFIG_FILE_VERSION)) {
+        if (semver.lt(config.version, "0.0.2")) {
+          const migrationResult = await this.migrateFromV1ToV2();
+          if (migrationResult.type === "error") {
+            return migrationResult;
+          }
+        }
+        // Can add more migration paths here as needed for future versions
+      }
+      return { type: "success" };
+    } catch (error: any) {
+      return {
+        type: "error",
+        error: {
+          code: ErrorCode.MigrationFailed,
+          message: `Failed to migrate workspace records: ${error.message}`,
+          path: this.rootPath,
+          fileType: FileTypeEnum.UNKNOWN,
+        },
+      };
+    }
+  }
+
+  private async migrateFromV1ToV2(): Promise<FileSystemResult<void>> {
+    try {
+      const allRecordsResult = await this.getAllRecords();
+      if (allRecordsResult.type === "error") {
+        throw new Error(
+          `Failed to get records: ${allRecordsResult.error.message}`
+        );
+      }
+
+      const { erroredRecords } = allRecordsResult.content;
+
+      const apiRecordsToMigrate = erroredRecords.filter(
+        (record) => record.type === "api"
+      );
+
+      for (const record of apiRecordsToMigrate) {
+        try {
+          const recordMigrationResult = await this.migrateApiRecordToV2(
+            record.path
+          );
+          if (recordMigrationResult.type === "error") {
+            console.error(
+              `Failed to migrate API record ${record.path}:`,
+              recordMigrationResult.error.message
+            );
+            // Continue with other records even if one fails
+          }
+        } catch (error) {
+          console.error(`Failed to migrate API record ${record.path}:`, error);
+          // Continue with other records even if one fails
+        }
+      }
+
+      const versionUpdateResult = await this.updateWorkspaceConfigVersion(
+        WORKSPACE_CONFIG_FILE_VERSION
+      );
+      if (versionUpdateResult.type === "error") {
+        return versionUpdateResult;
+      }
+
+      return { type: "success" };
+    } catch (error: any) {
+      return {
+        type: "error",
+        error: {
+          code: ErrorCode.MigrationFailed,
+          message: `Failed to migrate from V1 to V2: ${error.message}`,
+          path: this.rootPath,
+          fileType: FileTypeEnum.UNKNOWN,
+        },
+      };
+    }
+  }
+
+  private async migrateApiRecordToV2(
+    path: string
+  ): Promise<FileSystemResult<void>> {
+    try {
+      const fileResource = this.createResource({
+        id: path,
+        type: "file",
+      });
+
+      const rawContentResult = await parseFileRaw({
+        resource: fileResource,
+      });
+
+      if (rawContentResult.type === "error") {
+        return rawContentResult;
+      }
+
+      const rawContent = rawContentResult.content;
+      let oldRecordData: any;
+
+      try {
+        oldRecordData = JSON.parse(rawContent);
+      } catch (error: any) {
+        throw new Error(
+          `Failed to parse record data while migrating from V1 to V2: ${error.message}`
+        );
+      }
+
+      const newRecordData: Static<typeof ApiRecord> = {
+        name: oldRecordData.name,
+        request: {
+          url: oldRecordData.url,
+          auth: oldRecordData.auth || {
+            authConfigStore: {},
+            currentAuthType: AuthType.INHERIT,
+          },
+          scripts: oldRecordData.scripts || {
+            preRequest: "",
+            postResponse: "",
+          },
+          type: ApiEntryType.HTTP,
+          headers: oldRecordData.headers || [],
+          queryParams: oldRecordData.queryParams || [],
+          method: oldRecordData.method || ApiMethods.GET,
+          body: oldRecordData.body || null,
+          contentType: oldRecordData.contentType || RequestContentType.RAW,
+          includeCredentials: oldRecordData.includeCredentials || false,
+        },
+      };
+
+      const writeResult = await writeContent(
+        fileResource,
+        newRecordData,
+        new ApiRecordFileType()
+      );
+      if (writeResult.type === "error") {
+        return writeResult;
+      }
+
+      return { type: "success" };
+    } catch (error: any) {
+      return {
+        type: "error",
+        error: {
+          code: ErrorCode.MigrationFailed,
+          message: `Failed to migrate API record: ${error.message}`,
+          path,
+          fileType: FileTypeEnum.UNKNOWN,
+        },
+      };
+    }
+  }
+
+  private async updateWorkspaceConfigVersion(
+    newVersion: string
+  ): Promise<FileSystemResult<void>> {
+    try {
+      if (!semver.valid(newVersion)) {
+        throw new Error(`Invalid version format: ${newVersion}`);
+      }
+
+      const currentConfig = this.config;
+      if (!currentConfig || Object.keys(currentConfig).length === 0) {
+        return {
+          type: "error",
+          error: {
+            code: ErrorCode.MigrationFailed,
+            message: "No valid config available for version update",
+            path: this.rootPath,
+            fileType: FileTypeEnum.UNKNOWN,
+          },
+        };
+      }
+
+      const newConfig: Static<typeof Config> = {
+        ...currentConfig,
+        version: newVersion,
+      };
+
+      const configFile = this.createResource({
+        id: getIdFromPath(appendPath(this.rootPath, CONFIG_FILE)),
+        type: "file",
+      });
+
+      const writeResult = await writeContentRaw(
+        configFile,
+        JSON.stringify(newConfig, null, 2)
+      );
+      if (writeResult.type === "error") {
+        return writeResult;
+      }
+
+      this.config = newConfig;
+      return { type: "success" };
+    } catch (error: any) {
+      return {
+        type: "error",
+        error: {
+          code: ErrorCode.MigrationFailed,
+          message: `Failed to update workspace config version: ${error.message}`,
+          path: this.rootPath,
+          fileType: FileTypeEnum.UNKNOWN,
+        },
+      };
+    }
   }
 
   private createResource<T extends FsResource["type"]>(params: {
