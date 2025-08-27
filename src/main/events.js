@@ -1,6 +1,7 @@
 import path from "path";
 import { unescape } from "querystring";
 import fs from "fs";
+import os from "os";
 import { app, dialog, ipcMain } from "electron";
 /** ACTIONS */
 import startBackgroundProcess from "./actions/startBackgroundProcess";
@@ -289,74 +290,92 @@ export const registerMainProcessCommonEvents = () => {
     return folderDialogPromise;
   });
 
-  ipcMain.handle("get-workspace-folder-preview", async (event, payload) => {
-    try {
-      const { folderPath } = payload;
+  ipcMain.handle(
+    "get-workspace-folder-preview",
+    async (event, payload = {}) => {
+      try {
+        let { folderPath } = payload;
 
-      if (!folderPath) {
-        throw new Error("Workspace path is required");
-      }
+        if (!folderPath) {
+          const homeDir = os.homedir();
+          const documentsPath = path.join(homeDir, "Documents");
 
-      // Checking if workspace folder exists
-      const workspaceExists = fs.existsSync(folderPath);
-      const existingContents = [];
-
-      if (workspaceExists) {
-        // Check if it's actually a directory
-        const stats = fs.statSync(folderPath);
-        if (!stats.isDirectory()) {
-          throw new Error("Workspace path is not a directory");
+          if (
+            fs.existsSync(documentsPath) &&
+            fs.statSync(documentsPath).isDirectory()
+          ) {
+            folderPath = documentsPath;
+          } else {
+            folderPath = homeDir;
+          }
         }
 
-        // Read existing directory contents at root level of workspace
-        const items = fs.readdirSync(folderPath);
+        // Checking if workspace folder exists
+        const workspaceExists = fs.existsSync(folderPath);
+        const existingContents = [];
 
-        for (const item of items) {
-          const itemPath = path.join(folderPath, item);
-          const itemStats = fs.statSync(itemPath);
+        if (workspaceExists) {
+          // Check if it's actually a directory
+          const stats = fs.statSync(folderPath);
+          if (!stats.isDirectory()) {
+            throw new Error("Workspace path is not a directory");
+          }
 
-          existingContents.push({
-            name: item,
-            path: itemPath,
-            type: itemStats.isDirectory() ? "directory" : "file",
+          // Read existing directory contents at root level of workspace
+          const items = fs.readdirSync(folderPath);
+
+          for (const item of items) {
+            const itemPath = path.join(folderPath, item);
+            const itemStats = fs.statSync(itemPath);
+
+            existingContents.push({
+              name: item,
+              path: itemPath,
+              type: itemStats.isDirectory() ? "directory" : "file",
+            });
+          }
+
+          existingContents.sort((a, b) => {
+            const aIsDir = a.type === "directory";
+            const bIsDir = b.type === "directory";
+            if (aIsDir && !bIsDir) return -1;
+            if (!aIsDir && bIsDir) return 1;
+            return a.name.localeCompare(b.name);
           });
         }
 
-        existingContents.sort((a, b) => {
-          const aIsDir = a.type === "directory";
-          const bIsDir = b.type === "directory";
-          if (aIsDir && !bIsDir) return -1;
-          if (!aIsDir && bIsDir) return 1;
-          return a.name.localeCompare(b.name);
-        });
-      }
-
-      const newAdditions = [
-        {
-          name: "environments",
-          path: path.join(folderPath, "environments"),
+        const newAdditions = {
+          name: "Workspace folder",
+          path: folderPath,
           type: "directory",
-        },
-        {
-          name: "requestly.json",
-          path: path.join(folderPath, "requestly.json"),
-          type: "file",
-        },
-      ];
+          contents: [
+            {
+              name: "environments",
+              path: path.join(folderPath, "environments"),
+              type: "directory",
+            },
+            {
+              name: "requestly.json",
+              path: path.join(folderPath, "requestly.json"),
+              type: "file",
+            },
+          ],
+        };
 
-      return {
-        success: true,
-        folderPath,
-        existingContents,
-        newAdditions,
-      };
-    } catch (error) {
-      console.error("Error getting folder preview:", error);
-      return {
-        success: false,
-        error: error.message,
-        folderPath: payload.folderPath,
-      };
+        return {
+          success: true,
+          folderPath,
+          existingContents,
+          newAdditions,
+        };
+      } catch (error) {
+        console.error("Error getting folder preview:", error);
+        return {
+          success: false,
+          error: error.message,
+          folderPath: payload.folderPath,
+        };
+      }
     }
-  });
+  );
 };
