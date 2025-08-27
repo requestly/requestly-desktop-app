@@ -473,10 +473,12 @@ export async function createWorkspaceFolder(
   workspacePath: string
 ): Promise<FileSystemResult<{ name: string; id: string; path: string }>> {
   const sanitizedWorkspacePath = sanitizePath(workspacePath);
+
+  const workspaceFolderPath = appendPath(sanitizedWorkspacePath, name);
   const folderCreationResult = await createFolder(
     createFsResource({
       rootPath: sanitizedWorkspacePath,
-      path: sanitizedWorkspacePath,
+      path: workspaceFolderPath,
       type: "folder",
     }),
     {
@@ -487,10 +489,11 @@ export async function createWorkspaceFolder(
   if (folderCreationResult.type === "error") {
     return folderCreationResult;
   }
+
   const configFileCreationResult = await writeContentRaw(
     createFsResource({
-      rootPath: sanitizedWorkspacePath,
-      path: appendPath(sanitizedWorkspacePath, "requestly.json"),
+      rootPath: workspaceFolderPath,
+      path: appendPath(workspaceFolderPath, "requestly.json"),
       type: "file",
     }),
     {
@@ -506,7 +509,7 @@ export async function createWorkspaceFolder(
 
   return addWorkspaceToGlobalConfig({
     name,
-    path: sanitizedWorkspacePath,
+    path: workspaceFolderPath,
   });
 }
 
