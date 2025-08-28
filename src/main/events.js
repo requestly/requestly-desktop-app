@@ -36,6 +36,13 @@ const getFileCategory = (fileExtension) => {
   }
 };
 
+const createFsResourceItem = (name, fsResourcePath, type) => ({
+  name,
+  path: fsResourcePath,
+  type,
+  ...(type === "directory" && { contents: [] }),
+});
+
 export async function trackRecentlyAccessedFile(filePath) {
   const fileExtension = path.extname(filePath);
 
@@ -328,11 +335,13 @@ export const registerMainProcessCommonEvents = () => {
             const itemPath = path.join(folderPath, item);
             const itemStats = fs.statSync(itemPath);
 
-            existingContents.push({
-              name: item,
-              path: itemPath,
-              type: itemStats.isDirectory() ? "directory" : "file",
-            });
+            existingContents.push(
+              createFsResourceItem(
+                item,
+                itemPath,
+                itemStats.isDirectory() ? "directory" : "file"
+              )
+            );
           }
 
           existingContents.sort((a, b) => {
@@ -353,6 +362,7 @@ export const registerMainProcessCommonEvents = () => {
               name: "environments",
               path: path.join(folderPath, "environments"),
               type: "directory",
+              contents: [],
             },
             {
               name: "requestly.json",
