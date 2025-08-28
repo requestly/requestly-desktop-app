@@ -311,14 +311,14 @@ export const registerMainProcessCommonEvents = () => {
         }
 
         // Checking if workspace folder exists
-        const workspaceExists = fs.existsSync(folderPath);
+        const folderExists = fs.existsSync(folderPath);
         const existingContents = [];
 
-        if (workspaceExists) {
-          // Check if it's actually a directory
+        if (folderExists) {
+          // Check if it's a directory
           const stats = fs.statSync(folderPath);
           if (!stats.isDirectory()) {
-            throw new Error("Workspace path is not a directory");
+            throw new Error("Folder path is not a directory");
           }
 
           // Read existing directory contents at root level of workspace
