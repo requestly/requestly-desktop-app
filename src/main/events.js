@@ -1,6 +1,7 @@
 import path from "path";
 import { unescape } from "querystring";
 import fs from "fs";
+import os from "os";
 import { app, dialog, ipcMain } from "electron";
 /** ACTIONS */
 import startBackgroundProcess from "./actions/startBackgroundProcess";
@@ -34,6 +35,13 @@ const getFileCategory = (fileExtension) => {
       return "unknown";
   }
 };
+
+const createFsResourceItem = (name, fsResourcePath, type) => ({
+  name,
+  path: fsResourcePath,
+  type,
+  ...(type === "directory" && { contents: [] }),
+});
 
 export async function trackRecentlyAccessedFile(filePath) {
   const fileExtension = path.extname(filePath);
@@ -263,19 +271,21 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
 export const registerMainProcessCommonEvents = () => {
   ipcMain.handle("open-file-dialog", async (event, options) => {
     const fileDialogPromise = dialog.showOpenDialog(options ?? {});
-    return fileDialogPromise.then(result => {
-      const { canceled, filePaths } = result;
-      if (canceled || !filePaths?.length) {
-        return {canceled: true, files: []};
-      }
-      const files = []
-      for (const filePath of filePaths) {
-        const { size } = fs.statSync(filePath);
-        const name = path.basename(filePath);
-        files.push({ path: filePath, name, size });
-      }
-      return { canceled, files };
-    }).catch(console.error)
+    return fileDialogPromise
+      .then((result) => {
+        const { canceled, filePaths } = result;
+        if (canceled || !filePaths?.length) {
+          return { canceled: true, files: [] };
+        }
+        const files = [];
+        for (const filePath of filePaths) {
+          const { size } = fs.statSync(filePath);
+          const name = path.basename(filePath);
+          files.push({ path: filePath, name, size });
+        }
+        return { canceled, files };
+      })
+      .catch(console.error);
   });
 
   ipcMain.handle("open-folder-dialog", async (event, options = {}) => {
@@ -286,4 +296,96 @@ export const registerMainProcessCommonEvents = () => {
     const folderDialogPromise = await dialog.showOpenDialog(dialogOptions);
     return folderDialogPromise;
   });
+
+  ipcMain.handle(
+    "get-workspace-folder-preview",
+    async (event, payload = {}) => {
+      try {
+        let { folderPath } = payload;
+
+        if (!folderPath) {
+          const homeDir = os.homedir();
+          const documentsPath = path.join(homeDir, "Documents");
+
+          if (
+            fs.existsSync(documentsPath) &&
+            fs.statSync(documentsPath).isDirectory()
+          ) {
+            folderPath = documentsPath;
+          } else {
+            folderPath = homeDir;
+          }
+        }
+
+        // Checking if workspace folder exists
+        const folderExists = fs.existsSync(folderPath);
+        const existingContents = [];
+
+        if (folderExists) {
+          // Check if it's a directory
+          const stats = fs.statSync(folderPath);
+          if (!stats.isDirectory()) {
+            throw new Error("Folder path is not a directory");
+          }
+
+          // Read existing directory contents at root level of workspace
+          const items = fs.readdirSync(folderPath);
+
+          for (const item of items) {
+            const itemPath = path.join(folderPath, item);
+            const itemStats = fs.statSync(itemPath);
+
+            existingContents.push(
+              createFsResourceItem(
+                item,
+                itemPath,
+                itemStats.isDirectory() ? "directory" : "file"
+              )
+            );
+          }
+
+          existingContents.sort((a, b) => {
+            const aIsDir = a.type === "directory";
+            const bIsDir = b.type === "directory";
+            if (aIsDir && !bIsDir) return -1;
+            if (!aIsDir && bIsDir) return 1;
+            return a.name.localeCompare(b.name);
+          });
+        }
+
+        const newAdditions = {
+          name: "Workspace folder",
+          path: folderPath,
+          type: "directory",
+          contents: [
+            {
+              name: "environments",
+              path: path.join(folderPath, "environments"),
+              type: "directory",
+              contents: [],
+            },
+            {
+              name: "requestly.json",
+              path: path.join(folderPath, "requestly.json"),
+              type: "file",
+            },
+          ],
+        };
+
+        return {
+          success: true,
+          folderPath,
+          existingContents,
+          newAdditions,
+        };
+      } catch (error) {
+        console.error("Error getting folder preview:", error);
+        return {
+          success: false,
+          error: error.message,
+          folderPath: payload.folderPath,
+        };
+      }
+    }
+  );
 };
