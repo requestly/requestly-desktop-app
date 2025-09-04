@@ -2,7 +2,7 @@ import path from "path";
 import { unescape } from "querystring";
 import fs from "fs";
 import os from "os";
-import { app, dialog, ipcMain } from "electron";
+import { app, dialog, ipcMain, shell } from "electron";
 /** ACTIONS */
 import startBackgroundProcess from "./actions/startBackgroundProcess";
 import { getState, setState } from "./actions/stateManagement";
@@ -388,4 +388,9 @@ export const registerMainProcessCommonEvents = () => {
       }
     }
   );
+
+  ipcMain.handle("open-path-in-file-manager", async (event, payload) => {
+    const { path: pathToOpen } = payload;
+    shell.openPath(pathToOpen);
+  });
 };
