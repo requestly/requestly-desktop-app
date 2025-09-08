@@ -43,6 +43,7 @@ import {
   Auth,
   GlobalConfig,
   ApiRecord,
+  AuthType,
 } from "./schemas";
 import { Stats } from "node:fs";
 import { FileType } from "./file-types/file-type.interface";
@@ -664,7 +665,10 @@ async function getCollectionAuthData(
 
   return {
     type: "success",
-    content: {},
+    content: {
+      authConfigStore: {},
+      currentAuthType: AuthType.NO_AUTH,
+    },
   } as FileSystemResult<Static<typeof Auth>>;
 }
 
