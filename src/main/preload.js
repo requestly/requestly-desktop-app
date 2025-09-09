@@ -18,6 +18,8 @@ if (process.env.NODE_ENV === "development") {
   appVersion = app.getVersion();
 }
 
+/* HACKY WAY TO CHECK isSetAppBuild BASED ON EXEC PATH */
+const isSetappBuild = (process.execPath || "").toLowerCase().includes("setapp");
 (function (window) {
   // Build the RQ object
   const RQ = window.RQ || {};
@@ -27,7 +29,7 @@ if (process.env.NODE_ENV === "development") {
   RQ.MODE = "DESKTOP";
   // TODO @Sachin: TMP VERSION as of now
   RQ.DESKTOP.VERSION = appVersion || "1.0";
-
+  RQ.DESKTOP.IS_SETAPP_BUILD = isSetappBuild;
   // Services
   RQ.DESKTOP.SERVICES = RQ.DESKTOP.SERVICES || {};
   // Services - Storage Service
