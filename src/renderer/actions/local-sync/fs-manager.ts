@@ -782,17 +782,15 @@ export class FsManager {
       return createResult;
     }
 
-    if (collectionId) {
-      const authWriteResult = await this.updateCollectionAuthData(
-        createResult.content.resource.path,
-        {
-          authConfigStore: {},
-          currentAuthType: AuthType.INHERIT,
-        }
-      );
-      if (authWriteResult.type === "error") {
-        return authWriteResult;
+    const authWriteResult = await this.updateCollectionAuthData(
+      createResult.content.resource.path,
+      {
+        authConfigStore: {},
+        currentAuthType: AuthType.INHERIT,
       }
+    );
+    if (authWriteResult.type === "error") {
+      return authWriteResult;
     }
 
     return parseFolderToCollection(this.rootPath, resource);
