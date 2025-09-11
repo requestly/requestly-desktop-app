@@ -12,14 +12,14 @@ const IPC = require("./preload-apis/IPC");
 const STATE_MANAGEMENT = require("./preload-apis/AppState");
 
 let appVersion = null;
+const isSetappBuild = process.env.IS_SETAPP_BUILD === "true";
+
 if (process.env.NODE_ENV === "development") {
   appVersion = require("../../package.json").version;
 } else {
   appVersion = app.getVersion();
 }
 
-/* HACKY WAY TO CHECK isSetAppBuild BASED ON EXEC PATH */
-const isSetappBuild = (process.execPath || "").toLowerCase().includes("setapp");
 (function (window) {
   // Build the RQ object
   const RQ = window.RQ || {};

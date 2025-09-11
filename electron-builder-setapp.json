@@ -13,7 +13,7 @@
   "protocols": {
     "name": "setapp-requestly-internal-protocol",
     "schemes": [
-      "setapp-requestly"
+      "requestly-setapp"
     ]
   },
   "fileAssociations": [
