@@ -1,5 +1,5 @@
 {
-  "productName": "Requestly-Setapp",
+  "productName": "Requestly",
   "appId": "io.requestly.app-setapp",
   "electronVersion": "23.0.0",
   "asar": true,

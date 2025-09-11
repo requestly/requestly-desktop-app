@@ -474,11 +474,9 @@ app
   .whenReady()
   .then(() => {
     app.on("activate", () => {
-      try {
+      if (process.env.IS_SETAPP_BUILD === "true") {
         const setappFramework = require("@setapp/framework-wrapper");
         setappFramework.SetappManager.shared.reportUsageEvent(setappFramework.SETAPP_USAGE_EVENT.USER_INTERACTION);
-      } catch (error) {
-        logger.error("Failed to report Setapp activate event:", error);
       }
 
       // On macOS it's common to re-create a window in the app when the
