@@ -8,6 +8,7 @@ import {
   FileTypeEnum,
   FsResource,
 } from "./types";
+import { fileIndex } from "./file-index";
 
 export class FsResourceCreationError extends Error {
   path: string;
@@ -124,7 +125,8 @@ export function parseJsonContent<T extends TSchema>(
 }
 
 export function getIdFromPath(path: string) {
-  return path;
+  const id = fileIndex.getId(path);
+  return id;
 }
 
 export function mapSuccessWrite<
@@ -216,4 +218,103 @@ export function createFileSystemError(
       fileType,
     },
   };
+}
+
+/**
+ * WARNING: Genrated by Claude
+ *
+ * Sanitizes a string to be safe for use as a filename or folder name across all platforms
+ * (Windows, macOS, Linux)
+ * 
+ * @param input - The input string to sanitize
+ * @param maxLength - Maximum length for the filename (default: 100)
+ * @param replacement - Character to replace invalid characters with (default: '_')
+ * @returns A sanitized filename safe for all platforms
+ */
+export function sanitizeFsResourceName(
+  input: string, 
+  maxLength: number = 100, 
+  replacement: string = '_'
+): string {
+  if (!input || typeof input !== 'string') {
+    return 'Untitled';
+  }
+
+  // Trim whitespace
+  let sanitized = input.trim();
+
+  // If empty after trim, return default
+  if (!sanitized) {
+    return 'Untitled';
+  }
+
+  // Reserved names on Windows (case-insensitive)
+  const reservedNames = new Set([
+    'CON', 'PRN', 'AUX', 'NUL',
+    'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
+    'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'
+  ]);
+
+  // Characters that are invalid in filenames across platforms
+  // Windows: < > : " | ? * \ /
+  // macOS: : (converted to /) 
+  // Linux: / and null character
+  // We'll be conservative and exclude all problematic characters
+  const invalidCharsRegex = /[<>:"/\\|?*\x00-\x1F\x7F]/g;
+
+  // Replace invalid characters
+  sanitized = sanitized.replace(invalidCharsRegex, replacement);
+
+  // Remove or replace problematic characters at start/end
+  // Can't start or end with spaces or dots on Windows
+  sanitized = sanitized.replace(/^[.\s]+|[.\s]+$/g, replacement);
+
+  // Handle multiple consecutive replacement characters
+  if (replacement) {
+    const replacementRegex = new RegExp(`${escapeRegex(replacement)}+`, 'g');
+    sanitized = sanitized.replace(replacementRegex, replacement);
+  }
+
+  // Check if it's a reserved name (Windows)
+  const nameWithoutExt = sanitized.split('.')[0].toUpperCase();
+  if (reservedNames.has(nameWithoutExt)) {
+    sanitized = `${replacement}${sanitized}`;
+  }
+
+  // Ensure it doesn't start with a dash (can cause issues with command line tools)
+  if (sanitized.startsWith('-')) {
+    sanitized = replacement + sanitized.slice(1);
+  }
+
+  // Limit length while preserving file extension if present
+  if (sanitized.length > maxLength) {
+    const lastDotIndex = sanitized.lastIndexOf('.');
+    if (lastDotIndex > 0 && lastDotIndex > sanitized.length - 10) {
+      // Has extension, preserve it
+      const extension = sanitized.slice(lastDotIndex);
+      const nameOnly = sanitized.slice(0, lastDotIndex);
+      const maxNameLength = maxLength - extension.length;
+      sanitized = nameOnly.slice(0, maxNameLength) + extension;
+    } else {
+      // No extension or extension is too far back
+      sanitized = sanitized.slice(0, maxLength);
+    }
+  }
+
+  // Final cleanup - remove trailing dots and spaces again (in case truncation caused issues)
+  sanitized = sanitized.replace(/[.\s]+$/, '');
+
+  // If we ended up with an empty string, return default
+  if (!sanitized) {
+    return 'Untitled';
+  }
+
+  return sanitized;
+}
+
+/**
+ * Helper function to escape special regex characters
+ */
+function escapeRegex(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
