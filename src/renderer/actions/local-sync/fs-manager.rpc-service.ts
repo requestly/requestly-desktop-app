@@ -4,9 +4,9 @@ import { FsManager } from "./fs-manager";
 export class FsManagerRPCService extends RPCServiceOverIPC {
   private fsManager: FsManager;
 
-  constructor(readonly rootPath: string) {
+  constructor(readonly rootPath: string, readonly exposedWorkspacePaths: Map<string,unknown>) {
     super(`local_sync: ${rootPath}`);
-    this.fsManager = new FsManager(rootPath);
+    this.fsManager = new FsManager(rootPath, this.exposedWorkspacePaths);
   }
 
   reload() {

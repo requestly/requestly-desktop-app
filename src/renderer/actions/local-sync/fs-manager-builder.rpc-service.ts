@@ -24,12 +24,7 @@ export class FsManagerBuilderRPCService extends RPCServiceOverIPC {
       console.log("not building again");
       return;
     }
-    // We are essentially using the exposedWorkspacePaths as a lock.
-    // If two parallel executions occur, one of them would set an empty object,
-    // and hence the other one won't be able to proceed.
-    // It's a simple hack for now, TODO: productionize this
-    this.exposedWorkspacePaths.set(rootPath, {} as any);
-    const manager = new FsManagerRPCService(rootPath);
+    const manager = new FsManagerRPCService(rootPath, this.exposedWorkspacePaths);
     await manager.init();
     this.exposedWorkspacePaths.set(rootPath, manager);
   }

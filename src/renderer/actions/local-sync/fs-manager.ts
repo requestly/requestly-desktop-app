@@ -84,7 +84,7 @@ export class FsManager {
 
   private fsIgnoreManager: FsIgnoreManager;
 
-  constructor(rootPath: string) {
+  constructor(rootPath: string, readonly exposedWorkspacePaths: Map<string, unknown>) {
     this.rootPath = getNormalizedPath(rootPath);
     this.config = {} as Static<typeof Config>;
     this.fsIgnoreManager = new FsIgnoreManager(this.rootPath, this.config);
@@ -386,6 +386,7 @@ export class FsManager {
       path,
       rootPath: this.rootPath,
       type: params.type,
+      exposedWorkspacePaths: this.exposedWorkspacePaths,
     });
   }
 
@@ -397,6 +398,7 @@ export class FsManager {
       path: params.path,
       rootPath: this.rootPath,
       type: params.type,
+      exposedWorkspacePaths: this.exposedWorkspacePaths,
     });
   }
 

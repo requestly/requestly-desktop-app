@@ -33,6 +33,7 @@ export function createFsResource<T extends FsResource["type"]>(params: {
   rootPath: string;
   path: string;
   type: T;
+  exposedWorkspacePaths?: Map<string, unknown>,
 }): FsResource & { type: T } {
   try {
     const { rootPath, type } = params;
@@ -48,12 +49,11 @@ export function createFsResource<T extends FsResource["type"]>(params: {
       );
     }
 
-    const normalizedRootPath = getNormalizedPath(rootPath);
-    const pathRootSlice = path.slice(0, normalizedRootPath.length);
-
-    if (normalizedRootPath !== pathRootSlice) {
+    const normalizedRootPaths = new Set<string>().add(getNormalizedPath(rootPath));
+    params.exposedWorkspacePaths?.keys().forEach(path => normalizedRootPaths.add(getNormalizedPath(path)));
+    if (!normalizedRootPaths.values().some(rootPath => path.startsWith(rootPath))) {
       throw new Error(
-        `Can not create fs resource reference! Path '${path}' lies outside workspace path '${rootPath}'`
+        `Can not create fs resource reference! Path '${path}' lies outside workspace paths!`
       );
     }
 
