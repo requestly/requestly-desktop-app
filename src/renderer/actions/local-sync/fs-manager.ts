@@ -869,7 +869,10 @@ export class FsManager {
     id: string,
     newParentId: string
   ): Promise<FileSystemResult<Collection>> {
-    const parentPath = newParentId.length ? newParentId : this.rootPath;
+    const parentPath = newParentId.length ? fileIndex.getPath(newParentId) : this.rootPath;
+    if(!parentPath) {
+      throw new Error(`Path not found for collection/root id ${newParentId}`);
+    }
     const folderResource = this.createResource({
       id,
       type: "folder",
