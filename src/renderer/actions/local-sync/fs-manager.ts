@@ -77,6 +77,12 @@ import { HandleError } from "./decorators/handle-error.decorator";
 import { FsIgnoreManager } from "./fsIgnore-manager";
 import { fileIndex } from "./file-index";
 
+export class ResourceNotFound extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
 export class FsManager {
   private rootPath: string;
 
@@ -113,7 +119,7 @@ export class FsManager {
       });
 
       const alreadyExists = await getIfFileExists(globalEnvFile);
-      if(alreadyExists) {
+      if (alreadyExists) {
         fileIndex.remove({
           type: 'path',
           path: globalEnvFile.path,
@@ -124,12 +130,9 @@ export class FsManager {
         )
       }
 
-      console.log('file index', fileIndex);      
-      
     } catch (error) {
       throw new Error(
-        `Failed to initialize FsManager: ${
-          error instanceof Error ? error.message : String(error)
+        `Failed to initialize FsManager: ${error instanceof Error ? error.message : String(error)
         }`
       );
     }
@@ -379,8 +382,8 @@ export class FsManager {
     type: T;
   }) {
     const path = fileIndex.getPath(params.id);
-    if(!path) {
-      throw new Error(`Resource ${params.id} of type ${params.type} not found!`);
+    if (!path) {
+      throw new ResourceNotFound(`Resource ${params.id} of type ${params.type} not found!`);
     }
     return createFsResource({
       path,
@@ -634,10 +637,10 @@ export class FsManager {
     });
 
     const alreadyExists = await getIfFileExists(resource);
-    if(alreadyExists) {
+    if (alreadyExists) {
       throw new Error(`Record '${content.name}' already exists!`);
     }
-    
+
     const writeResult = await writeContent(
       resource,
       content,
@@ -665,18 +668,29 @@ export class FsManager {
 
   @HandleError
   async deleteRecord(id: string): Promise<FileSystemResult<void>> {
-    const resource = this.createResource({
-      id,
-      type: "file",
-    });
-    const deleteResult = await deleteFsResource(resource);
-    if (deleteResult.type === "error") {
-      return deleteResult;
-    }
+    try {
+      const resource = this.createResource({
+        id,
+        type: "file",
+      });
+      const deleteResult = await deleteFsResource(resource);
+      if (deleteResult.type === "error") {
+        return deleteResult;
+      }
 
-    return {
-      type: "success",
-    };
+      return {
+        type: "success",
+      };
+    }
+    catch (e) {
+      if (e instanceof ResourceNotFound) {
+        return {
+          type: "success",
+        }
+      }
+
+      throw e;
+    }
   }
 
   @HandleError
@@ -725,23 +739,33 @@ export class FsManager {
     id: string,
     collectionId?: string,
   ): Promise<FileSystemResult<Collection>> {
-    return this.createCollection(name,collectionId, id);
+    return this.createCollection(name, collectionId, id);
   }
 
   @HandleError
   async deleteCollection(id: string): Promise<FileSystemResult<void>> {
-    const resource = this.createResource({
-      id,
-      type: "folder",
-    });
-    const deleteResult = await deleteFsResource(resource);
-    if (deleteResult.type === "error") {
-      return deleteResult;
-    }
+    try {
+      const resource = this.createResource({
+        id,
+        type: "folder",
+      });
+      const deleteResult = await deleteFsResource(resource);
+      if (deleteResult.type === "error") {
+        return deleteResult;
+      }
 
-    return {
-      type: "success",
-    };
+      return {
+        type: "success",
+      };
+    } catch (e) {
+      if (e instanceof ResourceNotFound) {
+        return {
+          type: "success",
+        }
+      }
+
+      throw e;
+    }
   }
 
   @HandleError
@@ -872,7 +896,7 @@ export class FsManager {
     newParentId: string
   ): Promise<FileSystemResult<Collection>> {
     const parentPath = newParentId.length ? fileIndex.getPath(newParentId) : this.rootPath;
-    if(!parentPath) {
+    if (!parentPath) {
       throw new Error(`Path not found for collection/root id ${newParentId}`);
     }
     const folderResource = this.createResource({
@@ -921,7 +945,7 @@ export class FsManager {
     newParentId: string
   ): Promise<FileSystemResult<API>> {
     const parentPath = newParentId.length ? fileIndex.getPath(newParentId) : this.rootPath;
-    if(!parentPath) {
+    if (!parentPath) {
       throw new Error(`Path not found for collection/root id ${newParentId}`);
     }
     const fileResource = this.createResource({
@@ -1035,13 +1059,13 @@ export class FsManager {
       return writeResult;
     }
 
-    if(updatedRecord.name === currentRecord.name) {
-        return parseFileToApi(this.rootPath, fileResource);
+    if (updatedRecord.name === currentRecord.name) {
+      return parseFileToApi(this.rootPath, fileResource);
     }
 
     const parentPath = getParentFolderPath(fileResource);
     const newFilePath = appendPath(parentPath, this.generateFileName(updatedRecord.name));
-    
+
     const newFileResource = this.createRawResource({
       path: newFilePath,
       type: 'file',
@@ -1049,12 +1073,12 @@ export class FsManager {
 
     const result = await rename(fileResource, newFileResource);
 
-    if(result.type === 'error') {
+    if (result.type === 'error') {
       return result;
     }
 
     return parseFileToApi(this.rootPath, newFileResource);
-    
+
   }
 
   @HandleError
@@ -1112,10 +1136,10 @@ export class FsManager {
     });
 
     const alreadyExists = await getIfFileExists(envFile);
-    if(alreadyExists) {
+    if (alreadyExists) {
       throw new Error(`Environment '${environmentName}' already exists!`);
     }
-    
+
     const content = {
       name: environmentName,
       variables: {},
@@ -1179,13 +1203,13 @@ export class FsManager {
       return writeResult;
     }
 
-    if(updatedRecord.name === content.name) {
-        return parseFileToEnv(fileResource);
+    if (updatedRecord.name === content.name) {
+      return parseFileToEnv(fileResource);
     }
 
     const parentPath = getParentFolderPath(fileResource);
     const newFilePath = appendPath(parentPath, this.generateFileName(updatedRecord.name));
-    
+
     const newFileResource = this.createRawResource({
       path: newFilePath,
       type: 'file',
@@ -1193,7 +1217,7 @@ export class FsManager {
 
     const result = await rename(fileResource, newFileResource);
 
-    if(result.type === 'error') {
+    if (result.type === 'error') {
       return result;
     }
 
@@ -1278,19 +1302,23 @@ export class FsManager {
     collection: CollectionRecord,
     id: string
   ): Promise<FileSystemResult<Collection>> {
-    const path = appendPath(this.rootPath, sanitizeFsResourceName(collection.name));
+    const parentPath = collection.collectionId.length ? fileIndex.getPath(collection.collectionId) : this.rootPath;
+    if (!parentPath) {
+      throw new Error(`Could not find path for id ${collection.collectionId}`);
+    }
+    const path = appendPath(parentPath, sanitizeFsResourceName(collection.name));
     const collectionFolder = this.createRawResource({
       path,
       type: "folder",
     });
-    const createResult = await createFolder(collectionFolder, {useId: id});
+    const createResult = await createFolder(collectionFolder, { useId: id });
     if (createResult.type === "error") {
       return createResult;
     }
 
     if (collection.description?.length) {
-      const descriptionFile = this.createResource({
-        id: appendPath(collectionFolder.path, DESCRIPTION_FILE),
+      const descriptionFile = this.createRawResource({
+        path: appendPath(collectionFolder.path, DESCRIPTION_FILE),
         type: "file",
       });
       const writeResult = await writeContent(
