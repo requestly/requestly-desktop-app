@@ -251,14 +251,14 @@ export async function writeContent(
   fileType: FileType<any>,
   options?: {
     writeWithElevatedAccess?: boolean;
-    skipAlreadyExistsCheck?: boolean;
+    performExistenceCheck?: boolean;
     useId?: string;
   }
 ): Promise<FileSystemResult<{ resource: FileResource }>> {
   try {
-    const { writeWithElevatedAccess = false, skipAlreadyExistsCheck = false } = options || {};
+    const { writeWithElevatedAccess = false, performExistenceCheck = false } = options || {};
 
-    if (!skipAlreadyExistsCheck) {
+    if (performExistenceCheck) {
       const alreadyExists = await getIfFileExists(resource);
       if (alreadyExists) {
         return {

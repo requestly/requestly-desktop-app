@@ -642,6 +642,7 @@ export class FsManager {
       new ApiRecordFileType(),
       {
         useId: idToUse,
+        performExistenceCheck: true,
       }
     );
     if (writeResult.type === "error") {
@@ -1121,6 +1122,7 @@ export class FsManager {
       new EnvironmentRecordFileType(),
       {
         useId: isGlobal ? 'global' : undefined,
+        performExistenceCheck: true,
       }
     );
     if (writeResult.type === "error") {
@@ -1239,7 +1241,10 @@ export class FsManager {
     const writeResult = await writeContent(
       resource,
       newEnvironmentContent,
-      fileType
+      fileType,
+      {
+        performExistenceCheck: true,
+      }
     );
     if (writeResult.type === "error") {
       return writeResult;
