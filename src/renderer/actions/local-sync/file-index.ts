@@ -13,6 +13,10 @@ class FileIndex {
 
   }
 
+  private isFolder(path: string) {
+    return path[path.length - 1] === '/';
+  }
+
   addIdPath(id: string, path: string, skipExistenceChecks = false) {
     if (!skipExistenceChecks) {
       if (this.hasId(id)) {
@@ -63,6 +67,15 @@ class FileIndex {
     }
     if (path) {
       this.pathToId.delete(path);
+      if(this.isFolder(path)) {
+        Array.from(this.pathToId).forEach(([childPath, childId]) => {
+          if(childPath.startsWith(path)) {
+            this.pathToId.delete(path);
+            this.idToPath.delete(childId);
+          }
+        });
+      }
+      
     }
     return true;
   }
@@ -76,6 +89,20 @@ class FileIndex {
     this.idToPath.set(existingId, newPath);
     this.pathToId.delete(oldPath);
     this.pathToId.set(newPath, existingId);
+
+    if(this.isFolder(oldPath)) {
+      Array.from(this.pathToId).forEach(([childPath, childId]) => {
+        if(!childPath.startsWith(oldPath)) {
+          return;
+        }
+
+        const newChildPath = childPath.replace(oldPath, newPath);
+
+        this.idToPath.set(childId, newChildPath);
+        this.pathToId.delete(childPath);
+        this.pathToId.set(newChildPath, childId);
+      });
+    }
 
     return true;
   }
