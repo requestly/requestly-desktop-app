@@ -127,6 +127,13 @@ export const BaseRequest = Type.Object({
   ),
 });
 
+export const PathVariable = Type.Object({
+  id: Type.Number(),
+  key: Type.String(),
+  value: Type.Optional(Type.String()),
+  description: Type.Optional(Type.String()),
+});
+
 export const HttpRequest = Type.Intersect([
   BaseRequest,
   Type.Object({
@@ -138,6 +145,7 @@ export const HttpRequest = Type.Intersect([
     bodyContainer: Type.Optional(RequestBodyContainer),
     contentType: Type.Optional(Type.Enum(RequestContentType)),
     includeCredentials: Type.Optional(Type.Boolean()),
+    pathVariables: Type.Optional(Type.Array(PathVariable)),
   }),
 ]);
 
