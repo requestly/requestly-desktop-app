@@ -130,7 +130,7 @@ export const BaseRequest = Type.Object({
 export const PathVariable = Type.Object({
   id: Type.Number(),
   key: Type.String(),
-  value: Type.Optional(Type.String()),
+  value: Type.String(),
   description: Type.Optional(Type.String()),
 });
 
