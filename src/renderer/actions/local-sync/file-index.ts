@@ -115,14 +115,19 @@ class FileIndex {
 
     const allChildren = Array.from(this.pathToId.keys().filter(p => p.startsWith(path)));
     const immediateChildren = new Set(allChildren.map(p => {
-      const child = p.split(path)[1];
-      if(!child) {
+      const grandChild = p.split(path)[1];
+      if(!grandChild) {
         return;
       }
-      if(child.endsWith('/')) {
-        return child.split('/')[0];
+      
+      let index = grandChild.indexOf('/');
+
+      // Grand child is actually a file and hence an immediate child
+      if(index === -1) {
+        return pathUtils.parse(grandChild).name;
       }
-      return pathUtils.parse(child).name;
+      const child = grandChild.slice(0, index);
+      return child;
     }).filter(Boolean) as string[]);
     
     return immediateChildren;
