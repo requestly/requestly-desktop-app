@@ -1,0 +1,108 @@
+{
+  "productName": "Requestly",
+  "appId": "io.requestly.app-setapp",
+  "electronVersion": "23.0.0",
+  "asar": true,
+  "asarUnpack": "**\\*.{node,dll}",
+  "files": [
+    "dist",
+    "node_modules",
+    "package.json",
+    "static"
+  ],
+  "protocols": {
+    "name": "setapp-requestly-internal-protocol",
+    "schemes": [
+      "requestly-setapp"
+    ]
+  },
+  "fileAssociations": [
+    {
+      "ext": "har",
+      "name": "Network Captures",
+      "role": "Default",
+      "icon": "assets/icon.icns"
+    },
+    {
+      "ext": "rqly",
+      "name": "Requestly session",
+      "role": "Owner",
+      "icon": "assets/icon.icns"
+    }
+  ],
+  "mac": {
+    "type": "distribution",
+    "hardenedRuntime": true,
+    "entitlements": "assets/entitlements.mac.plist",
+    "entitlementsInherit": "assets/entitlements.mac.plist",
+    "gatekeeperAssess": false,
+    "requirements": "assets/requirement.rqset",
+    "identity": "Browserstack Inc (YQ5FZQ855D)",
+    "notarize": {
+      "teamId": "YQ5FZQ855D"
+    },
+    "minimumSystemVersion": "12.0",
+    "x64ArchFiles": "**/static/nss/darwin/**",
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["universal"]
+      }
+    ],
+    "extraResources": [
+      {
+        "from": "assets/setappPublicKey.pem",
+        "to": "setappPublicKey.pem"
+      }
+    ],
+    "extendInfo": {
+      "NSUpdateSecurityPolicy": {
+        "AllowProcesses": {
+          "MEHY5QF425": [
+            "com.setapp.DesktopClient.SetappAgent"
+          ]
+        }
+      }
+    },
+    "files": [
+      "!**/.git/*",
+      "!**/.gitignore",
+      "!**/.gitmodules",
+      "!**/node_modules/@setapp/framework-wrapper/build/{Debug,Release}",
+      "!**/node_modules/@setapp/framework-wrapper/{src,test}"
+    ]
+  },
+  "dmg": {
+    "sign": true,
+    "contents": [
+      {
+        "x": 130,
+        "y": 220
+      },
+      {
+        "x": 410,
+        "y": 220,
+        "type": "link",
+        "path": "/Applications"
+      }
+    ]
+  },
+  "directories": {
+    "app": "release/app",
+    "buildResources": "assets",
+    "output": "release/build-setapp"
+  },
+  "extraResources": [
+    "./assets/**",
+    {
+      "from": "./release/app",
+      "filter": "static/**"
+    }
+  ],
+  "publish": {
+    "provider": "github",
+    "releaseType": "release",
+    "owner": "requestly",
+    "repo": "requestly-desktop-app-release"
+  }
+}

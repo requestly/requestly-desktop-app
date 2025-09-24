@@ -474,6 +474,11 @@ app
   .whenReady()
   .then(() => {
     app.on("activate", () => {
+      if (process.env.IS_SETAPP_BUILD === "true") {
+        const setappFramework = require("@setapp/framework-wrapper");
+        setappFramework.SetappManager.shared.reportUsageEvent(setappFramework.SETAPP_USAGE_EVENT.USER_INTERACTION);
+      }
+
       // On macOS it's common to re-create a window in the app when the
       // dock icon is clicked and there are no other windows open.
       if (BrowserWindow.getAllWindows().length === 0) {
