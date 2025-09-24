@@ -93,7 +93,13 @@
             "arm64"
           ]
         }
-      ]
+      ],
+      "extendInfo": {
+        "NSCameraUsageDescription": null,
+        "NSMicrophoneUsageDescription": null,
+        "NSBluetoothAlwaysUsageDescription": null,
+        "NSBluetoothPeripheralUsageDescription": null
+      }
     },
     "dmg": {
       "sign": true,
