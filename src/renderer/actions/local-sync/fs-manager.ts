@@ -5,6 +5,7 @@ import {
   createFsResource,
   getIdFromPath,
   getNameOfResource,
+  getNewNameIfQuickCreate,
   getNormalizedPath,
   mapSuccessfulFsResult,
   parseJsonContent,
@@ -60,6 +61,7 @@ import {
   EnvironmentVariableValue,
   ErrorCode,
   ErroredRecord,
+  FileResource,
   FileSystemResult,
   FileTypeEnum,
   FsResource,
@@ -471,6 +473,65 @@ export class FsManager {
     return envFolderPath;
   }
 
+
+  private async getFileResourceWithNameVerification(params: {
+    name?: string,
+    id: string,
+  }): Promise<FileSystemResult<FileResource>> {
+    const existingFile = this.createResource({
+      id: params.id,
+      type: 'file',
+    });
+
+    if (!params.name) {
+      return {
+        type: 'success',
+        content: existingFile,
+      };
+    }
+
+    const existingFileName = getFileNameFromPath(existingFile.path);
+    const sanitizedName = this.generateFileName(params.name);
+    if (existingFileName === sanitizedName) {
+      return {
+        type: 'success',
+        content: existingFile,
+      };
+    }
+
+    const parentPath = getParentFolderPath(existingFile);
+    const newFilePath = appendPath(parentPath, sanitizedName);
+
+    const newFileResource = this.createRawResource({
+      path: newFilePath,
+      type: 'file',
+    });
+
+    const alreadyExists = await getIfFileExists(newFileResource);
+    if (alreadyExists) {
+      return {
+        "type": "error",
+        "error": {
+          message: `Resource with name ${sanitizedName} already exists!`,
+          fileType: FileTypeEnum.UNKNOWN,
+          path: newFilePath,
+          code: ErrorCode.EntityAlreadyExists,
+        }
+      }
+    }
+
+    const result = await rename(existingFile, newFileResource);
+
+    if (result.type === 'error') {
+      return result;
+    }
+
+    return {
+      type: 'success',
+      content: newFileResource,
+    };
+  }
+
   @HandleError
   async getRecord(id: string): Promise<FileSystemResult<API>> {
     const resource = this.createResource({
@@ -630,6 +691,14 @@ export class FsManager {
       type: "folder",
     });
 
+    const newName = getNewNameIfQuickCreate({
+      name: sanitizeFsResourceName(content.name),
+      baseName: 'Untitled request',
+      parentPath: getNormalizedPath(parentFolderResource.path),
+    });
+
+    content.name = newName;
+
     const path = appendPath(parentFolderResource.path, this.generateFileName(content.name));
     const resource = this.createRawResource({
       path,
@@ -718,13 +787,21 @@ export class FsManager {
       id: collectionId || getIdFromPath(this.rootPath),
       type: "folder",
     });
+    const newName = getNewNameIfQuickCreate({
+      name: sanitizeFsResourceName(name),
+      baseName: 'New collection',
+      parentPath: getNormalizedPath(folderResource.path),
+    });
+
+    name = newName;
+
     const path = appendPath(folderResource.path, name);
     const resource = this.createRawResource({
       path,
       type: "folder",
     });
     const createResult = await createFolder(resource, {
-      errorIfDoesNotExist: true,
+      errorIfExist: true,
       useId: idToUse,
     });
     if (createResult.type === "error") {
@@ -777,7 +854,6 @@ export class FsManager {
         return result;
       }
     }
-
     return {
       type: "success",
     };
@@ -1033,10 +1109,17 @@ export class FsManager {
   ): Promise<FileSystemResult<API>> {
     const fileType = new ApiRecordFileType();
     removeUndefinedFromRoot(patch);
-    const fileResource = this.createResource({
+    let fileResourceResult = await this.getFileResourceWithNameVerification({
       id,
-      type: "file",
+      name: patch.name,
     });
+
+    if (fileResourceResult.type === 'error') {
+      return fileResourceResult;
+    }
+
+    const fileResource = fileResourceResult.content;
+
     const parsedRecordResult = await parseFile({
       resource: fileResource,
       fileType,
@@ -1059,25 +1142,7 @@ export class FsManager {
       return writeResult;
     }
 
-    if (updatedRecord.name === currentRecord.name) {
-      return parseFileToApi(this.rootPath, fileResource);
-    }
-
-    const parentPath = getParentFolderPath(fileResource);
-    const newFilePath = appendPath(parentPath, this.generateFileName(updatedRecord.name));
-
-    const newFileResource = this.createRawResource({
-      path: newFilePath,
-      type: 'file',
-    });
-
-    const result = await rename(fileResource, newFileResource);
-
-    if (result.type === 'error') {
-      return result;
-    }
-
-    return parseFileToApi(this.rootPath, newFileResource);
+    return parseFileToApi(this.rootPath, fileResource);
 
   }
 
@@ -1127,6 +1192,14 @@ export class FsManager {
       return folderCreationResult;
     }
 
+    const newName = getNewNameIfQuickCreate({
+      name: sanitizeFsResourceName(environmentName),
+      baseName: 'New Environment',
+      parentPath: getNormalizedPath(environmentFolderPath),
+    });
+
+    environmentName = newName;
+
     const envFile = this.createRawResource({
       path: appendPath(
         environmentFolderPath,
@@ -1169,10 +1242,17 @@ export class FsManager {
   ): Promise<FileSystemResult<Environment>> {
     const fileType = new EnvironmentRecordFileType();
     removeUndefinedFromRoot(patch);
-    const fileResource = this.createResource({
+    let fileResourceResult = await this.getFileResourceWithNameVerification({
       id,
-      type: "file",
+      name: (patch as any).name,
     });
+
+    if (fileResourceResult.type === 'error') {
+      return fileResourceResult;
+    }
+
+    const fileResource = fileResourceResult.content;
+
     const parsedRecordResult = await parseFile({
       resource: fileResource,
       fileType,
@@ -1203,25 +1283,7 @@ export class FsManager {
       return writeResult;
     }
 
-    if (updatedRecord.name === content.name) {
-      return parseFileToEnv(fileResource);
-    }
-
-    const parentPath = getParentFolderPath(fileResource);
-    const newFilePath = appendPath(parentPath, this.generateFileName(updatedRecord.name));
-
-    const newFileResource = this.createRawResource({
-      path: newFilePath,
-      type: 'file',
-    });
-
-    const result = await rename(fileResource, newFileResource);
-
-    if (result.type === 'error') {
-      return result;
-    }
-
-    return parseFileToEnv(newFileResource);
+    return parseFileToEnv(fileResource);
   }
 
   @HandleError
@@ -1306,12 +1368,24 @@ export class FsManager {
     if (!parentPath) {
       throw new Error(`Could not find path for id ${collection.collectionId}`);
     }
+
+    //Figure out an alternate name only for the root collection being imported
+    if (!collection.collectionId.length) {
+      const newName = getNewNameIfQuickCreate({
+        name: sanitizeFsResourceName(collection.name),
+        baseName: collection.name,
+        parentPath: getNormalizedPath(parentPath),
+      });
+
+      collection.name = newName;
+    }
+
     const path = appendPath(parentPath, sanitizeFsResourceName(collection.name));
     const collectionFolder = this.createRawResource({
       path,
       type: "folder",
     });
-    const createResult = await createFolder(collectionFolder, { useId: id });
+    const createResult = await createFolder(collectionFolder, { errorIfExist: true, useId: id });
     if (createResult.type === "error") {
       return createResult;
     }

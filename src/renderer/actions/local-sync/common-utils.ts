@@ -318,3 +318,55 @@ export function sanitizeFsResourceName(
 function escapeRegex(string: string): string {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+
+/**
+ * Detects if a given name corresponds to a 'new' entity based on a base string pattern.
+ * Matches exact base string or base string followed by a number.
+ * 
+ * @param name - The name to check (e.g., 'Untitled', 'Untitled1', 'Untitled42')
+ * @param baseString - The base string to match against (e.g., 'Untitled', 'New Environment')
+ * @returns true if the name matches the pattern, false otherwise
+ */
+export function isNewEntityName(name: string, baseString: string): boolean {
+  // Escape special regex characters in the base string
+  const escapedBase = baseString.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  
+  // Pattern: exact match OR base string followed by one or more digits
+  const pattern = new RegExp(`^${escapedBase}(\\d+)?$`);
+  
+  return pattern.test(name);
+}
+
+/**
+ * Pure function that generates the next available name variant.
+ * Always starts with baseName + "1" and increments until finding an available name.
+ * 
+ * @param baseName - The base name to generate alternatives for
+ * @param existingNames - Array of existing names to avoid conflicts with
+ * @returns The next available name variant (e.g., 'Untitled1', 'Untitled2')
+ */
+export function getAlternateName(baseName: string, existingNames: Set<string>): string {
+  let counter = 1;
+  let candidateName = `${baseName}${counter}`;
+  
+  while (existingNames.has(candidateName)) {
+    counter++;
+    candidateName = `${baseName}${counter}`;
+  }
+  
+  return candidateName;
+}
+
+export function getNewNameIfQuickCreate(params: {
+  name: string,
+  baseName: string,
+  parentPath: string,
+}) {
+  if(!isNewEntityName(params.name, params.baseName)) {
+    return params.name;
+  }
+
+  const children = fileIndex.getImmediateChildren(params.parentPath);
+
+  return getAlternateName(params.baseName, children);
+}

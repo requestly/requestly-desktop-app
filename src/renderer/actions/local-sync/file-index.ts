@@ -1,4 +1,5 @@
 import { v4 } from "uuid";
+import pathUtils from 'path';
 
 class FileIndex {
   private pathToId = new Map<string, string>();
@@ -70,7 +71,7 @@ class FileIndex {
       if(this.isFolder(path)) {
         Array.from(this.pathToId).forEach(([childPath, childId]) => {
           if(childPath.startsWith(path)) {
-            this.pathToId.delete(path);
+            this.pathToId.delete(childPath);
             this.idToPath.delete(childId);
           }
         });
@@ -105,6 +106,26 @@ class FileIndex {
     }
 
     return true;
+  }
+
+  getImmediateChildren(path: string): Set<string> {
+    if(!path.endsWith('/')) {
+      return new Set();
+    }
+
+    const allChildren = Array.from(this.pathToId.keys().filter(p => p.startsWith(path)));
+    const immediateChildren = new Set(allChildren.map(p => {
+      const child = p.split(path)[1];
+      if(!child) {
+        return;
+      }
+      if(child.endsWith('/')) {
+        return child.split('/')[0];
+      }
+      return pathUtils.parse(child).name;
+    }).filter(Boolean) as string[]);
+    
+    return immediateChildren;
   }
 }
 

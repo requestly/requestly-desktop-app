@@ -142,12 +142,12 @@ export async function deleteFsResource(
 export async function createFolder(
   resource: FolderResource,
   options?: {
-    errorIfDoesNotExist?: boolean;
+    errorIfExist?: boolean;
     createWithElevatedAccess?: boolean;
     useId?: string;
   }
 ): Promise<FileSystemResult<{ resource: FolderResource }>> {
-  const { errorIfDoesNotExist = false, createWithElevatedAccess = false } =
+  const { errorIfExist = false, createWithElevatedAccess = false } =
     options || {};
   try {
     const statsResult = await getFsResourceStats(resource);
@@ -170,7 +170,7 @@ export async function createFolder(
       }
 
       
-    } else if (errorIfDoesNotExist) {
+    } else if (errorIfExist) {
       return createFileSystemError(
         { message: "Folder already exists!" },
         resource.path,
