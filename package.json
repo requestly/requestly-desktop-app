@@ -140,6 +140,7 @@
         "filter": "static/**"
       }
     ],
+    "afterPack": ".erb/scripts/afterPack-verify-dlls.js",
     "publish": {
       "provider": "github",
       "releaseType": "release",
