@@ -82,7 +82,7 @@ class FileIndex {
   }
 
   movePath(oldPath: string, newPath: string): boolean {
-    const existingId = this.getId(oldPath);
+    const existingId = this.pathToId.get(oldPath);
     if (!existingId) {
       return false;
     }
