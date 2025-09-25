@@ -346,6 +346,9 @@ export function isNewEntityName(name: string, baseString: string): boolean {
  * @returns The next available name variant (e.g., 'Untitled1', 'Untitled2')
  */
 export function getAlternateName(baseName: string, existingNames: Set<string>): string {
+  if(!existingNames.has(baseName)) {
+    return baseName;
+  }
   let counter = 1;
   let candidateName = `${baseName}${counter}`;
   
@@ -365,7 +368,6 @@ export function getNewNameIfQuickCreate(params: {
   if(!isNewEntityName(params.name, params.baseName)) {
     return params.name;
   }
-
   const children = fileIndex.getImmediateChildren(params.parentPath);
 
   return getAlternateName(params.baseName, children);
