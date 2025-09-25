@@ -900,8 +900,12 @@ export class FsManager {
     id: string,
     description: string
   ): Promise<FileSystemResult<string>> {
+    const collectionFolder = this.createResource({
+      id,
+      type: 'folder'
+    });
     const descriptionFileResource = this.createRawResource({
-      path: appendPath(id, DESCRIPTION_FILE),
+      path: appendPath(collectionFolder.path, DESCRIPTION_FILE),
       type: "file",
     });
     if (!description.length) {
@@ -934,8 +938,13 @@ export class FsManager {
     id: string,
     authData: Static<typeof Auth>
   ): Promise<FileSystemResult<Static<typeof Auth>>> {
+    const collectionFolder = this.createResource({
+      id,
+      type: 'folder'
+    });
+
     const authFileResource = this.createRawResource({
-      path: appendPath(id, COLLECTION_AUTH_FILE),
+      path: appendPath(collectionFolder.path, COLLECTION_AUTH_FILE),
       type: "file",
     });
 
