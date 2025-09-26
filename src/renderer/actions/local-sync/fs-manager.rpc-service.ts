@@ -4,9 +4,9 @@ import { FsManager } from "./fs-manager";
 export class FsManagerRPCService extends RPCServiceOverIPC {
   private fsManager: FsManager;
 
-  constructor(readonly rootPath: string) {
+  constructor(readonly rootPath: string, readonly exposedWorkspacePaths: Map<string,unknown>) {
     super(`local_sync: ${rootPath}`);
-    this.fsManager = new FsManager(rootPath);
+    this.fsManager = new FsManager(rootPath, this.exposedWorkspacePaths);
   }
 
   reload() {
@@ -92,10 +92,6 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
     this.exposeMethodOverIPC(
       "moveCollections",
       this.fsManager.moveCollections.bind(this.fsManager)
-    );
-    this.exposeMethodOverIPC(
-      "copyCollection",
-      this.fsManager.copyCollection.bind(this.fsManager)
     );
     this.exposeMethodOverIPC(
       "setCollectionVariables",
