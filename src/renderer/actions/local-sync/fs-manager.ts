@@ -112,26 +112,6 @@ export class FsManager {
       await this.getAllRecords();
       await this.getAllEnvironments();
 
-      const globalEnvFile = this.createRawResource({
-        path: appendPath(
-          this.getEnvironmentsFolderPath(),
-          GLOBAL_ENV_FILE
-        ),
-        type: "file",
-      });
-
-      const alreadyExists = await getIfFileExists(globalEnvFile);
-      if (alreadyExists) {
-        fileIndex.remove({
-          type: 'path',
-          path: globalEnvFile.path,
-        })
-        fileIndex.addIdPath(
-          'global', globalEnvFile.path,
-          true, //skip existence checks
-        )
-      }
-
     } catch (error) {
       throw new Error(
         `Failed to initialize FsManager: ${error instanceof Error ? error.message : String(error)
@@ -662,11 +642,13 @@ export class FsManager {
           continue;
         }
         if (parsedResult) {
+          const isGlobal = resource.path.endsWith(`/${GLOBAL_ENV_FILE}`);
           entities.push({
             type: "environment",
             id: getIdFromPath(resource.path),
             name: parsedResult.content.name,
             variables: parsedResult.content.variables,
+            isGlobal,
           });
         }
       }
@@ -1232,7 +1214,6 @@ export class FsManager {
       content,
       new EnvironmentRecordFileType(),
       {
-        useId: isGlobal ? 'global' : undefined,
         performExistenceCheck: true,
       }
     );

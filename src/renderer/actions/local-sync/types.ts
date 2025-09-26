@@ -108,6 +108,7 @@ export type Environment = {
   type: "environment";
   id: string;
   name: string;
+  isGlobal: boolean;
   variables?: Variable;
 };
 

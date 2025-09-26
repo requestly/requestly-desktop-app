@@ -34,6 +34,7 @@ import {
   GIT_IGNORE_FILE,
   GLOBAL_CONFIG_FILE_NAME,
   GLOBAL_CONFIG_FOLDER_PATH,
+  GLOBAL_ENV_FILE,
   WORKSPACE_CONFIG_FILE_VERSION,
 } from "./constants";
 import { Static, TSchema } from "@sinclair/typebox";
@@ -888,11 +889,13 @@ export async function parseFileToEnv(
 
   const { content } = parsedFileResult;
 
+  const isGlobal = file.path.endsWith(`/${GLOBAL_ENV_FILE}`);
   const environment: Environment = {
     type: "environment",
     id: getIdFromPath(file.path),
     name: content.name,
     variables: content.variables,
+    isGlobal,
   };
 
   const result: FileSystemResult<Environment> = {
