@@ -200,7 +200,8 @@ export async function rename<T extends FsResource>(
       }
       return getIfFileExists(newResource);
     })();
-    if (alreadyExists) {
+    const isSamePath = getNormalizedPath(oldResource.path).toLowerCase() === getNormalizedPath(newResource.path).toLowerCase();
+    if (!isSamePath && alreadyExists) {
       return {
         type: 'error',
         error: {

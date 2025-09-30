@@ -487,8 +487,9 @@ export class FsManager {
       type: 'file',
     });
 
+    const isSamePath = getNormalizedPath(existingFile.path).toLowerCase() === getNormalizedPath(newFileResource.path).toLowerCase();
     const alreadyExists = await getIfFileExists(newFileResource);
-    if (alreadyExists) {
+    if (!isSamePath && alreadyExists) {
       return {
         "type": "error",
         "error": {
