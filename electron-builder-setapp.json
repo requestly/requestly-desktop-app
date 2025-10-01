@@ -1,6 +1,6 @@
 {
   "productName": "Requestly",
-  "appId": "io.requestly.app-setapp",
+  "appId": "io.requestly.beta-setapp",
   "electronVersion": "23.0.0",
   "asar": true,
   "asarUnpack": "**\\*.{node,dll}",
@@ -43,9 +43,10 @@
     },
     "minimumSystemVersion": "12.0",
     "x64ArchFiles": "**/static/nss/darwin/**",
+    "icon": "assets/AppIcon.png",
     "target": [
       {
-        "target": "dmg",
+        "target": "zip",
         "arch": ["universal"]
       }
     ],
@@ -53,9 +54,14 @@
       {
         "from": "assets/setappPublicKey.pem",
         "to": "setappPublicKey.pem"
+      },
+      {
+        "from": "assets/AppIcon.png",
+        "to": "AppIcon.png"
       }
     ],
     "extendInfo": {
+      "CFBundleIconFile": "AppIcon.png",
       "NSUpdateSecurityPolicy": {
         "AllowProcesses": {
           "MEHY5QF425": [
