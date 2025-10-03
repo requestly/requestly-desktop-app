@@ -271,30 +271,32 @@ export class FsManager {
             })
             .catch(() => false);
 
-          if (!authFileExists) {
-            const authData: Static<typeof Auth> = {
-              authConfigStore: {},
-              currentAuthType: AuthType.INHERIT,
-            };
+          if (authFileExists) {
+            // eslint-disable-next-line
+            continue;
+          }
 
-            const authFileResource = this.createResource({
-              id: authFilePath,
-              type: "file",
-            });
+          const authData: Static<typeof Auth> = {
+            authConfigStore: {},
+            currentAuthType: AuthType.INHERIT,
+          };
 
-            const writeResult = await writeContent(
-              authFileResource,
-              authData,
-              new AuthRecordFileType()
+          const authFileResource = this.createResource({
+            id: authFilePath,
+            type: "file",
+          });
+
+          const writeResult = await writeContent(
+            authFileResource,
+            authData,
+            new AuthRecordFileType()
+          );
+
+          if (writeResult.type === "error") {
+            console.error(
+              `Failed to create auth.json for collection ${collection.id}:`,
+              writeResult.error.message
             );
-
-            if (writeResult.type === "error") {
-              console.error(
-                `Failed to create auth.json for collection ${collection.id}:`,
-                writeResult.error.message
-              );
-              // Continue
-            }
           }
         } catch (error) {
           console.error(
