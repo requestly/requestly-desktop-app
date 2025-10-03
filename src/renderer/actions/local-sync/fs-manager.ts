@@ -142,16 +142,10 @@ export class FsManager {
         throw new Error(`Invalid version format: ${config.version}`);
       }
 
-      if (semver.lt(config.version, WORKSPACE_CONFIG_FILE_VERSION)) {
-        if (semver.lt(config.version, "0.0.2")) {
-          const migrationResult = await this.migrateFromV1ToV2();
-          if (migrationResult.type === "error") {
-            return migrationResult;
-          }
-        }
-        // Can add more migration paths here as needed for future versions
-      }
-      return { type: "success" };
+      return await this.migrateToVersion(
+        config.version,
+        WORKSPACE_CONFIG_FILE_VERSION
+      );
     } catch (error: any) {
       return {
         type: "error",
@@ -163,6 +157,36 @@ export class FsManager {
         },
       };
     }
+  }
+
+  private async migrateToVersion(
+    currentVersion: string,
+    targetVersion: string
+  ): Promise<FileSystemResult<void>> {
+    if (semver.gte(currentVersion, targetVersion)) {
+      return { type: "success" };
+    }
+
+    let nextVersion: string;
+    let migrationResult: FileSystemResult<void>;
+
+    if (semver.lt(currentVersion, "0.0.2")) {
+      migrationResult = await this.migrateFromV1ToV2();
+      nextVersion = "0.0.2";
+    } else if (semver.lt(currentVersion, "0.0.3")) {
+      migrationResult = await this.migrateFromV2ToV3();
+      nextVersion = "0.0.3";
+    } else {
+      throw new Error(
+        `No migration path available from version ${currentVersion} to ${targetVersion}`
+      );
+    }
+
+    if (migrationResult.type === "error") {
+      return migrationResult;
+    }
+
+    return this.migrateToVersion(nextVersion, targetVersion);
   }
 
   private async migrateFromV1ToV2(): Promise<FileSystemResult<void>> {
@@ -199,7 +223,7 @@ export class FsManager {
       }
 
       const versionUpdateResult = await this.updateWorkspaceConfigVersion(
-        WORKSPACE_CONFIG_FILE_VERSION
+        "0.0.2"
       );
       if (versionUpdateResult.type === "error") {
         return versionUpdateResult;
@@ -212,6 +236,91 @@ export class FsManager {
         error: {
           code: ErrorCode.MigrationFailed,
           message: `Failed to migrate from V1 to V2: ${error.message}`,
+          path: this.rootPath,
+          fileType: FileTypeEnum.UNKNOWN,
+        },
+      };
+    }
+  }
+
+  private async migrateFromV2ToV3(): Promise<FileSystemResult<void>> {
+    try {
+      const allRecordsResult = await this.getAllRecords();
+      if (allRecordsResult.type === "error") {
+        throw new Error(
+          `Failed to get records: ${allRecordsResult.error.message}`
+        );
+      }
+
+      const { records } = allRecordsResult.content;
+
+      const collectionRecords = records.filter(
+        (record) => record.type === "collection"
+      ) as Collection[];
+
+      for (const collection of collectionRecords) {
+        try {
+          const authFilePath = appendPath(collection.id, COLLECTION_AUTH_FILE);
+
+          const authFileExists = await stat(authFilePath)
+            .then((result) => {
+              if (result.type === "error") {
+                return false;
+              }
+              return true;
+            })
+            .catch(() => false);
+
+          if (authFileExists) {
+            // eslint-disable-next-line
+            continue;
+          }
+
+          const authData: Static<typeof Auth> = {
+            authConfigStore: {},
+            currentAuthType: AuthType.INHERIT,
+          };
+
+          const authFileResource = this.createResource({
+            id: authFilePath,
+            type: "file",
+          });
+
+          const writeResult = await writeContent(
+            authFileResource,
+            authData,
+            new AuthRecordFileType()
+          );
+
+          if (writeResult.type === "error") {
+            console.error(
+              `Failed to create auth.json for collection ${collection.id}:`,
+              writeResult.error.message
+            );
+          }
+        } catch (error) {
+          console.error(
+            `Failed to process collection ${collection.id}:`,
+            error
+          );
+          // Continue with other collections
+        }
+      }
+
+      const versionUpdateResult = await this.updateWorkspaceConfigVersion(
+        "0.0.3"
+      );
+      if (versionUpdateResult.type === "error") {
+        return versionUpdateResult;
+      }
+
+      return { type: "success" };
+    } catch (error: any) {
+      return {
+        type: "error",
+        error: {
+          code: ErrorCode.MigrationFailed,
+          message: `Failed to migrate from V2 to V3: ${error.message}`,
           path: this.rootPath,
           fileType: FileTypeEnum.UNKNOWN,
         },
@@ -674,6 +783,18 @@ export class FsManager {
     if (createResult.type === "error") {
       return createResult;
     }
+
+    const authWriteResult = await this.updateCollectionAuthData(
+      createResult.content.resource.path,
+      {
+        authConfigStore: {},
+        currentAuthType: AuthType.INHERIT,
+      }
+    );
+    if (authWriteResult.type === "error") {
+      return authWriteResult;
+    }
+
     return parseFolderToCollection(this.rootPath, resource);
   }
 
@@ -806,19 +927,6 @@ export class FsManager {
       type: "file",
     });
 
-    if (authData.currentAuthType === AuthType.NO_AUTH) {
-      const deleteResult = await deleteFsResource(authFileResource);
-      if (deleteResult.type === "error") {
-        return deleteResult;
-      }
-      return {
-        type: "success",
-        content: {
-          authConfigStore: {},
-          currentAuthType: AuthType.NO_AUTH,
-        },
-      };
-    }
     const writeResult = await writeContent(
       authFileResource,
       authData,
