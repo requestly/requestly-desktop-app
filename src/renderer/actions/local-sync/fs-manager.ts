@@ -294,8 +294,8 @@ export class FsManager {
             currentAuthType: AuthType.INHERIT,
           };
 
-          const authFileResource = this.createResource({
-            id: authFilePath,
+          const authFileResource = this.createRawResource({
+            path: authFilePath,
             type: "file",
           });
 
