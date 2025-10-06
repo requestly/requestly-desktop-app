@@ -901,7 +901,7 @@ export class FsManager {
     }
 
     const authWriteResult = await this.updateCollectionAuthData(
-      createResult.content.resource.path,
+      getIdFromPath(createResult.content.resource.path),
       {
         authConfigStore: {},
         currentAuthType: AuthType.INHERIT,
