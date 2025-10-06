@@ -602,7 +602,7 @@ export class FsManager {
       return {
         "type": "error",
         "error": {
-          message: `Resource with name ${sanitizedName} already exists!`,
+          message: `Resource with name '${sanitizedName}' already exists!`,
           fileType: FileTypeEnum.UNKNOWN,
           path: newFilePath,
           code: ErrorCode.EntityAlreadyExists,
