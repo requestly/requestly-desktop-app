@@ -1,7 +1,7 @@
 {
   "name": "requestly",
   "productName": "Requestly",
-  "version": "25.8.29",
+  "version": "25.10.3",
   "private": true,
   "description": "Intercept & Modify HTTP Requests",
   "main": "./dist/main/main.js",
@@ -22,6 +22,9 @@
     "@httptoolkit/osx-find-executable": "^2.0.1",
     "brotli-wasm": "^1.1.0",
     "ws": "^8.16.0"
+  },
+  "optionalDependencies": {
+    "@setapp/framework-wrapper": "^4.3.3"
   },
   "devDependencies": {
     "electron": "^27.3.8",

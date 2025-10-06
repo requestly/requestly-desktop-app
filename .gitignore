@@ -23,6 +23,8 @@ node_modules
 
 release/app/dist
 release/build
+release/build-setapp
+assets/setappPublicKey.pem
 .erb/dll
 
 .idea
