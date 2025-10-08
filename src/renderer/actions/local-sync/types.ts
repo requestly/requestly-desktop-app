@@ -23,7 +23,9 @@ export enum ErrorCode {
   WrongInput = "wrong_input",
   PermissionDenied = "permission_denied",
   MigrationFailed = "migration_failed",
+  EntityAlreadyExists = 'entity_already_exists',
   UNKNOWN = "unknown",
+  
 }
 
 export type FileSystemError = {
@@ -106,6 +108,7 @@ export type Environment = {
   type: "environment";
   id: string;
   name: string;
+  isGlobal: boolean;
   variables?: Variable;
 };
 

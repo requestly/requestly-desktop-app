@@ -5,6 +5,7 @@ import {
   Collection,
   Environment,
   EnvironmentVariableValue,
+  ErrorCode,
   FileResource,
   FileSystemResult,
   FileTypeEnum,
@@ -33,6 +34,7 @@ import {
   GIT_IGNORE_FILE,
   GLOBAL_CONFIG_FILE_NAME,
   GLOBAL_CONFIG_FOLDER_PATH,
+  GLOBAL_ENV_FILE,
   WORKSPACE_CONFIG_FILE_VERSION,
 } from "./constants";
 import { Static, TSchema } from "@sinclair/typebox";
@@ -58,6 +60,7 @@ import {
 import path from "node:path";
 import { FsService } from "./fs/fs.service";
 import type { FsIgnoreManager } from "./fsIgnore-manager";
+import { fileIndex } from "./file-index";
 
 // TODO: Fix the delimiters added by electron on file paths
 function sanitizePath(rawPath: string) {
@@ -107,6 +110,10 @@ export async function deleteFsResource(
         };
       }
       await FsService.unlink(resource.path);
+      fileIndex.remove({
+        type: 'path',
+        path: resource.path
+      });
     } else {
       const exists = await getIfFolderExists(resource);
       if (!exists) {
@@ -118,6 +125,10 @@ export async function deleteFsResource(
         };
       }
       await FsService.rmdir(resource.path, { recursive: true });
+      fileIndex.remove({
+        type: 'path',
+        path: resource.path
+      });
     }
     return {
       type: "success",
@@ -133,11 +144,12 @@ export async function deleteFsResource(
 export async function createFolder(
   resource: FolderResource,
   options?: {
-    errorIfDoesNotExist?: boolean;
+    errorIfExist?: boolean;
     createWithElevatedAccess?: boolean;
+    useId?: string;
   }
 ): Promise<FileSystemResult<{ resource: FolderResource }>> {
-  const { errorIfDoesNotExist = false, createWithElevatedAccess = false } =
+  const { errorIfExist = false, createWithElevatedAccess = false } =
     options || {};
   try {
     const statsResult = await getFsResourceStats(resource);
@@ -152,7 +164,15 @@ export async function createFolder(
       } else {
         await FsService.mkdir(resource.path, { recursive: true });
       }
-    } else if (errorIfDoesNotExist) {
+
+      if(options?.useId) {
+        fileIndex.addIdPath(options.useId, resource.path);
+      } else {
+        fileIndex.getId(resource.path);
+      }
+
+      
+    } else if (errorIfExist) {
       return createFileSystemError(
         { message: "Folder already exists!" },
         resource.path,
@@ -175,7 +195,26 @@ export async function rename<T extends FsResource>(
   newResource: T
 ): Promise<FileSystemResult<T>> {
   try {
+    const alreadyExists = await (async () => {
+      if (newResource.type === 'folder') {
+        return getIfFolderExists(newResource);
+      }
+      return getIfFileExists(newResource);
+    })();
+    const isSamePath = getNormalizedPath(oldResource.path).toLowerCase() === getNormalizedPath(newResource.path).toLowerCase();
+    if (!isSamePath && alreadyExists) {
+      return {
+        type: 'error',
+        error: {
+          message: 'Entity already exists!',
+          fileType: FileTypeEnum.UNKNOWN,
+          path: newResource.path,
+          code: ErrorCode.EntityAlreadyExists,
+        }
+      };
+    }
     await FsService.rename(oldResource.path, newResource.path);
+    fileIndex.movePath(oldResource.path, newResource.path);
     return {
       type: "success",
       content: newResource,
@@ -215,10 +254,28 @@ export async function writeContent(
   fileType: FileType<any>,
   options?: {
     writeWithElevatedAccess?: boolean;
+    performExistenceCheck?: boolean;
+    useId?: string;
   }
 ): Promise<FileSystemResult<{ resource: FileResource }>> {
   try {
-    const { writeWithElevatedAccess = false } = options || {};
+    const { writeWithElevatedAccess = false, performExistenceCheck = false } = options || {};
+
+    if (performExistenceCheck) {
+      const alreadyExists = await getIfFileExists(resource);
+      if (alreadyExists) {
+        return {
+          type: 'error',
+          error: {
+            message: 'Entity already exists!',
+            fileType: fileType.type,
+            path: resource.path,
+            code: ErrorCode.EntityAlreadyExists,
+          }
+        };
+      }
+    }
+
     const parsedContentResult = parseRaw(content, fileType.validator);
     if (parsedContentResult.type === "error") {
       return createFileSystemError(
@@ -238,6 +295,11 @@ export async function writeContent(
     } else {
       await FsService.writeFile(resource.path, serializedContent);
     }
+    if(options?.useId) {
+      fileIndex.addIdPath(options.useId, resource.path);
+    } else {
+      fileIndex.getId(resource.path);
+    }
     return {
       type: "success",
       content: {
@@ -254,6 +316,7 @@ export async function writeContentRaw(
   content: Record<any, any> | string,
   options?: {
     writeWithElevatedAccess?: boolean;
+    useId?: string;
   }
 ): Promise<FileSystemResult<{ resource: FileResource }>> {
   try {
@@ -269,6 +332,12 @@ export async function writeContentRaw(
     } else {
       await FsService.writeFile(resource.path, serializedContent);
     }
+    if(options?.useId) {
+      fileIndex.addIdPath(options.useId, resource.path);
+    } else {
+      fileIndex.getId(resource.path);
+    }
+
     return {
       type: "success",
       content: {
@@ -585,7 +654,7 @@ export function getParentFolderPath(fsResource: FsResource) {
 function getCollectionId(rootPath: string, fsResource: FsResource) {
   const parentPath = getParentFolderPath(fsResource);
   if (parentPath === rootPath) {
-    return getIdFromPath("");
+    return "";
   }
 
   return getIdFromPath(parentPath);
@@ -825,11 +894,13 @@ export async function parseFileToEnv(
 
   const { content } = parsedFileResult;
 
+  const isGlobal = file.path.endsWith(`/${GLOBAL_ENV_FILE}`);
   const environment: Environment = {
     type: "environment",
     id: getIdFromPath(file.path),
     name: content.name,
     variables: content.variables,
+    isGlobal,
   };
 
   const result: FileSystemResult<Environment> = {

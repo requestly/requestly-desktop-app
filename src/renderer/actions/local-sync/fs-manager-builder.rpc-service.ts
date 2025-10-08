@@ -24,7 +24,7 @@ export class FsManagerBuilderRPCService extends RPCServiceOverIPC {
       console.log("not building again");
       return;
     }
-    const manager = new FsManagerRPCService(rootPath);
+    const manager = new FsManagerRPCService(rootPath, this.exposedWorkspacePaths);
     await manager.init();
     this.exposedWorkspacePaths.set(rootPath, manager);
   }
