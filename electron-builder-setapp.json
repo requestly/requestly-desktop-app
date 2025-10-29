@@ -68,7 +68,11 @@
             "com.setapp.DesktopClient.SetappAgent"
           ]
         }
-      }
+      },
+      "NSCameraUsageDescription": null,
+      "NSMicrophoneUsageDescription": null,
+      "NSBluetoothAlwaysUsageDescription": null,
+      "NSBluetoothPeripheralUsageDescription": null
     },
     "files": [
       "!**/.git/*",
