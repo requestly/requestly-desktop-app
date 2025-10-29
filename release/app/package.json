@@ -24,7 +24,7 @@
     "ws": "^8.16.0"
   },
   "optionalDependencies": {
-    "@setapp/framework-wrapper": "^4.3.3"
+    "@setapp/framework-wrapper": "^4.3.4"
   },
   "devDependencies": {
     "electron": "^27.3.8",
