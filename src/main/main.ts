@@ -447,7 +447,7 @@ app.on("ready", () => {
     }
   });
   loadingScreenWindow.loadURL(
-    `file://${path.resolve(__dirname, "../loadingScreen/", "index.html")}`
+    `file://${path.resolve(process.resourcesPath, "loadingScreen", "index.html")}`
   );
   loadingScreenWindow.show();
 });
