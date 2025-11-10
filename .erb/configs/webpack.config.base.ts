@@ -20,6 +20,10 @@ export default {
           loader: "ts-loader",
         },
       },
+      {
+        test: /\.node$/,
+        loader: "node-loader",
+      },
     ],
   },
 
