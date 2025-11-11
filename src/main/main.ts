@@ -12,7 +12,7 @@
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 import path from "path";
-import { app, BrowserWindow, shell, dialog, Tray, Menu, clipboard } from "electron";
+import { app, BrowserWindow, shell, dialog, Tray, Menu, clipboard, ipcMain } from "electron";
 import log from "electron-log";
 import MenuBuilder from "./menu";
 import {
@@ -24,9 +24,7 @@ import {
 /** Storage - State */
 import "./actions/initGlobalState";
 import AutoUpdate from "../lib/autoupdate";
-import { cleanupAndQuit } from "./actions/cleanup";
-import { trackEventViaWebApp } from "./actions/events";
-import EVENTS from "./actions/events/constants";
+import { getReadyToQuitApp } from "./actions/cleanup";
 import fs from "fs";
 import logger from "../utils/logger";
 import { setupIPCForwardingToWebApp } from "./actions/setupIPCForwarding";
@@ -85,7 +83,7 @@ export default function createTrayMenu(ip?: string, port?: number) {
     {
       label: "Show Requestly",
       click: () => {
-        if(webAppWindow) {
+        if(webAppWindow && !webAppWindow.isDestroyed()) {
           if(webAppWindow.isMinimized()) {
             webAppWindow.restore()
           }
@@ -151,7 +149,7 @@ export default function createTrayMenu(ip?: string, port?: number) {
     {
       label: "Quit",
       click: () => {
-        app.quit();
+        webAppWindow?.close();
       },
     },
   ]
@@ -170,7 +168,7 @@ export default function createTrayMenu(ip?: string, port?: number) {
   tray.setContextMenu(trayMenu);
 }
 
-
+let closingAccepted = false
 const createWindow = async () => {
   if (isDevelopment) {
     await installExtensions();
@@ -258,63 +256,19 @@ const createWindow = async () => {
     }
   });
 
-  // webAppWindow.on('closed', () => {
-  //   webAppWindow = null;
-  // });
-
-  webAppWindow.on("close", (e) => {
-    // Check if user has already asked to Quit app from here or somewhere else
-    // @ts-expect-error
-    if (global.isQuitActionConfirmed) {
-      saveCookies();
-      app.quit();
-      return;
+  webAppWindow.on('close', async (event) => {
+    if(!closingAccepted) {
+      event.preventDefault();
+      webAppWindow?.webContents.send("initiate-app-close")
     }
+  })
 
-    if (webAppWindow) {
-      let message =
-        "Do you really want to quit? This would also stop the proxy server.";
-
-      // @ts-expect-error
-      if (global.quitAndInstall) {
-        message = "Confirm to restart & install update";
-        // @ts-expect-error
-        global.quitAndInstall = false;
-      }
-
-      const choice = dialog.showMessageBoxSync(webAppWindow, {
-        type: "question",
-        buttons: ["Yes, quit Requestly", "Minimize instead", "Cancel"],
-        title: "Quit Requestly",
-        message: message,
-      });
-
-      switch (choice) {
-        // If Quit is clicked
-        case 0:
-          // Set flag to check next iteration
-          trackEventViaWebApp(webAppWindow, EVENTS.QUIT_APP)
-          // @ts-expect-error
-          global.isQuitActionConfirmed = true;
-          // Calling app.quit() would again invoke this function
-          e.preventDefault();
-          cleanupAndQuit();
-          break;
-        // If Minimize is clicked
-        case 1:
-          webAppWindow.minimize();
-          e.preventDefault();
-          break;
-        // If cancel is clicked
-        case 2:
-          e.preventDefault();
-          break;
-        default:
-          break;
-      }
-    }
-  });
-
+  webAppWindow.on('closed', async () => {
+    saveCookies();
+    await getReadyToQuitApp();
+    webAppWindow = null;
+    return;
+  })
   const enableBGWindowDebug = () => {
     // Show bg window and toggle the devtools
     try {
@@ -368,7 +322,7 @@ function handleCustomProtocolURL(urlString: string) {
 
 // custom protocol (requestly) handler
 app.on("open-url", (_event, rqUrl) => {
-  if(webAppWindow) {
+  if(webAppWindow && !webAppWindow.isDestroyed()) {
     handleCustomProtocolURL(rqUrl)
   } else {
     onWebAppReadyHandlers.push(() => handleCustomProtocolURL(rqUrl))
@@ -401,7 +355,7 @@ async function handleFileOpen(filePath: string, webAppWindow?: BrowserWindow) {
 
 app.on('open-file', async (event, filePath) => {
   event.preventDefault();
-  if(webAppWindow) {
+  if(webAppWindow && !webAppWindow.isDestroyed()) {
     handleFileOpen(filePath, webAppWindow);
   } else {
     logger.log("webAppWindow not ready")
@@ -492,3 +446,24 @@ app
   .catch((err) => {
     console.log(err);
   });
+
+ipcMain.handle("quit-app", (_event) => {
+  closingAccepted = true
+  webAppWindow?.close();
+})
+
+app.on("before-quit", () => {
+  // cleanup when quitting has been finalised
+  ipcMain.removeAllListeners();
+  webAppWindow?.removeAllListeners();
+  // @ts-expect-error BrowserWindow types are not being enforced for this variable
+  backgroundWindow?.removeAllListeners();
+
+  ipcMain.removeAllListeners();
+  process.on('uncaughtException', (err) => {
+    logger.error('Unhandled Exception while quitting:', err);
+  });
+  process.on('unhandledRejection', (err) => {
+    logger.error('Unhandled Rejection while quitting:', err);
+  });
+})
