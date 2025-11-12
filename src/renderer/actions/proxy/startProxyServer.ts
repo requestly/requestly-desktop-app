@@ -3,19 +3,20 @@ import { ip } from "address";
 
 import { RQProxyProvider } from "@requestly/requestly-proxy";
 import RulesDataSource from "../../lib/proxy-interface/rulesFetcher";
-import LoggerService from "../../lib/proxy-interface/loggerService";
 
 import getNextAvailablePort from "../getNextAvailablePort";
 // CONFIG
 import { staticConfig } from "../../config";
 // SENTRY
 import * as Sentry from "@sentry/browser";
-import startHelperServer from "../startHelperServer";
+import startHelperServer, { stopHelperServer } from "../startHelperServer";
 import logger from "utils/logger";
 import { getDefaultProxyPort } from "../storage/cacheUtils";
 import { handleCARegeneration } from "../apps/os/ca/utils";
-import { startHelperSocketServer } from "../helperSocketServer";
+import { startHelperSocketServer, stopHelperSocketServer } from "../helperSocketServer";
 import portfinder from "portfinder";
+import LoggerService from "renderer/lib/proxy-interface/loggerService";
+import { addShutdownHandler } from "../shutdown";
 
 declare global {
   interface Window {
@@ -35,6 +36,28 @@ const { CERTS_PATH, ROOT_CERT_PATH } = staticConfig;
 const DEFAULT_HELPER_SERVER_PORT = 7040;
 const DEFAULT_SOCKET_SERVER_PORT = 59763;
 
+function startProxyFromModule(PROXY_PORT: number) {
+  const proxyConfig = {
+    port: PROXY_PORT,
+    // @ts-ignore
+    certPath: CERTS_PATH,
+    rootCertPath: ROOT_CERT_PATH,
+    onCARegenerated: handleCARegeneration,
+  };
+  RQProxyProvider.createInstance(
+    proxyConfig,
+    new RulesDataSource(),
+    new LoggerService(),
+  );
+  window.proxy = RQProxyProvider.getInstance().proxy;
+}
+
+export function stopProxyServer() {
+  if(window.proxy) {
+    window.proxy.close();
+  }
+}
+
 // this automatically stops the old server before starting the new one
 export default async function startProxyServer(
   proxyPort?: number,
@@ -42,7 +65,7 @@ export default async function startProxyServer(
 ): Promise<IStartProxyResult> {
   // Check if proxy is already listening. If so, close it
   try {
-    window.proxy.close();
+    stopProxyServer();
     logger.log("A proxy server was closed");
   } catch (error) {
     Sentry.captureException(error);
@@ -90,23 +113,13 @@ export default async function startProxyServer(
   });
   startHelperSocketServer(HELPER_SOCKET_SERVER_PORT);
 
+  // fix-me: this does not remove existing handlers when restarting. 
+  // For now that doesn't have side effects
+  addShutdownHandler(() => {
+    stopProxyServer();
+    stopHelperServer();
+    stopHelperSocketServer();
+  }) 
+
   return result;
-}
-
-function startProxyFromModule(PROXY_PORT: number) {
-  const proxyConfig = {
-    port: PROXY_PORT,
-    // @ts-ignore
-    certPath: CERTS_PATH,
-    rootCertPath: ROOT_CERT_PATH,
-    onCARegenerated: handleCARegeneration,
-  };
-  RQProxyProvider.createInstance(
-    proxyConfig,
-    new RulesDataSource(),
-    new LoggerService()
-  );
-
-  // Helper server needs http port, hence
-  window.proxy = RQProxyProvider.getInstance().proxy;
 }

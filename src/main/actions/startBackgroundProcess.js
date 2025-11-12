@@ -79,14 +79,6 @@ const startBackgroundProcess = async () => {
       resolve(true);
     });
 
-    backgroundWindow.on("close", (event) => {
-      if (global.isQuitActionConfirmed) {
-        console.log("BG quitting");
-        return;
-      }
-
-      event.preventDefault();
-    });
   });
 };
 
