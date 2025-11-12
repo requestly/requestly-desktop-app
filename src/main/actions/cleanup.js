@@ -24,6 +24,8 @@ export const getReadyToQuitApp = async  () => {
         global.backgroundWindow?.close();
         resolve()
       });
+    } else {
+      resolve();
     }
   })
 };
