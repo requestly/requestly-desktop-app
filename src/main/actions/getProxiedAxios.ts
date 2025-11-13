@@ -6,6 +6,9 @@ import {
   addCookiesToRequest,
   storeCookiesFromResponse,
 } from "./cookiesHelpers";
+const dns = require("dns")
+import http from "http";
+import https from "https";
 
 class PatchedHttpsProxyAgent extends HttpsProxyAgent {
   ca: unknown;
@@ -47,8 +50,20 @@ function createAxiosInstance(
       }),
     });
   } else {
+    /* https://github.com/requestly/requestly-desktop-app/pull/227 */
+    const localhostIPv4Lookup = (hostname: any, options: any, callback: any) => {
+      if (hostname === 'localhost') {
+        dns.lookup(hostname, { ...options, family: 4 }, callback);
+      } else {
+        dns.lookup(hostname, options, callback);
+      }
+    };
+    const httpAgent = new http.Agent({ lookup: localhostIPv4Lookup });
+    const httpsAgent = new https.Agent({ lookup: localhostIPv4Lookup });
     instance = axios.create({
       proxy: false,
+      httpAgent,
+      httpsAgent,
     });
   }
 
