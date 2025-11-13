@@ -27,25 +27,38 @@ export class RPCServiceOverIPC {
     exposedMethodName: string,
     method: (..._args: any[]) => Promise<any>
   ) {
-    // const channelName = this.generateChannelNameForMethod(method);
     const channelName = `${this.RPC_CHANNEL_PREFIX}${exposedMethodName}`;
-    console.log("DBG-1: exposing channel", channelName, Date.now());
+    // console.log("DBG-1: exposing channel", channelName, Date.now());
     ipcRenderer.on(channelName, async (_event, args) => {
-      console.log(
-        "DBG-1: received event on channel",
-        channelName,
-        _event,
-        args
-      );
+      // console.log(
+      //   "DBG-1: received event on channel",
+      //   channelName,
+      //   _event,
+      //   args,
+      //   Date.now()
+      // );
       try {
         const result = await method(...args);
-        console.log("DBG-2: result in method", result, exposedMethodName);
+
+        // console.log(
+        //   "DBG-2: result in method",
+        //   result,
+        //   channelName,
+        //   _event,
+        //   args,
+        //   exposedMethodName,
+        //   Date.now()
+        // );
         ipcRenderer.send(`reply-${channelName}`, {
           success: true,
           data: result,
         });
       } catch (error: any) {
-        console.log("DBG-2: error in method", error);
+        // console.log(
+        //   `DBG-2: reply-${channelName} error in method`,
+        //   error,
+        //   Date.now()
+        // );
         ipcRenderer.send(`reply-${channelName}`, {
           success: false,
           data: error.message,
