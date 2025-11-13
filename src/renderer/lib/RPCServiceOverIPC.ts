@@ -35,17 +35,23 @@ export class RPCServiceOverIPC {
         "DBG-1: received event on channel",
         channelName,
         _event,
-        args
+        args,
+        Date.now()
       );
       try {
         const result = await method(...args);
-        console.log("DBG-2: result in method", result, exposedMethodName);
+        console.log(
+          "DBG-2: result in method",
+          result,
+          exposedMethodName,
+          Date.now()
+        );
         ipcRenderer.send(`reply-${channelName}`, {
           success: true,
           data: result,
         });
       } catch (error: any) {
-        console.log("DBG-2: error in method", error);
+        console.log("DBG-2: error in method", error, Date.now());
         ipcRenderer.send(`reply-${channelName}`, {
           success: false,
           data: error.message,

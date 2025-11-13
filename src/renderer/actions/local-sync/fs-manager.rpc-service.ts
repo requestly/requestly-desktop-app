@@ -4,7 +4,10 @@ import { FsManager } from "./fs-manager";
 export class FsManagerRPCService extends RPCServiceOverIPC {
   private fsManager: FsManager;
 
-  constructor(readonly rootPath: string, readonly exposedWorkspacePaths: Map<string,unknown>) {
+  constructor(
+    readonly rootPath: string,
+    readonly exposedWorkspacePaths: Map<string, unknown>
+  ) {
     super(`local_sync: ${rootPath}`);
     this.fsManager = new FsManager(rootPath, this.exposedWorkspacePaths);
   }
@@ -24,7 +27,7 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
       );
     }
 
-    this.exposeMethodOverIPC(
+    await this.exposeMethodOverIPC(
       "getAllRecords",
       this.fsManager.getAllRecords.bind(this.fsManager)
     );
@@ -140,5 +143,9 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
       "createCollectionFromCompleteRecord",
       this.fsManager.createCollectionFromCompleteRecord.bind(this.fsManager)
     );
+
+    await new Promise((resolve) => {
+      setTimeout(resolve, 500);
+    });
   }
 }
