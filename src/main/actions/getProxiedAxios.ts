@@ -32,25 +32,17 @@ let proxyConfig: ProxyConfig;
 
 function createAxiosInstance(
   config: ProxyConfig,
-  enableRQProxy: boolean = false,
   addStoredCookies: boolean = false
 ): AxiosInstance {
-  let instance: AxiosInstance;
-  if (enableRQProxy) {
-    instance = axios.create({
-      proxy: false,
-      httpAgent: new HttpsProxyAgent(`http://${config.ip}:${config.port}`),
-      httpsAgent: new PatchedHttpsProxyAgent({
-        host: config.ip,
-        port: config.port,
-        ca: readFileSync(config.rootCertPath),
-      }),
-    });
-  } else {
-    instance = axios.create({
-      proxy: false,
-    });
-  }
+  const instance = axios.create({
+    proxy: false,
+    httpAgent: new HttpsProxyAgent(`http://${config.ip}:${config.port}`),
+    httpsAgent: new PatchedHttpsProxyAgent({
+      host: config.ip,
+      port: config.port,
+      ca: readFileSync(config.rootCertPath),
+    }),
+  });
 
   instance.interceptors.response.use(storeCookiesFromResponse);
   if (addStoredCookies) {
@@ -68,8 +60,8 @@ export const createOrUpdateAxiosInstance = (
   };
 
   try {
-    proxiedAxios = createAxiosInstance(proxyConfig, false);
-    proxiedAxiosWithSessionCookies = createAxiosInstance(proxyConfig, false, true);
+    proxiedAxios = createAxiosInstance(proxyConfig);
+    proxiedAxiosWithSessionCookies = createAxiosInstance(proxyConfig, true);
   } catch (error) {
     /* Do nothing */
     console.error("Error creating or updating Axios instance:", error);
