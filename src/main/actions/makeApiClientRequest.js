@@ -2,6 +2,8 @@ import getProxiedAxios from "./getProxiedAxios";
 import AdvancedFormData from "form-data";
 
 const fs = require("fs");
+const dns = require("dns")
+dns.setDefaultResultOrder('ipv4first');
 
 const makeApiClientRequest = async ({ apiRequest }) => {
   try {
