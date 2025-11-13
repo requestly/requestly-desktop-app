@@ -2,7 +2,6 @@ import { ipcRenderer } from "electron";
 import fs from "fs";
 import path from "path";
 import { getLocalFileLogConfig } from "renderer/actions/storage/cacheUtils";
-import logger from "utils/logger";
 
 
 function saveLogToLocalFile(log) {
@@ -88,13 +87,9 @@ export function clearStoredLogs() {
 
 class LoggerService {
   addLog = (log, requestHeaders) => {
-    try {
-      // send log to webapp
-      ipcRenderer.send("log-network-request-v2", log);
-    } catch (error) {
-      /* error only seen to happen during the app shutting down */
-      logger.error("Error while sending network log - ", error)
-    }
+
+    // send log to webapp
+    ipcRenderer.send("log-network-request-v2", log);
 
     try {
       // save to file if config is preset

@@ -1,4 +1,5 @@
 import {
+  app,
   Menu,
   shell,
   BrowserWindow,
@@ -12,7 +13,6 @@ interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
 
 export default class MenuBuilder {
   mainWindow: BrowserWindow;
-
   enableBGWindowDebug: Function;
 
   constructor(mainWindow: BrowserWindow, enableBGWindowDebug: Function) {
@@ -79,7 +79,10 @@ export default class MenuBuilder {
           label: "Quit",
           accelerator: "Command+Q",
           click: () => {
-            return this.mainWindow?.close();
+            if (this.mainWindow) {
+              return this.mainWindow.close();
+            }
+            app.quit();
           },
         },
       ],
@@ -286,7 +289,10 @@ export default class MenuBuilder {
             label: "&Close",
             accelerator: "Ctrl+W",
             click: () => {
-              return this.mainWindow?.close();
+              if (this.mainWindow) {
+                return this.mainWindow.close();
+              }
+              app.quit();
             },
           },
         ],
