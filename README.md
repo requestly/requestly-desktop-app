@@ -34,6 +34,7 @@ This repo contains the core logic and source code for the <a href="https://reque
   - [Setup](#setup)
   - [Run](#run)
   - [Packaging](#packaging)
+- [Install using winget](#install-using-winget)
 - [Contributing](#contributing)
 - [Links](#links)
 
@@ -92,9 +93,17 @@ This app uses electron-builder to package and sign the app. Run this command to 
 npm run package
 ```
 
+## Install using winget
+To install the desktop app using winget on Windows, type below in the Windows Terminal
+```
+winget install BrowserStackInc.Requestly
+```
+
 ## Contributing
 
 Read our [contributing guide](https://github.com/requestly/requestly/blob/master/CONTRIBUTING.md) to learn about how to propose bugfixes and improvements, and how the development process works. 
+
+
 
 ## Links
 
@@ -102,4 +111,6 @@ Read our [contributing guide](https://github.com/requestly/requestly/blob/master
 - 📖 Documentation: [https://docs.requestly.io](https://docs.requestly.io)
 - 🖥️ Download Desktop App: [https://requestly.io/desktop/](https://requestly.io/desktop/)
 
-For **payment/billing related issues**, feel free to contact us at [contact@requestly.io](mailto:contact@requestly.io)
+
+
+For **payment/billing related issues**, feel free to contact us at [contact@requestly.io](mailto:contact@requestly.io)u
