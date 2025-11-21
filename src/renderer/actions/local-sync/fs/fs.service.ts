@@ -103,6 +103,13 @@ export class FsService {
     return fsp.unlink(...params);
   }
 
+  static rm(
+    path: PathLike,
+    options?: fs.RmOptions
+  ) {
+    return fsp.rm(path, options);
+  }
+
   static mkdir(...params: Parameters<typeof fsp.mkdir>) {
     return fsp.mkdir(...params);
   }

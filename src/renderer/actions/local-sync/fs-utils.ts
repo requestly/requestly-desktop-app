@@ -760,6 +760,72 @@ export async function getAllWorkspaces(): Promise<
   }
 }
 
+export async function removeWorkspace(
+  workspaceId: string,
+  options: { deleteDirectory?: boolean } = {}
+): Promise<FileSystemResult<void>> {
+  try {
+    const globalConfigFileResource = createFsResource({
+      rootPath: GLOBAL_CONFIG_FOLDER_PATH,
+      path: appendPath(GLOBAL_CONFIG_FOLDER_PATH, GLOBAL_CONFIG_FILE_NAME),
+      type: "file",
+    });
+
+    const readResult = await parseFileRaw({
+      resource: globalConfigFileResource,
+    });
+
+    if (readResult.type === "error") {
+      // If config doesn't exist, there's nothing to remove.
+      if (readResult.error.code === ErrorCode.NotFound) {
+        return { type: "success" };
+      }
+      return readResult;
+    }
+
+    const config: Static<typeof GlobalConfig> = JSON.parse(readResult.content);
+
+    const workspaceToRemove = config.workspaces.find(
+      (ws) => ws.id === workspaceId
+    );
+
+    if (!workspaceToRemove) {
+      // Workspace not found, so it's already "removed".
+      return { type: "success" };
+    }
+
+    if (options.deleteDirectory) {
+      try {
+        await FsService.rm(workspaceToRemove.path, {
+          recursive: true,
+          force: true,
+        });
+      } catch (e: any) {
+        return createFileSystemError(
+          e,
+          workspaceToRemove.path,
+          FileTypeEnum.UNKNOWN
+        );
+      }
+    }
+
+    const updatedConfig: Static<typeof GlobalConfig> = {
+      ...config,
+      workspaces: config.workspaces.filter((ws) => ws.id !== workspaceId),
+    };
+
+    await atomicWriteGlobalConfig(updatedConfig);
+
+    return { type: "success" };
+  } catch (error: any) {
+    return createFileSystemError(
+      error,
+      GLOBAL_CONFIG_FOLDER_PATH,
+      FileTypeEnum.GLOBAL_CONFIG
+    );
+  }
+}
+
 export function getParentFolderPath(fsResource: FsResource) {
   const { path: resourcePath } = fsResource;
   const parent = getNormalizedPath(path.dirname(resourcePath));

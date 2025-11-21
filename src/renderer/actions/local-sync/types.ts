@@ -23,9 +23,9 @@ export enum ErrorCode {
   WrongInput = "wrong_input",
   PermissionDenied = "permission_denied",
   MigrationFailed = "migration_failed",
-  EntityAlreadyExists = 'entity_already_exists',
+  EntityAlreadyExists = "entity_already_exists",
+  NotFound = "not_found",
   UNKNOWN = "unknown",
-  
 }
 
 export type FileSystemError = {
