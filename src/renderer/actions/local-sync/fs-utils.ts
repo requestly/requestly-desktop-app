@@ -594,34 +594,68 @@ export async function migrateGlobalConfig(oldConfig: any) {
   return oldConfig;
 }
 
+type WorkspaceValidationResult = {
+  keep: boolean;
+  ws: Static<typeof GlobalConfig>["workspaces"][number];
+};
+
+async function validateWorkspace(
+  ws: Static<typeof GlobalConfig>["workspaces"][number]
+): Promise<WorkspaceValidationResult> {
+  const logPruning = (reason: string) => {
+    console.info(`[workspaces] Pruning workspace '${ws.name}' at '${ws.path}' (${reason})`);
+    return { keep: false, ws };
+  };
+
+  const workspacePath = (ws.path || "").trim();
+  if (!workspacePath) {
+    console.info(`[workspaces] Pruning workspace '${ws.name}' (empty path entry)`);
+    return { keep: false, ws };
+  }
+
+  if (!FsService.existsSync(workspacePath)) {
+    return logPruning("path does not exist");
+  }
+
+  try {
+    const dirStats = await FsService.lstat(workspacePath);
+    if (!dirStats.isDirectory()) {
+      return logPruning("not a directory");
+    }
+  } catch (e: any) {
+    return logPruning(`failed to stat directory: ${e?.code || e?.message}`);
+  }
+
+  const configPath = appendPath(workspacePath, CONFIG_FILE);
+  if (!FsService.existsSync(configPath)) {
+    return logPruning(`missing '${CONFIG_FILE}'`);
+  }
+
+  try {
+    const configStats = await FsService.lstat(configPath);
+    if (!configStats.isFile()) {
+      return logPruning(`'${CONFIG_FILE}' not a file`);
+    }
+  } catch (e: any) {
+    return logPruning(`failed to stat '${CONFIG_FILE}': ${e?.code || e?.message}`);
+  }
+
+  return { keep: true, ws };
+}
+
 async function filterExistingWorkspaceFolders(
   workspaces: Static<typeof GlobalConfig>["workspaces"]
-): Promise<{ valid: Static<typeof GlobalConfig>["workspaces"]; pruned: number }> {
+): Promise<{
+  valid: Static<typeof GlobalConfig>["workspaces"];
+  pruned: number;
+}> {
   if (!workspaces.length) {
     return { valid: [], pruned: 0 };
   }
 
-  const results = await Promise.all(
-    workspaces.map(async (ws) => {
-      try {
-        const stats = await FsService.lstat(ws.path);
-        if (stats.isDirectory()) {
-          return { keep: true, ws };
-        }
-        console.info(
-          `[workspaces] Pruning workspace '${ws.name}' at '${ws.path}' (not a directory)`
-        );
-        return { keep: false, ws };
-      } catch (e: any) {
-        console.info(
-          `[workspaces] Pruning workspace '${ws.name}' at '${ws.path}' (missing: ${e?.code || e?.message})`
-        );
-        return { keep: false, ws };
-      }
-    })
-  );
-
+  const results = await Promise.all(workspaces.map(validateWorkspace));
   const valid = results.filter((r) => r.keep).map((r) => r.ws);
+
   return { valid, pruned: workspaces.length - valid.length };
 }
 

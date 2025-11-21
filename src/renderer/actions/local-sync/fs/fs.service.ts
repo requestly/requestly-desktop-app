@@ -123,4 +123,8 @@ export class FsService {
   static cp(...params: Parameters<typeof fsp.cp>) {
     return fsp.cp(...params);
   }
+
+  static existsSync(path: PathLike) {
+    return fs.existsSync(path);
+  }
 }
