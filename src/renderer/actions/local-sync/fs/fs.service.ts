@@ -28,9 +28,9 @@ export class FsService {
     path: PathLike | FileHandle,
     options?:
       | ({
-          encoding?: null | undefined;
-          flag?: OpenMode | undefined;
-        } & Abortable)
+        encoding?: null | undefined;
+        flag?: OpenMode | undefined;
+      } & Abortable)
       | null
   ): Promise<string | Buffer> {
     return fsp.readFile(path, options);
@@ -47,8 +47,8 @@ export class FsService {
     path: PathLike,
     options?:
       | (ObjectEncodingOptions & {
-          withFileTypes?: false | undefined;
-        })
+        withFileTypes?: false | undefined;
+      })
       | BufferEncoding
       | null
   ) {
@@ -83,9 +83,9 @@ export class FsService {
       | Stream,
     options?:
       | (ObjectEncodingOptions & {
-          mode?: Mode | undefined;
-          flag?: OpenMode | undefined;
-        } & Abortable)
+        mode?: Mode | undefined;
+        flag?: OpenMode | undefined;
+      } & Abortable)
       | BufferEncoding
       | null
   ) {
