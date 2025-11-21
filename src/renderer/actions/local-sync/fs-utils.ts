@@ -594,6 +594,63 @@ export async function migrateGlobalConfig(oldConfig: any) {
   return oldConfig;
 }
 
+async function filterExistingWorkspaceFolders(
+  workspaces: Static<typeof GlobalConfig>["workspaces"]
+): Promise<{ valid: Static<typeof GlobalConfig>["workspaces"]; pruned: number }> {
+  if (!workspaces.length) {
+    return { valid: [], pruned: 0 };
+  }
+
+  const results = await Promise.all(
+    workspaces.map(async (ws) => {
+      try {
+        const stats = await FsService.lstat(ws.path);
+        if (stats.isDirectory()) {
+          return { keep: true, ws };
+        }
+        console.info(
+          `[workspaces] Pruning workspace '${ws.name}' at '${ws.path}' (not a directory)`
+        );
+        return { keep: false, ws };
+      } catch (e: any) {
+        console.info(
+          `[workspaces] Pruning workspace '${ws.name}' at '${ws.path}' (missing: ${e?.code || e?.message})`
+        );
+        return { keep: false, ws };
+      }
+    })
+  );
+
+  const valid = results.filter((r) => r.keep).map((r) => r.ws);
+  return { valid, pruned: workspaces.length - valid.length };
+}
+
+async function atomicWriteGlobalConfig(
+  config: Static<typeof GlobalConfig>
+): Promise<void> {
+  const originalPath = appendPath(
+    GLOBAL_CONFIG_FOLDER_PATH,
+    GLOBAL_CONFIG_FILE_NAME
+  );
+  const tmpPath = `${originalPath}.tmp`;
+  const serialized = serializeContentForWriting(config);
+  try {
+    try {
+      await FsService.mkdir(GLOBAL_CONFIG_FOLDER_PATH, { recursive: true });
+    } catch (_) {
+      /* ignore */
+    }
+    await FsService.writeFileWithElevatedAccess(tmpPath, serialized);
+    await FsService.rename(tmpPath, originalPath);
+  } catch (e: any) {
+    try { await FsService.unlink(tmpPath); } catch (_) { /* ignore */ }
+    console.debug(
+      `[workspaces][atomic-write] Non-critical failure writing global config: ${e?.code || ''} ${e?.message || e}`
+    );
+    throw e;
+  }
+}
+
 export async function getAllWorkspaces(): Promise<
   FileSystemResult<Static<typeof GlobalConfig>["workspaces"]>
 > {
@@ -615,26 +672,44 @@ export async function getAllWorkspaces(): Promise<
     const { content } = readResult;
     const parsedContent: Static<typeof GlobalConfig> = JSON.parse(content);
 
+    let effectiveConfig = parsedContent;
     if (parsedContent.version !== CORE_CONFIG_FILE_VERSION) {
       const migratedConfig = await migrateGlobalConfig(parsedContent);
-      const writeResult = await writeContent(
-        globalConfigFileResource,
-        migratedConfig,
-        new GlobalConfigRecordFileType()
-      );
-      if (writeResult.type === "error") {
-        return writeResult;
+      try {
+        await atomicWriteGlobalConfig(migratedConfig);
+        effectiveConfig = migratedConfig;
+      } catch (e: any) {
+        return createFileSystemError(
+          e,
+          GLOBAL_CONFIG_FOLDER_PATH,
+          FileTypeEnum.GLOBAL_CONFIG
+        );
       }
+    }
 
+    const { valid, pruned } = await filterExistingWorkspaceFolders(
+      effectiveConfig.workspaces
+    );
+
+    if (pruned > 0) {
+      const updatedConfig: Static<typeof GlobalConfig> = {
+        version: effectiveConfig.version || CORE_CONFIG_FILE_VERSION,
+        workspaces: valid,
+      };
+      try {
+        await atomicWriteGlobalConfig(updatedConfig);
+      } catch (_e: any) {
+        // Silent fallback: we already logged in atomicWriteGlobalConfig; return pruned list anyway.
+      }
       return {
         type: "success",
-        content: migratedConfig.workspaces,
+        content: valid,
       };
     }
 
     return {
       type: "success",
-      content: parsedContent.workspaces,
+      content: effectiveConfig.workspaces,
     };
   } catch (error: any) {
     return createFileSystemError(
