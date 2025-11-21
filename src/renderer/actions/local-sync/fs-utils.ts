@@ -776,8 +776,7 @@ export async function removeWorkspace(
     });
 
     if (readResult.type === "error") {
-      // If config doesn't exist, there's nothing to remove.
-      if (readResult.error.code === ErrorCode.NotFound) {
+      if (readResult.error.code === ErrorCode.UNKNOWN) {
         return { type: "success" };
       }
       return readResult;
