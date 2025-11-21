@@ -165,13 +165,13 @@ export async function createFolder(
         await FsService.mkdir(resource.path, { recursive: true });
       }
 
-      if(options?.useId) {
+      if (options?.useId) {
         fileIndex.addIdPath(options.useId, resource.path);
       } else {
         fileIndex.getId(resource.path);
       }
 
-      
+
     } else if (errorIfExist) {
       return createFileSystemError(
         { message: "Folder already exists!" },
@@ -295,7 +295,7 @@ export async function writeContent(
     } else {
       await FsService.writeFile(resource.path, serializedContent);
     }
-    if(options?.useId) {
+    if (options?.useId) {
       fileIndex.addIdPath(options.useId, resource.path);
     } else {
       fileIndex.getId(resource.path);
@@ -332,7 +332,7 @@ export async function writeContentRaw(
     } else {
       await FsService.writeFile(resource.path, serializedContent);
     }
-    if(options?.useId) {
+    if (options?.useId) {
       fileIndex.addIdPath(options.useId, resource.path);
     } else {
       fileIndex.getId(resource.path);
@@ -643,11 +643,17 @@ async function atomicWriteGlobalConfig(
     await FsService.writeFileWithElevatedAccess(tmpPath, serialized);
     await FsService.rename(tmpPath, originalPath);
   } catch (e: any) {
-    try { await FsService.unlink(tmpPath); } catch (_) { /* ignore */ }
     console.debug(
-      `[workspaces][atomic-write] Non-critical failure writing global config: ${e?.code || ''} ${e?.message || e}`
+      `[workspaces][atomic-write] Non-critical failure writing global config: ${e?.code || ""
+      } ${e?.message || e}`
     );
     throw e;
+  } finally {
+    try {
+      await FsService.unlink(tmpPath);
+    } catch (_) {
+      /* ignore */
+    }
   }
 }
 
