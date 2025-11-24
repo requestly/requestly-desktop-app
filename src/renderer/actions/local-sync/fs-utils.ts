@@ -427,6 +427,63 @@ export async function parseFileRaw(params: {
   }
 }
 
+/* NOTE: This is the ONLY function that should write to the global config file.
+         All global config mutations must go through this writer to avoid
+         partial writes & concurrency issues.
+*/
+async function writeToGlobalConfig(
+  config: Static<typeof GlobalConfig>
+): Promise<FileSystemResult<{ resource: FileResource }>> {
+  const originalPath = appendPath(
+    GLOBAL_CONFIG_FOLDER_PATH,
+    GLOBAL_CONFIG_FILE_NAME
+  );
+  const tmpPath = `${originalPath}.tmp`;
+  const serialized = serializeContentForWriting(config);
+  const globalConfigFileResource = createFsResource({
+    rootPath: GLOBAL_CONFIG_FOLDER_PATH,
+    path: originalPath,
+    type: "file",
+  });
+
+  try {
+    await FsService.mkdir(GLOBAL_CONFIG_FOLDER_PATH, { recursive: true });
+  } catch (e: any) {
+    return createFileSystemError(
+      e,
+      GLOBAL_CONFIG_FOLDER_PATH,
+      FileTypeEnum.GLOBAL_CONFIG
+    );
+  }
+
+  try {
+    await FsService.writeFileWithElevatedAccess(tmpPath, serialized);
+  } catch (e: any) {
+    return createFileSystemError(e, tmpPath, FileTypeEnum.GLOBAL_CONFIG);
+  }
+
+  try {
+    await FsService.rename(tmpPath, originalPath);
+  } catch (e: any) {
+    return createFileSystemError(e, originalPath, FileTypeEnum.GLOBAL_CONFIG);
+  } finally {
+    try {
+      await FsService.unlink(tmpPath);
+    } catch (e: any) {
+      /* We don't bubble up an error here to avoid false negatives
+         Failure to replace the config file with the temp file is
+         handled by the parent catch block.
+      */
+      console.debug('[global-config] tmp cleanup failed', e?.code, e?.message);
+    }
+  }
+
+  return {
+    type: "success",
+    content: { resource: globalConfigFileResource },
+  };
+}
+
 export async function createGlobalConfigFolder(): Promise<
   FileSystemResult<{ resource: FolderResource }>
 > {
@@ -489,16 +546,9 @@ export async function addWorkspaceToGlobalConfig(params: {
       version: CORE_CONFIG_FILE_VERSION,
       workspaces: [newWorkspace],
     };
-    const result = await writeContent(
-      globalConfigFileResource,
-      config,
-      fileType,
-      {
-        writeWithElevatedAccess: true,
-      }
-    );
-    if (result.type === "error") {
-      return result;
+    const writeResult = await writeToGlobalConfig(config);
+    if (writeResult.type === "error") {
+      return writeResult as FileSystemResult<{ name: string; id: string; path: string }>;
     }
     return {
       type: "success",
@@ -520,16 +570,9 @@ export async function addWorkspaceToGlobalConfig(params: {
     workspaces: [...readResult.content.workspaces, newWorkspace],
   };
 
-  const writeResult = await writeContent(
-    globalConfigFileResource,
-    updatedConfig,
-    fileType,
-    {
-      writeWithElevatedAccess: true,
-    }
-  );
+  const writeResult = await writeToGlobalConfig(updatedConfig);
   if (writeResult.type === "error") {
-    return writeResult;
+    return writeResult as FileSystemResult<{ name: string; id: string; path: string }>;
   }
 
   return {
@@ -594,53 +637,60 @@ export async function migrateGlobalConfig(oldConfig: any) {
   return oldConfig;
 }
 
-type WorkspaceValidationResult = {
-  keep: boolean;
-  ws: Static<typeof GlobalConfig>["workspaces"][number];
-};
+type WorkspaceValidationResult =
+  | {
+    valid: true;
+    ws: Static<typeof GlobalConfig>["workspaces"][number];
+  }
+  | {
+    valid: false;
+    ws: Static<typeof GlobalConfig>["workspaces"][number];
+    error: { message: string };
+  };
 
 async function validateWorkspace(
   ws: Static<typeof GlobalConfig>["workspaces"][number]
 ): Promise<WorkspaceValidationResult> {
-  const logPruning = (reason: string) => {
-    console.info(`[workspaces] Pruning workspace '${ws.name}' at '${ws.path}' (${reason})`);
-    return { keep: false, ws };
+  const prune = (message: string): WorkspaceValidationResult => {
+    console.info(
+      `[workspaces] Pruning workspace '${ws.name}' at '${ws.path}' (${message})`
+    );
+    return { valid: false, ws, error: { message } };
   };
 
   const workspacePath = (ws.path || "").trim();
   if (!workspacePath) {
-    console.info(`[workspaces] Pruning workspace '${ws.name}' (empty path entry)`);
-    return { keep: false, ws };
+    return prune("empty path entry");
   }
 
   if (!FsService.existsSync(workspacePath)) {
-    return logPruning("path does not exist");
+    return prune("path does not exist");
   }
 
   try {
     const dirStats = await FsService.lstat(workspacePath);
     if (!dirStats.isDirectory()) {
-      return logPruning("not a directory");
+      return prune("not a directory");
     }
   } catch (e: any) {
-    return logPruning(`failed to stat directory: ${e?.code || e?.message}`);
+    return prune(`failed to stat directory: ${e?.code || e?.message}`);
   }
 
   const configPath = appendPath(workspacePath, CONFIG_FILE);
   if (!FsService.existsSync(configPath)) {
-    return logPruning(`missing '${CONFIG_FILE}'`);
+    return prune(`missing '${CONFIG_FILE}'`);
   }
 
   try {
     const configStats = await FsService.lstat(configPath);
     if (!configStats.isFile()) {
-      return logPruning(`'${CONFIG_FILE}' not a file`);
+      return prune(`'${CONFIG_FILE}' not a file`);
     }
   } catch (e: any) {
-    return logPruning(`failed to stat '${CONFIG_FILE}': ${e?.code || e?.message}`);
+    return prune(`failed to stat '${CONFIG_FILE}': ${e?.code || e?.message}`);
   }
 
-  return { keep: true, ws };
+  return { valid: true, ws };
 }
 
 async function filterExistingWorkspaceFolders(
@@ -654,41 +704,9 @@ async function filterExistingWorkspaceFolders(
   }
 
   const results = await Promise.all(workspaces.map(validateWorkspace));
-  const valid = results.filter((r) => r.keep).map((r) => r.ws);
+  const valid = results.filter((r) => r.valid).map((r) => r.ws);
 
   return { valid, pruned: workspaces.length - valid.length };
-}
-
-async function atomicWriteGlobalConfig(
-  config: Static<typeof GlobalConfig>
-): Promise<void> {
-  const originalPath = appendPath(
-    GLOBAL_CONFIG_FOLDER_PATH,
-    GLOBAL_CONFIG_FILE_NAME
-  );
-  const tmpPath = `${originalPath}.tmp`;
-  const serialized = serializeContentForWriting(config);
-  try {
-    try {
-      await FsService.mkdir(GLOBAL_CONFIG_FOLDER_PATH, { recursive: true });
-    } catch (_) {
-      /* ignore */
-    }
-    await FsService.writeFileWithElevatedAccess(tmpPath, serialized);
-    await FsService.rename(tmpPath, originalPath);
-  } catch (e: any) {
-    console.debug(
-      `[workspaces][atomic-write] Non-critical failure writing global config: ${e?.code || ""
-      } ${e?.message || e}`
-    );
-    throw e;
-  } finally {
-    try {
-      await FsService.unlink(tmpPath);
-    } catch (_) {
-      /* ignore */
-    }
-  }
 }
 
 export async function getAllWorkspaces(): Promise<
@@ -715,16 +733,11 @@ export async function getAllWorkspaces(): Promise<
     let effectiveConfig = parsedContent;
     if (parsedContent.version !== CORE_CONFIG_FILE_VERSION) {
       const migratedConfig = await migrateGlobalConfig(parsedContent);
-      try {
-        await atomicWriteGlobalConfig(migratedConfig);
-        effectiveConfig = migratedConfig;
-      } catch (e: any) {
-        return createFileSystemError(
-          e,
-          GLOBAL_CONFIG_FOLDER_PATH,
-          FileTypeEnum.GLOBAL_CONFIG
-        );
+      const migrateWriteResult = await writeToGlobalConfig(migratedConfig);
+      if (migrateWriteResult.type === "error") {
+        return migrateWriteResult as FileSystemResult<Static<typeof GlobalConfig>["workspaces"]>;
       }
+      effectiveConfig = migratedConfig;
     }
 
     const { valid, pruned } = await filterExistingWorkspaceFolders(
@@ -736,10 +749,9 @@ export async function getAllWorkspaces(): Promise<
         version: effectiveConfig.version || CORE_CONFIG_FILE_VERSION,
         workspaces: valid,
       };
-      try {
-        await atomicWriteGlobalConfig(updatedConfig);
-      } catch (_e: any) {
-        // Silent fallback: we already logged in atomicWriteGlobalConfig; return pruned list anyway.
+      const pruneWriteResult = await writeToGlobalConfig(updatedConfig);
+      if (pruneWriteResult.type === "error") {
+        return pruneWriteResult as FileSystemResult<Static<typeof GlobalConfig>["workspaces"]>;
       }
       return {
         type: "success",
@@ -813,7 +825,10 @@ export async function removeWorkspace(
       workspaces: config.workspaces.filter((ws) => ws.id !== workspaceId),
     };
 
-    await atomicWriteGlobalConfig(updatedConfig);
+    const removeWriteResult = await writeToGlobalConfig(updatedConfig);
+    if (removeWriteResult.type === "error") {
+      return removeWriteResult as FileSystemResult<void>;
+    }
 
     return { type: "success" };
   } catch (error: any) {
