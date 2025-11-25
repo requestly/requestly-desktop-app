@@ -548,7 +548,7 @@ export async function addWorkspaceToGlobalConfig(params: {
     };
     const writeResult = await writeToGlobalConfig(config);
     if (writeResult.type === "error") {
-      return writeResult as FileSystemResult<{ name: string; id: string; path: string }>;
+      return writeResult;
     }
     return {
       type: "success",
@@ -572,7 +572,7 @@ export async function addWorkspaceToGlobalConfig(params: {
 
   const writeResult = await writeToGlobalConfig(updatedConfig);
   if (writeResult.type === "error") {
-    return writeResult as FileSystemResult<{ name: string; id: string; path: string }>;
+    return writeResult;
   }
 
   return {
@@ -735,7 +735,7 @@ export async function getAllWorkspaces(): Promise<
       const migratedConfig = await migrateGlobalConfig(parsedContent);
       const migrateWriteResult = await writeToGlobalConfig(migratedConfig);
       if (migrateWriteResult.type === "error") {
-        return migrateWriteResult as FileSystemResult<Static<typeof GlobalConfig>["workspaces"]>;
+        return migrateWriteResult;
       }
       effectiveConfig = migratedConfig;
     }
@@ -751,7 +751,7 @@ export async function getAllWorkspaces(): Promise<
       };
       const pruneWriteResult = await writeToGlobalConfig(updatedConfig);
       if (pruneWriteResult.type === "error") {
-        return pruneWriteResult as FileSystemResult<Static<typeof GlobalConfig>["workspaces"]>;
+        return pruneWriteResult;
       }
       return {
         type: "success",
@@ -827,7 +827,7 @@ export async function removeWorkspace(
 
     const removeWriteResult = await writeToGlobalConfig(updatedConfig);
     if (removeWriteResult.type === "error") {
-      return removeWriteResult as FileSystemResult<void>;
+      return removeWriteResult;
     }
 
     return { type: "success" };
@@ -878,7 +878,7 @@ async function getCollectionVariables(
   return {
     type: "success",
     content: {},
-  } as FileSystemResult<Static<typeof Variables>>;
+  };
 }
 
 async function getCollectionDescription(
@@ -933,7 +933,7 @@ async function getCollectionAuthData(
       authConfigStore: {},
       currentAuthType: AuthType.NO_AUTH,
     },
-  } as FileSystemResult<Static<typeof Auth>>;
+  };
 }
 
 export async function parseFolderToCollection(
