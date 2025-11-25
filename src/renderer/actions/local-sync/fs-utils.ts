@@ -429,8 +429,7 @@ export async function parseFileRaw(params: {
 
 /* NOTE: This is the ONLY function that should write to the global config file.
          All global config mutations must go through this writer to avoid
-         partial writes & concurrency issues.
-*/
+         partial writes & concurrency issues. */
 async function writeToGlobalConfig(
   config: Static<typeof GlobalConfig>
 ): Promise<FileSystemResult<{ resource: FileResource }>> {
@@ -438,7 +437,6 @@ async function writeToGlobalConfig(
     GLOBAL_CONFIG_FOLDER_PATH,
     GLOBAL_CONFIG_FILE_NAME
   );
-  const tmpPath = `${originalPath}.tmp`;
   const serialized = serializeContentForWriting(config);
   const globalConfigFileResource = createFsResource({
     rootPath: GLOBAL_CONFIG_FOLDER_PATH,
@@ -457,25 +455,9 @@ async function writeToGlobalConfig(
   }
 
   try {
-    await FsService.writeFileWithElevatedAccess(tmpPath, serialized);
-  } catch (e: any) {
-    return createFileSystemError(e, tmpPath, FileTypeEnum.GLOBAL_CONFIG);
-  }
-
-  try {
-    await FsService.rename(tmpPath, originalPath);
+    await FsService.writeFileWithElevatedAccess(originalPath, serialized);
   } catch (e: any) {
     return createFileSystemError(e, originalPath, FileTypeEnum.GLOBAL_CONFIG);
-  } finally {
-    try {
-      await FsService.unlink(tmpPath);
-    } catch (e: any) {
-      /* We don't bubble up an error here to avoid false negatives
-         Failure to replace the config file with the temp file is
-         handled by the parent catch block.
-      */
-      console.debug('[global-config] tmp cleanup failed', e?.code, e?.message);
-    }
   }
 
   return {
