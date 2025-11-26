@@ -861,7 +861,7 @@ async function getCollectionVariables(
   return {
     type: "success",
     content: {},
-  };
+  } as FileSystemResult<Static<typeof Variables>>;
 }
 
 async function getCollectionDescription(
@@ -916,7 +916,7 @@ async function getCollectionAuthData(
       authConfigStore: {},
       currentAuthType: AuthType.NO_AUTH,
     },
-  };
+  } as FileSystemResult<Static<typeof Auth>>;
 }
 
 export async function parseFolderToCollection(
