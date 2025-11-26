@@ -787,6 +787,17 @@ export async function removeWorkspace(
       return { type: "success" };
     }
 
+    const updatedConfig: Static<typeof GlobalConfig> = {
+      ...config,
+      workspaces: config.workspaces.filter((ws) => ws.id !== workspaceId),
+    };
+
+    // First, write the updated global config. Only delete directory after success.
+    const removeWriteResult = await writeToGlobalConfig(updatedConfig);
+    if (removeWriteResult.type === "error") {
+      return removeWriteResult;
+    }
+
     if (options.deleteDirectory) {
       try {
         await FsService.rm(workspaceToRemove.path, {
@@ -800,16 +811,6 @@ export async function removeWorkspace(
           FileTypeEnum.UNKNOWN
         );
       }
-    }
-
-    const updatedConfig: Static<typeof GlobalConfig> = {
-      ...config,
-      workspaces: config.workspaces.filter((ws) => ws.id !== workspaceId),
-    };
-
-    const removeWriteResult = await writeToGlobalConfig(updatedConfig);
-    if (removeWriteResult.type === "error") {
-      return removeWriteResult;
     }
 
     return { type: "success" };
