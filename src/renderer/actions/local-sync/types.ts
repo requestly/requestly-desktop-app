@@ -24,6 +24,7 @@ export enum ErrorCode {
   PermissionDenied = "permission_denied",
   MigrationFailed = "migration_failed",
   EntityAlreadyExists = "entity_already_exists",
+  NotFound = "not_found",
   UNKNOWN = "unknown",
 }
 

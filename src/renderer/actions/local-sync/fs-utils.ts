@@ -770,9 +770,9 @@ export async function removeWorkspace(
     });
 
     if (readResult.type === "error") {
-      if (readResult.error.code === ErrorCode.UNKNOWN) {
-        return { type: "success" };
-      }
+        if (readResult.error.code === ErrorCode.NotFound) {
+          return { type: "success" };
+        }
       return readResult;
     }
 
