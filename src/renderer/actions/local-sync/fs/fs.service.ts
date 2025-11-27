@@ -28,9 +28,9 @@ export class FsService {
     path: PathLike | FileHandle,
     options?:
       | ({
-          encoding?: null | undefined;
-          flag?: OpenMode | undefined;
-        } & Abortable)
+        encoding?: null | undefined;
+        flag?: OpenMode | undefined;
+      } & Abortable)
       | null
   ): Promise<string | Buffer> {
     return fsp.readFile(path, options);
@@ -47,8 +47,8 @@ export class FsService {
     path: PathLike,
     options?:
       | (ObjectEncodingOptions & {
-          withFileTypes?: false | undefined;
-        })
+        withFileTypes?: false | undefined;
+      })
       | BufferEncoding
       | null
   ) {
@@ -83,9 +83,9 @@ export class FsService {
       | Stream,
     options?:
       | (ObjectEncodingOptions & {
-          mode?: Mode | undefined;
-          flag?: OpenMode | undefined;
-        } & Abortable)
+        mode?: Mode | undefined;
+        flag?: OpenMode | undefined;
+      } & Abortable)
       | BufferEncoding
       | null
   ) {
@@ -101,6 +101,13 @@ export class FsService {
 
   static unlink(...params: Parameters<typeof fsp.unlink>) {
     return fsp.unlink(...params);
+  }
+
+  static rm(
+    path: PathLike,
+    options?: fs.RmOptions
+  ) {
+    return fsp.rm(path, options);
   }
 
   static mkdir(...params: Parameters<typeof fsp.mkdir>) {
@@ -122,5 +129,9 @@ export class FsService {
 
   static cp(...params: Parameters<typeof fsp.cp>) {
     return fsp.cp(...params);
+  }
+
+  static existsSync(path: PathLike) {
+    return fs.existsSync(path);
   }
 }

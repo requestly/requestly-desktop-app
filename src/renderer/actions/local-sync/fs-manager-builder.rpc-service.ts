@@ -1,5 +1,9 @@
 import { RPCServiceOverIPC } from "renderer/lib/RPCServiceOverIPC";
-import { createWorkspaceFolder, getAllWorkspaces } from "./fs-utils";
+import {
+  createWorkspaceFolder,
+  getAllWorkspaces,
+  removeWorkspace,
+} from "./fs-utils";
 import { FsManagerRPCService } from "./fs-manager.rpc-service";
 
 export class FsManagerBuilderRPCService extends RPCServiceOverIPC {
@@ -15,6 +19,7 @@ export class FsManagerBuilderRPCService extends RPCServiceOverIPC {
   init() {
     this.exposeMethodOverIPC("createWorkspaceFolder", createWorkspaceFolder);
     this.exposeMethodOverIPC("getAllWorkspaces", getAllWorkspaces);
+    this.exposeMethodOverIPC("removeWorkspace", removeWorkspace);
     this.exposeMethodOverIPC("build", this.build.bind(this));
     this.exposeMethodOverIPC("reload", this.reload.bind(this));
   }

@@ -201,6 +201,10 @@ export function isAccessError(error: any) {
   return error.code === "EACCES";
 }
 
+export function isNotFoundError(error: any) {
+  return error.code === "ENOENT";
+}
+
 export function createFileSystemError(
   error: { message: string },
   path: string,
@@ -208,6 +212,8 @@ export function createFileSystemError(
 ): FileSystemError {
   const errorCode = isAccessError(error)
     ? ErrorCode.PermissionDenied
+    : isNotFoundError(error)
+    ? ErrorCode.NotFound
     : ErrorCode.UNKNOWN;
   return {
     type: "error",
