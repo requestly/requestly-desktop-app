@@ -79,7 +79,6 @@ import { isEmpty } from "lodash";
 import { HandleError } from "./decorators/handle-error.decorator";
 import { FsIgnoreManager } from "./fsIgnore-manager";
 import { fileIndex } from "./file-index";
-import { ResourceNotFound } from "./resource-not-found";
 
 export class ResourceNotFound extends Error {
   constructor(message: string) {
