@@ -770,9 +770,8 @@ export async function removeWorkspace(
     });
 
     if (readResult.type === "error") {
-        if (readResult.error.code === ErrorCode.NotFound) {
-          return { type: "success" };
-        }
+      // Global config missing is a catastrophic failure for local workspace operations.
+      // Propagate the error (including NotFound) to callers.
       return readResult;
     }
 
