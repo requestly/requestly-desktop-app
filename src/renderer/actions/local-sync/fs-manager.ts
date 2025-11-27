@@ -79,7 +79,6 @@ import { isEmpty } from "lodash";
 import { HandleError } from "./decorators/handle-error.decorator";
 import { FsIgnoreManager } from "./fsIgnore-manager";
 import { fileIndex } from "./file-index";
-
 export class ResourceNotFound extends Error {
   constructor(message: string) {
     super(message);
@@ -1303,25 +1302,20 @@ export class FsManager {
       return folderCreationResult;
     }
 
-    const newName = getNewNameIfQuickCreate({
+    let newName = getNewNameIfQuickCreate({
       name: sanitizeFsResourceName(environmentName),
       baseName: "New Environment",
       parentPath: getNormalizedPath(environmentFolderPath),
     });
 
-    const existingEnvNames = fileIndex.getImmediateChildren(
-      getNormalizedPath(environmentFolderPath)
-    );
+    // re-used to handle name conflicts by appending a number when an environment with the same name already exists during import
+    newName = getNewNameIfQuickCreate({
+      name: sanitizeFsResourceName(environmentName),
+      baseName: sanitizeFsResourceName(environmentName),
+      parentPath: getNormalizedPath(environmentFolderPath),
+    });
 
-    if (existingEnvNames.has(environmentName)) {
-      const newAppendedName = getAlternateName(
-        environmentName,
-        existingEnvNames
-      );
-      environmentName = newAppendedName;
-    } else {
-      environmentName = newName;
-    }
+    environmentName = newName;
 
     const envFile = this.createRawResource({
       path: appendPath(
@@ -1331,10 +1325,10 @@ export class FsManager {
       type: "file",
     });
 
-    // const alreadyExists = await getIfFileExists(envFile);
-    // if (alreadyExists) {
-    //   throw new Error(`Environment '${environmentName}' already exists!`);
-    // }
+    const alreadyExists = await getIfFileExists(envFile);
+    if (alreadyExists) {
+      throw new Error(`Environment '${environmentName}' already exists!`);
+    }
 
     const content = {
       name: environmentName,
