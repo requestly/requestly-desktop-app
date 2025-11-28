@@ -53,6 +53,7 @@ const KeyValuePair = Type.Object({
   value: Type.String(),
   isEnabled: Type.Boolean(),
   type: Type.Optional(Type.String()),
+  description: Type.Optional(Type.String()),
 });
 
 const formData = Type.Object({
