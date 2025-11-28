@@ -1,10 +1,19 @@
 import { RPCServiceOverIPC } from "renderer/lib/RPCServiceOverIPC";
 import { FsManager } from "./fs-manager";
 
+async function waitForInit() {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(""), 800);
+  });
+}
+
 export class FsManagerRPCService extends RPCServiceOverIPC {
   private fsManager: FsManager;
 
-  constructor(readonly rootPath: string, readonly exposedWorkspacePaths: Map<string,unknown>) {
+  constructor(
+    readonly rootPath: string,
+    readonly exposedWorkspacePaths: Map<string, unknown>
+  ) {
     super(`local_sync: ${rootPath}`);
     this.fsManager = new FsManager(rootPath, this.exposedWorkspacePaths);
   }
@@ -17,6 +26,7 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
     try {
       await this.fsManager.init();
     } catch (error) {
+      // console.log("FsManagerRPCService init", error);
       throw new Error(
         `Failed to initialize FsManager for ${this.rootPath}: ${
           error instanceof Error ? error.message : String(error)
@@ -140,5 +150,8 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
       "createCollectionFromCompleteRecord",
       this.fsManager.createCollectionFromCompleteRecord.bind(this.fsManager)
     );
+
+    // hack
+    await waitForInit();
   }
 }
