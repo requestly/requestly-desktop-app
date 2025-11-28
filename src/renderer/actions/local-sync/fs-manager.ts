@@ -3,6 +3,7 @@ import semver from "semver";
 import {
   appendPath,
   createFsResource,
+  getAlternateName,
   getIdFromPath,
   getNameOfResource,
   getNewNameIfQuickCreate,
@@ -78,13 +79,11 @@ import { isEmpty } from "lodash";
 import { HandleError } from "./decorators/handle-error.decorator";
 import { FsIgnoreManager } from "./fsIgnore-manager";
 import { fileIndex } from "./file-index";
-
 export class ResourceNotFound extends Error {
   constructor(message: string) {
     super(message);
   }
 }
-
 export class FsManager {
   private rootPath: string;
 
@@ -92,7 +91,10 @@ export class FsManager {
 
   private fsIgnoreManager: FsIgnoreManager;
 
-  constructor(rootPath: string, readonly exposedWorkspacePaths: Map<string, unknown>) {
+  constructor(
+    rootPath: string,
+    readonly exposedWorkspacePaths: Map<string, unknown>
+  ) {
     this.rootPath = getNormalizedPath(rootPath);
     this.config = {} as Static<typeof Config>;
     this.fsIgnoreManager = new FsIgnoreManager(this.rootPath, this.config);
@@ -111,10 +113,10 @@ export class FsManager {
       // Calling these methods to initialise file index
       await this.getAllRecords();
       await this.getAllEnvironments();
-
     } catch (error) {
       throw new Error(
-        `Failed to initialize FsManager: ${error instanceof Error ? error.message : String(error)
+        `Failed to initialize FsManager: ${
+          error instanceof Error ? error.message : String(error)
         }`
       );
     }
@@ -474,7 +476,9 @@ export class FsManager {
   }) {
     const path = fileIndex.getPath(params.id);
     if (!path) {
-      throw new ResourceNotFound(`Resource ${params.id} of type ${params.type} not found!`);
+      throw new ResourceNotFound(
+        `Resource ${params.id} of type ${params.type} not found!`
+      );
     }
     return createFsResource({
       path,
@@ -562,19 +566,18 @@ export class FsManager {
     return envFolderPath;
   }
 
-
   private async getFileResourceWithNameVerification(params: {
-    name?: string,
-    id: string,
+    name?: string;
+    id: string;
   }): Promise<FileSystemResult<FileResource>> {
     const existingFile = this.createResource({
       id: params.id,
-      type: 'file',
+      type: "file",
     });
 
     if (!params.name) {
       return {
-        type: 'success',
+        type: "success",
         content: existingFile,
       };
     }
@@ -583,7 +586,7 @@ export class FsManager {
     const sanitizedName = this.generateFileName(params.name);
     if (existingFileName === sanitizedName) {
       return {
-        type: 'success',
+        type: "success",
         content: existingFile,
       };
     }
@@ -593,31 +596,33 @@ export class FsManager {
 
     const newFileResource = this.createRawResource({
       path: newFilePath,
-      type: 'file',
+      type: "file",
     });
 
-    const isSamePath = getNormalizedPath(existingFile.path).toLowerCase() === getNormalizedPath(newFileResource.path).toLowerCase();
+    const isSamePath =
+      getNormalizedPath(existingFile.path).toLowerCase() ===
+      getNormalizedPath(newFileResource.path).toLowerCase();
     const alreadyExists = await getIfFileExists(newFileResource);
     if (!isSamePath && alreadyExists) {
       return {
-        "type": "error",
-        "error": {
+        type: "error",
+        error: {
           message: `Resource with name '${sanitizedName}' already exists!`,
           fileType: FileTypeEnum.UNKNOWN,
           path: newFilePath,
           code: ErrorCode.EntityAlreadyExists,
-        }
-      }
+        },
+      };
     }
 
     const result = await rename(existingFile, newFileResource);
 
-    if (result.type === 'error') {
+    if (result.type === "error") {
       return result;
     }
 
     return {
-      type: 'success',
+      type: "success",
       content: newFileResource,
     };
   }
@@ -776,7 +781,7 @@ export class FsManager {
   async createRecord(
     content: Static<typeof ApiRecord>,
     collectionId?: string,
-    idToUse?: string,
+    idToUse?: string
   ): Promise<FileSystemResult<API>> {
     const parentFolderResource = this.createResource({
       id: collectionId || getIdFromPath(this.rootPath),
@@ -785,13 +790,16 @@ export class FsManager {
 
     const newName = getNewNameIfQuickCreate({
       name: sanitizeFsResourceName(content.name),
-      baseName: 'Untitled request',
+      baseName: "Untitled request",
       parentPath: getNormalizedPath(parentFolderResource.path),
     });
 
     content.name = newName;
 
-    const path = appendPath(parentFolderResource.path, this.generateFileName(content.name));
+    const path = appendPath(
+      parentFolderResource.path,
+      this.generateFileName(content.name)
+    );
     const resource = this.createRawResource({
       path,
       type: "file",
@@ -822,7 +830,7 @@ export class FsManager {
   async createRecordWithId(
     content: Static<typeof ApiRecord>,
     id: string,
-    collectionId?: string,
+    collectionId?: string
   ): Promise<FileSystemResult<API>> {
     return this.createRecord(content, collectionId, id);
   }
@@ -842,12 +850,11 @@ export class FsManager {
       return {
         type: "success",
       };
-    }
-    catch (e) {
+    } catch (e) {
       if (e instanceof ResourceNotFound) {
         return {
           type: "success",
-        }
+        };
       }
 
       throw e;
@@ -873,7 +880,7 @@ export class FsManager {
   async createCollection(
     name: string,
     collectionId?: string,
-    idToUse?: string,
+    idToUse?: string
   ): Promise<FileSystemResult<Collection>> {
     const folderResource = this.createResource({
       id: collectionId || getIdFromPath(this.rootPath),
@@ -881,7 +888,7 @@ export class FsManager {
     });
     const newName = getNewNameIfQuickCreate({
       name: sanitizeFsResourceName(name),
-      baseName: 'New collection',
+      baseName: "New collection",
       parentPath: getNormalizedPath(folderResource.path),
     });
 
@@ -918,7 +925,7 @@ export class FsManager {
   async createCollectionWithId(
     name: string,
     id: string,
-    collectionId?: string,
+    collectionId?: string
   ): Promise<FileSystemResult<Collection>> {
     return this.createCollection(name, collectionId, id);
   }
@@ -942,7 +949,7 @@ export class FsManager {
       if (e instanceof ResourceNotFound) {
         return {
           type: "success",
-        }
+        };
       }
 
       throw e;
@@ -1006,7 +1013,7 @@ export class FsManager {
   ): Promise<FileSystemResult<string>> {
     const collectionFolder = this.createResource({
       id,
-      type: 'folder'
+      type: "folder",
     });
     const descriptionFileResource = this.createRawResource({
       path: appendPath(collectionFolder.path, DESCRIPTION_FILE),
@@ -1044,7 +1051,7 @@ export class FsManager {
   ): Promise<FileSystemResult<Static<typeof Auth>>> {
     const collectionFolder = this.createResource({
       id,
-      type: 'folder'
+      type: "folder",
     });
 
     const authFileResource = this.createRawResource({
@@ -1071,7 +1078,9 @@ export class FsManager {
     id: string,
     newParentId: string
   ): Promise<FileSystemResult<Collection>> {
-    const parentPath = newParentId.length ? fileIndex.getPath(newParentId) : this.rootPath;
+    const parentPath = newParentId.length
+      ? fileIndex.getPath(newParentId)
+      : this.rootPath;
     if (!parentPath) {
       throw new Error(`Path not found for collection/root id ${newParentId}`);
     }
@@ -1120,7 +1129,9 @@ export class FsManager {
     id: string,
     newParentId: string
   ): Promise<FileSystemResult<API>> {
-    const parentPath = newParentId.length ? fileIndex.getPath(newParentId) : this.rootPath;
+    const parentPath = newParentId.length
+      ? fileIndex.getPath(newParentId)
+      : this.rootPath;
     if (!parentPath) {
       throw new Error(`Path not found for collection/root id ${newParentId}`);
     }
@@ -1214,7 +1225,7 @@ export class FsManager {
       name: patch.name,
     });
 
-    if (fileResourceResult.type === 'error') {
+    if (fileResourceResult.type === "error") {
       return fileResourceResult;
     }
 
@@ -1243,7 +1254,6 @@ export class FsManager {
     }
 
     return parseFileToApi(this.rootPath, fileResource);
-
   }
 
   @HandleError
@@ -1292,9 +1302,16 @@ export class FsManager {
       return folderCreationResult;
     }
 
-    const newName = getNewNameIfQuickCreate({
+    let newName = getNewNameIfQuickCreate({
       name: sanitizeFsResourceName(environmentName),
-      baseName: 'New Environment',
+      baseName: "New Environment",
+      parentPath: getNormalizedPath(environmentFolderPath),
+    });
+
+    // re-used to handle name conflicts by appending a number when an environment with the same name already exists during import
+    newName = getNewNameIfQuickCreate({
+      name: sanitizeFsResourceName(environmentName),
+      baseName: sanitizeFsResourceName(environmentName),
       parentPath: getNormalizedPath(environmentFolderPath),
     });
 
@@ -1346,7 +1363,7 @@ export class FsManager {
       name: (patch as any).name,
     });
 
-    if (fileResourceResult.type === 'error') {
+    if (fileResourceResult.type === "error") {
       return fileResourceResult;
     }
 
@@ -1463,7 +1480,9 @@ export class FsManager {
     collection: CollectionRecord,
     id: string
   ): Promise<FileSystemResult<Collection>> {
-    const parentPath = collection.collectionId.length ? fileIndex.getPath(collection.collectionId) : this.rootPath;
+    const parentPath = collection.collectionId.length
+      ? fileIndex.getPath(collection.collectionId)
+      : this.rootPath;
     if (!parentPath) {
       throw new Error(`Could not find path for id ${collection.collectionId}`);
     }
@@ -1479,12 +1498,18 @@ export class FsManager {
       collection.name = newName;
     }
 
-    const path = appendPath(parentPath, sanitizeFsResourceName(collection.name));
+    const path = appendPath(
+      parentPath,
+      sanitizeFsResourceName(collection.name)
+    );
     const collectionFolder = this.createRawResource({
       path,
       type: "folder",
     });
-    const createResult = await createFolder(collectionFolder, { errorIfExist: true, useId: id });
+    const createResult = await createFolder(collectionFolder, {
+      errorIfExist: true,
+      useId: id,
+    });
     if (createResult.type === "error") {
       return createResult;
     }
