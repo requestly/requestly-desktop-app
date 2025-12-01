@@ -129,6 +129,7 @@ export default class MenuBuilder {
           accelerator: "Alt+Command+I",
           click: () => {
             this.mainWindow.webContents.toggleDevTools();
+            this.enableBGWindowDebug();
           },
         },
         {
@@ -328,6 +329,7 @@ export default class MenuBuilder {
                   accelerator: "Alt+Ctrl+I",
                   click: () => {
                     this.mainWindow.webContents.toggleDevTools();
+                    this.enableBGWindowDebug();
                   },
                 },
                 {
@@ -390,6 +392,7 @@ export default class MenuBuilder {
                   accelerator: "Alt+Ctrl+I",
                   click: () => {
                     this.mainWindow.webContents.toggleDevTools();
+                    this.enableBGWindowDebug();
                   },
                 },
                 {
