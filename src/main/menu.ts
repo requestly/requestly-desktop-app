@@ -125,10 +125,11 @@ export default class MenuBuilder {
           },
         },
         {
-          label: "Toggle Developer Tools",
+          label: "Debug Requestly",
           accelerator: "Alt+Command+I",
           click: () => {
             this.mainWindow.webContents.toggleDevTools();
+            this.enableBGWindowDebug();
           },
         },
         {
@@ -324,10 +325,11 @@ export default class MenuBuilder {
                   },
                 },
                 {
-                  label: "Toggle &Developer Tools",
+                  label: "Debug Requestly",
                   accelerator: "Alt+Ctrl+I",
                   click: () => {
                     this.mainWindow.webContents.toggleDevTools();
+                    this.enableBGWindowDebug();
                   },
                 },
                 {
@@ -386,10 +388,11 @@ export default class MenuBuilder {
                   },
                 },
                 {
-                  label: "Toggle &Developer Tools",
+                  label: "Debug Requestly",
                   accelerator: "Alt+Ctrl+I",
                   click: () => {
                     this.mainWindow.webContents.toggleDevTools();
+                    this.enableBGWindowDebug();
                   },
                 },
                 {
