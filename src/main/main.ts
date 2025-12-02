@@ -235,7 +235,15 @@ const createWindow = async () => {
   // @ts-ignore
   webAppWindow.webContents.once(
     "did-fail-load",
-    (errorCode, validatedUrl, isMainFrame) => {
+    (
+      _event,
+      errorCode,
+      _errorDescription,
+      validatedUrl,
+      isMainFrame,
+      _frameProcessId,
+      _frameRoutingId
+    ) => {
       if (isMainFrame) {
         console.error(
           `did-fail-load errorCode=${errorCode} url=${validatedUrl}`
@@ -298,16 +306,6 @@ const createWindow = async () => {
         // eslint-disable-next-line
         globalAny.backgroundWindow.show();
 
-        // eslint-disable-next-line
-        globalAny.backgroundWindow.focus();
-
-        // On Windows, ensure window is brought to front
-        if (process.platform === "win32") {
-          globalAny.backgroundWindow.setAlwaysOnTop(true);
-          setTimeout(() => {
-            globalAny.backgroundWindow.setAlwaysOnTop(false);
-          }, 100);
-        }
         // eslint-disable-next-line
         globalAny.backgroundWindow.webContents.toggleDevTools();
       }
