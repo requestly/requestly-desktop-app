@@ -805,7 +805,7 @@ export async function removeWorkspace(
           force: true,
         });
       } catch (e1: any) {
-        // Retry once after ~100ms to handle transient EPERM during scandir
+        // Retry once after ~100ms to handle transient fs errors (e.g. EPERM during scandir)
         await delay(100);
         try {
           await FsService.rm(workspaceToRemove.path, {
