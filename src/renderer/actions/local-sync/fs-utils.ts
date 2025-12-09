@@ -61,6 +61,7 @@ import path from "node:path";
 import { FsService } from "./fs/fs.service";
 import type { FsIgnoreManager } from "./fsIgnore-manager";
 import { fileIndex } from "./file-index";
+import { delay } from "../apps/mobile/utils";
 
 // TODO: Fix the delimiters added by electron on file paths
 function sanitizePath(rawPath: string) {
@@ -803,12 +804,21 @@ export async function removeWorkspace(
           recursive: true,
           force: true,
         });
-      } catch (e: any) {
-        return createFileSystemError(
-          e,
-          workspaceToRemove.path,
-          FileTypeEnum.UNKNOWN
-        );
+      } catch (e1: any) {
+        // Retry once after ~100ms to handle transient EPERM during scandir
+        await delay(100);
+        try {
+          await FsService.rm(workspaceToRemove.path, {
+            recursive: true,
+            force: true,
+          });
+        } catch (e2: any) {
+          return createFileSystemError(
+            e2,
+            workspaceToRemove.path,
+            FileTypeEnum.UNKNOWN
+          );
+        }
       }
     }
 
