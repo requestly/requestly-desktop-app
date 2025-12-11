@@ -89,6 +89,8 @@ export default async function startProxyServer(
   const proxyIp = ip()!;
   const targetPort = proxyPort || getDefaultProxyPort();
 
+  console.log(`DEBUG: ${proxyIp} ${targetPort}`);
+
   const result: IStartProxyResult = {
     success: true,
     port: targetPort,
