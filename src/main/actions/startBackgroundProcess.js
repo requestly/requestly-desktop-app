@@ -24,61 +24,69 @@ const resolveBackgroundPath = (htmlFileName) => {
 
 const startBackgroundProcess = async () => {
   // eslint-disable-next-line no-async-promise-executor
+  console.log("DEBUG: startBackgroundProcess: Starting Background Process");
   return new Promise(async (resolve) => {
-    let backgroundWindow = await getState("backgroundWindow");
-    if (!backgroundWindow) {
-      backgroundWindow = await setState(null, {
-        stateName: "backgroundWindow",
-        // Background Process Window
-        newValue: new BrowserWindow({
-          width: 800,
-          height: 600,
-          show:
-            process.env.NODE_ENV === "development" ||
-            process.env.DEBUG_PROD === "true",
-          webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
-            enableRemoteModule: true,
-          },
-        }),
+    try {
+      let backgroundWindow = await getState("backgroundWindow");
+      if (!backgroundWindow) {
+        backgroundWindow = await setState(null, {
+          stateName: "backgroundWindow",
+          // Background Process Window
+          newValue: new BrowserWindow({
+            width: 800,
+            height: 600,
+            show:
+              process.env.NODE_ENV === "development" ||
+              process.env.DEBUG_PROD === "true",
+            webPreferences: {
+              nodeIntegration: true,
+              contextIsolation: false,
+              enableRemoteModule: true,
+            },
+          }),
+        });
+        enableWebContents(backgroundWindow.webContents);
+        console.log("DEBUG: startBackgroundProcess: Background Window Created");
+      } else {
+        logger.log(
+          "startBackgroundProcess: A background windows already exists. Cancelling."
+        );
+
+        resolve(true);
+        return;
+      }
+
+      global.backgroundWindow = backgroundWindow;
+
+      // Load background code
+      backgroundWindow.loadURL(resolveBackgroundPath("index.html"));
+
+      // Open the DevTools in dev mode
+      if (
+        process.env.NODE_ENV === "development" ||
+        process.env.DEBUG_PROD === "true"
+      ) {
+        backgroundWindow.webContents.once("dom-ready", () => {
+          backgroundWindow.webContents.openDevTools();
+        });
+      }
+
+      // Setup IPC forwarding
+      setupIPCForwardingToBackground(backgroundWindow);
+
+      // Set state
+      global.isBackgroundProcessActive = true;
+
+      backgroundWindow.webContents.on("did-finish-load", () => {
+        resolve(true);
       });
-      enableWebContents(backgroundWindow.webContents);
-    } else {
-      logger.log(
-        "startBackgroundProcess: A background windows already exists. Cancelling."
+    } catch (error) {
+      console.log(
+        "DEBUG: startBackgroundProcess: Error starting background process",
+        error
       );
-
-      resolve(true);
-      return;
+      resolve(false);
     }
-
-    global.backgroundWindow = backgroundWindow;
-
-    // Load background code
-    backgroundWindow.loadURL(resolveBackgroundPath("index.html"));
-
-    // Open the DevTools in dev mode
-    if (
-      process.env.NODE_ENV === "development" ||
-      process.env.DEBUG_PROD === "true"
-    )
-    {
-      backgroundWindow.webContents.once('dom-ready', () => {
-        backgroundWindow.webContents.openDevTools();
-      })
-    }
-
-    // Setup IPC forwarding
-    setupIPCForwardingToBackground(backgroundWindow);
-
-    // Set state
-    global.isBackgroundProcessActive = true;
-
-    backgroundWindow.webContents.on("did-finish-load", () => {
-      resolve(true);
-    });
-
   });
 };
 
