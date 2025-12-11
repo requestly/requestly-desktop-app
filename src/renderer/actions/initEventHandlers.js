@@ -27,16 +27,19 @@ import { getAvailableAndroidDevices } from "./apps/mobile/utils";
 import { sendMessageToExtension } from "./helperSocketServer";
 import IosSimulatorDevice from "./apps/mobile/iosSimulator";
 
-
 const initEventHandlers = () => {
+  console.log("DEBUG:", "initializing IPC Event Handlers");
   ipcRenderer.send("background-process-started");
   ipcRenderer.on("start-proxy-server", async () => {
     const PROXY_RESULT = await startProxyServer();
+    console.log("DEBUG:", "Proxy Server Started:", PROXY_RESULT);
     ipcRenderer.send("reply-start-proxy-server", PROXY_RESULT);
     ipcRenderer.send("proxy-config-updated", getProxyConfig());
   });
 
   ipcRenderer.on("detect-available-apps", async (event, payload) => {
+    console.log("DEBUG: detect-available-apps", payload);
+
     const arrayOfAppIds = payload;
     let final_result = {};
 
@@ -52,6 +55,8 @@ const initEventHandlers = () => {
         })
         .catch((e) => console.error("Unexpected Behaviour", e));
     }
+
+    console.log("DEBUG: detect-available-apps final result", final_result);
 
     ipcRenderer.send("reply-detect-available-apps", final_result);
   });
