@@ -12,7 +12,16 @@
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 import path from "path";
-import { app, BrowserWindow, shell, dialog, Tray, Menu, clipboard, ipcMain } from "electron";
+import {
+  app,
+  BrowserWindow,
+  shell,
+  dialog,
+  Tray,
+  Menu,
+  clipboard,
+  ipcMain,
+} from "electron";
 import log from "electron-log";
 import MenuBuilder from "./menu";
 import {
@@ -82,18 +91,19 @@ const installExtensions = async () => {
 };
 
 export default function createTrayMenu(ip?: string, port?: number) {
-  if(tray) { // tray is recreated when proxy parameters are ready
+  if (tray) {
+    // tray is recreated when proxy parameters are ready
     tray.destroy();
-    tray = null
+    tray = null;
   }
   const proxyAddress = `${ip}:${port}`;
   const menuOptions: Electron.MenuItemConstructorOptions[] = [
     {
       label: "Show Requestly",
       click: () => {
-        if(webAppWindow && !webAppWindow.isDestroyed()) {
-          if(webAppWindow.isMinimized()) {
-            webAppWindow.restore()
+        if (webAppWindow && !webAppWindow.isDestroyed()) {
+          if (webAppWindow.isMinimized()) {
+            webAppWindow.restore();
           }
           webAppWindow.show();
           webAppWindow.focus();
@@ -140,7 +150,8 @@ export default function createTrayMenu(ip?: string, port?: number) {
     {
       label: "🐞 Report an Issue",
       click: () => {
-        const issueURL = "https://github.com/requestly/requestly/issues/new/choose";
+        const issueURL =
+          "https://github.com/requestly/requestly/issues/new/choose";
         shell.openExternal(issueURL);
       },
     },
@@ -160,14 +171,15 @@ export default function createTrayMenu(ip?: string, port?: number) {
         webAppWindow?.close();
       },
     },
-  ]
+  ];
 
-  if(!ip || !port) { // for case when proxy is not ready
-    menuOptions.splice(1,2)
+  if (!ip || !port) {
+    // for case when proxy is not ready
+    menuOptions.splice(1, 2);
   }
   const trayMenu = Menu.buildFromTemplate(menuOptions);
 
-  if(process.platform === "win32") {
+  if (process.platform === "win32") {
     tray = new Tray(getAssetPath("iconTemplate@2x.ico"));
   } else {
     tray = new Tray(getAssetPath("iconTemplate.png"));
@@ -176,7 +188,7 @@ export default function createTrayMenu(ip?: string, port?: number) {
   tray.setContextMenu(trayMenu);
 }
 
-let closingAccepted = false
+let closingAccepted = false;
 const createWindow = async () => {
   if (isDevelopment) {
     await installExtensions();
@@ -190,15 +202,15 @@ const createWindow = async () => {
     return path.join(RESOURCES_PATH, ...paths);
   };
 
-  let framelessOptions = {}
+  let framelessOptions = {};
 
   // Only for OSX right now. Needs to be tested for linux and windows
-  if(process.platform === "darwin") {
+  if (process.platform === "darwin") {
     framelessOptions = {
       frame: false,
       titleBarStyle: "hidden" as "hidden",
       trafficLightPosition: { x: 16, y: 16 },
-    }
+    };
   }
 
   webAppWindow = new BrowserWindow({
@@ -213,7 +225,7 @@ const createWindow = async () => {
       sandbox: false,
       preload: path.join(__dirname, "preload.js"),
     },
-    ...framelessOptions
+    ...framelessOptions,
   });
   webAppWindow.webContents.setVisualZoomLevelLimits(1, 3);
 
@@ -229,17 +241,30 @@ const createWindow = async () => {
   });
 
   // @ts-ignore
-  webAppWindow.webContents.once("did-fail-load", (event, errorCode, errorDescription, validatedUrl, isMainFrame, frameProcessId, frameRoutingId) => {
-    if(isMainFrame) {
-      console.error(`did-fail-load errorCode=${errorCode} url=${validatedUrl}`);
-      if (webAppWindow) webAppWindow.hide();
-      dialog.showErrorBox(
-        "No internet",
-        "Unable to connect to Requestly servers. Make sure you're connected to the internet or try removing any active proxy."
-      );
-      app.quit();
+  webAppWindow.webContents.once(
+    "did-fail-load",
+    (
+      _event,
+      errorCode,
+      _errorDescription,
+      validatedUrl,
+      isMainFrame,
+      _frameProcessId,
+      _frameRoutingId
+    ) => {
+      if (isMainFrame) {
+        console.error(
+          `did-fail-load errorCode=${errorCode} url=${validatedUrl}`
+        );
+        if (webAppWindow) webAppWindow.hide();
+        dialog.showErrorBox(
+          "No internet",
+          "Unable to connect to Requestly servers. Make sure you're connected to the internet or try removing any active proxy."
+        );
+        app.quit();
+      }
     }
-  });
+  );
 
   webAppWindow.once("ready-to-show", () => {
     if (!webAppWindow) {
@@ -254,7 +279,7 @@ const createWindow = async () => {
       webAppWindow.show();
       webAppWindow.focus();
 
-     executeOnWebAppReadyHandlers();
+      executeOnWebAppReadyHandlers();
     }
 
     // Close loading splash screen
@@ -264,19 +289,19 @@ const createWindow = async () => {
     }
   });
 
-  webAppWindow.on('close', async (event) => {
-    if(!closingAccepted) {
+  webAppWindow.on("close", async (event) => {
+    if (!closingAccepted) {
       event.preventDefault();
-      webAppWindow?.webContents.send("initiate-app-close")
+      webAppWindow?.webContents.send("initiate-app-close");
     }
-  })
+  });
 
-  webAppWindow.on('closed', async () => {
+  webAppWindow.on("closed", async () => {
     saveCookies();
     await getReadyToQuitApp();
     webAppWindow = null;
     return;
-  })
+  });
   const enableBGWindowDebug = () => {
     // Show bg window and toggle the devtools
     try {
@@ -288,6 +313,7 @@ const createWindow = async () => {
         // Show Window
         // eslint-disable-next-line
         globalAny.backgroundWindow.show();
+
         // eslint-disable-next-line
         globalAny.backgroundWindow.webContents.toggleDevTools();
       }
@@ -303,17 +329,17 @@ const createWindow = async () => {
   // Open urls in the user's browser
   webAppWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url);
-    return { action: 'deny' }
+    return { action: "deny" };
   });
 };
 
 let onWebAppReadyHandlers: (() => void)[] = [];
 function executeOnWebAppReadyHandlers() {
-  if(onWebAppReadyHandlers.length > 0) {
-    onWebAppReadyHandlers.forEach(callback => {
+  if (onWebAppReadyHandlers.length > 0) {
+    onWebAppReadyHandlers.forEach((callback) => {
       callback();
-    })
-    onWebAppReadyHandlers = []
+    });
+    onWebAppReadyHandlers = [];
   }
 }
 
@@ -330,16 +356,16 @@ function handleCustomProtocolURL(urlString: string) {
 
 // custom protocol (requestly) handler
 app.on("open-url", (_event, rqUrl) => {
-  if(webAppWindow && !webAppWindow.isDestroyed()) {
-    handleCustomProtocolURL(rqUrl)
+  if (webAppWindow && !webAppWindow.isDestroyed()) {
+    handleCustomProtocolURL(rqUrl);
   } else {
-    onWebAppReadyHandlers.push(() => handleCustomProtocolURL(rqUrl))
+    onWebAppReadyHandlers.push(() => handleCustomProtocolURL(rqUrl));
   }
-})
+});
 
 async function handleFileOpen(filePath: string, webAppWindow?: BrowserWindow) {
   trackRecentlyAccessedFile(filePath);
-  log.info("filepath opened", filePath)
+  log.info("filepath opened", filePath);
   webAppWindow?.show();
   webAppWindow?.focus();
   try {
@@ -354,22 +380,22 @@ async function handleFileOpen(filePath: string, webAppWindow?: BrowserWindow) {
       path: filePath,
     };
 
-    webAppWindow?.webContents.send("open-file", fileObject)
+    webAppWindow?.webContents.send("open-file", fileObject);
   } catch (error) {
-    logger.error(`Error while reading file ${filePath}`, error)
-    onWebAppReadyHandlers.push(() => handleFileOpen(filePath))
+    logger.error(`Error while reading file ${filePath}`, error);
+    onWebAppReadyHandlers.push(() => handleFileOpen(filePath));
   }
 }
 
-app.on('open-file', async (event, filePath) => {
+app.on("open-file", async (event, filePath) => {
   event.preventDefault();
-  if(webAppWindow && !webAppWindow.isDestroyed()) {
+  if (webAppWindow && !webAppWindow.isDestroyed()) {
     handleFileOpen(filePath, webAppWindow);
   } else {
-    logger.log("webAppWindow not ready")
-    onWebAppReadyHandlers.push(() => handleFileOpen(filePath))
+    logger.log("webAppWindow not ready");
+    onWebAppReadyHandlers.push(() => handleFileOpen(filePath));
   }
-  return
+  return;
 });
 
 // This method will be called when Electron has finished
@@ -399,17 +425,19 @@ app.on("ready", () => {
     registerMainProcessEventsForWebAppWindow(webAppWindow);
     registerMainProcessCommonEvents();
 
-    if (process.platform === 'win32') {
+    if (process.platform === "win32") {
       // Set the path of electron.exe and your app.
       // These two additional parameters are only available on windows.
       // Setting this is required to get this working in dev mode.
-      app.setAsDefaultProtocolClient('requestly', process.execPath, [path.resolve(process.argv[1])]);
+      app.setAsDefaultProtocolClient("requestly", process.execPath, [
+        path.resolve(process.argv[1]),
+      ]);
     } else {
-      app.setAsDefaultProtocolClient('requestly');
+      app.setAsDefaultProtocolClient("requestly");
     }
   });
   loadingScreenWindow.loadURL(
-    `file://${path.resolve(__dirname, "../loadingScreen/", "index.html")}`
+    `file://${path.resolve(process.resourcesPath, "loadingScreen", "index.html")}`
   );
   loadingScreenWindow.show();
 });
@@ -448,9 +476,9 @@ app
   });
 
 ipcMain.handle("quit-app", (_event) => {
-  closingAccepted = true
+  closingAccepted = true;
   webAppWindow?.close();
-})
+});
 
 app.on("before-quit", () => {
   // cleanup when quitting has been finalised
@@ -460,10 +488,10 @@ app.on("before-quit", () => {
   backgroundWindow?.removeAllListeners();
 
   ipcMain.removeAllListeners();
-  process.on('uncaughtException', (err) => {
-    logger.error('Unhandled Exception while quitting:', err);
+  process.on("uncaughtException", (err) => {
+    logger.error("Unhandled Exception while quitting:", err);
   });
-  process.on('unhandledRejection', (err) => {
-    logger.error('Unhandled Rejection while quitting:', err);
+  process.on("unhandledRejection", (err) => {
+    logger.error("Unhandled Rejection while quitting:", err);
   });
-})
+});
