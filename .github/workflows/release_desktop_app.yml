@@ -8,7 +8,7 @@ on:
         required: true
         type: choice
         options:
-          # - ubuntu-latest
+          - ubuntu-latest
           - windows-latest
           # - macos-latest
         default: windows-latest
