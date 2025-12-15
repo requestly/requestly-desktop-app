@@ -91,7 +91,7 @@ If you are running requestly-proxy, follow these steps:
    sh ./watch.sh
    ```
 
-   > After every change to **requestly-proxy**, press `cmd + r` on the background window for changes to apply
+   > After every change to **requestly-proxy**, press macOS `cmd + r` and for Windows and Linux use `Ctrl+R` on the background window for changes to apply
 
 
 ### Packaging
