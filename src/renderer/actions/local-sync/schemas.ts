@@ -47,11 +47,11 @@ export enum AuthType {
   BASIC_AUTH = "BASIC_AUTH",
 }
 
-export enum ValueType {
-  STRING = "String",
-  INTEGER = "Integer",
-  BOOLEAN = "Boolean",
-  FLOAT = "Number",
+export enum KeyValueDataType {
+  STRING = "string",
+  INTEGER = "integer",
+  BOOLEAN = "boolean",
+  NUMBER = "number",
 }
 
 const KeyValuePair = Type.Object({
@@ -61,7 +61,7 @@ const KeyValuePair = Type.Object({
   isEnabled: Type.Boolean(),
   type: Type.Optional(Type.String()),
   description: Type.Optional(Type.String()),
-  dataType: Type.Optional(Type.Enum(ValueType)),
+  dataType: Type.Optional(Type.Enum(KeyValueDataType)),
 });
 
 const formData = Type.Object({
