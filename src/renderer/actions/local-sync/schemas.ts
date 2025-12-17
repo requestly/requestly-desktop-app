@@ -141,6 +141,7 @@ export const PathVariable = Type.Object({
   key: Type.String(),
   value: Type.String(),
   description: Type.Optional(Type.String()),
+  dataType: Type.Optional(Type.Enum(KeyValueDataType)),
 });
 
 export const HttpRequest = Type.Intersect([
