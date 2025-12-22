@@ -6,26 +6,24 @@ export interface AWSSecretsManagerConfig {
   accessKeyId: string;
   secretAccessKey: string;
   region: string;
+  sessionToken?: string;
 }
 
-export interface SecretProviderMetadata {
+export interface SecretProviderConfig {
   id: string;
   type: SecretProviderType;
   name: string;
   isConfigured: boolean;
   createdAt: number;
   updatedAt: number;
+  config: AWSSecretsManagerConfig;
 }
-
-export type SecretProviderConfig = AWSSecretsManagerConfig;
 
 export interface ISecretProvider {
   type: SecretProviderType;
   id: string;
 
-  configure(config: SecretProviderConfig): Promise<void>;
-  getConfig(id: string): Promise<SecretProviderConfig>; // should return all or any non-sentive metadata? sensitive data is lazily fetched
-
   testConnection(): Promise<boolean>;
   fetchSecret(secretName: string): Promise<string>;
+  listSecrets(): Promise<string[]>;
 }
