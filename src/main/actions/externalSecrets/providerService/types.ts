@@ -13,7 +13,6 @@ export interface SecretProviderConfig {
   id: string;
   type: SecretProviderType;
   name: string;
-  isConfigured: boolean;
   createdAt: number;
   updatedAt: number;
   config: AWSSecretsManagerConfig;
