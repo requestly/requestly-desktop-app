@@ -19,6 +19,7 @@ export class ExternalSecretsManager {
   async configureProvider(config: SecretProviderConfig) {
     // process the config
     // validate the config
+    this.registerProviderInstance(this.createProviderInstance(config));
 
     this.encryptedStorage.save(config, `providers/${config.id}`, [
       "config.accessKeyId",
@@ -28,8 +29,8 @@ export class ExternalSecretsManager {
   }
 
   async removeProviderConfig(id: string) {
-    this.encryptedStorage.delete(`providers/${id}`);
     this.unregisterProviderInstance(id);
+    this.encryptedStorage.delete(`providers/${id}`);
   }
 
   async getProviderConfig(id: string): Promise<SecretProviderConfig> {
@@ -38,6 +39,11 @@ export class ExternalSecretsManager {
       "config.secretAccessKey",
       "config.sessionToken",
     ]);
+  }
+
+  async testProviderConnection(id: string): Promise<boolean> {
+    const provider = this.getProviderInstance(id);
+    return provider?.testConnection();
   }
 
   private registerProviderInstance(provider: ISecretProvider) {
