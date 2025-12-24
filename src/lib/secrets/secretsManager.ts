@@ -1,7 +1,7 @@
 import { EncryptedFsStorageService } from "./encryptedFsStorageService";
 import { ISecretProvider, SecretProviderConfig } from "./providerService/types";
 
-export class ExternalSecretsManager {
+export class SecretsManager {
   private providers: Map<string, ISecretProvider> = new Map();
 
   constructor(private encryptedStorage: EncryptedFsStorageService) {}
@@ -39,6 +39,11 @@ export class ExternalSecretsManager {
       "config.secretAccessKey",
       "config.sessionToken",
     ]);
+  }
+
+  private validateProviderConfig(config: SecretProviderConfig): boolean {
+    // implement validation logic
+    return true;
   }
 
   async testProviderConnection(id: string): Promise<boolean> {
