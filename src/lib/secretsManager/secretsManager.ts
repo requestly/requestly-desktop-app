@@ -1,5 +1,6 @@
 import { EncryptedFsStorageService } from "./encryptedFsStorageService";
-import { ISecretProvider, SecretProviderConfig } from "./providerService/types";
+import { ISecretProvider } from "./providerService/ISecretProvider";
+import { SecretProviderConfig } from "./types";
 
 export class SecretsManager {
   private providers: Map<string, ISecretProvider> = new Map();
@@ -21,11 +22,13 @@ export class SecretsManager {
     // validate the config
     this.registerProviderInstance(this.createProviderInstance(config));
 
-    this.encryptedStorage.save(config, `providers/${config.id}`, [
-      "config.accessKeyId",
-      "config.secretAccessKey",
-      "config.sessionToken",
-    ]);
+    this.encryptedStorage.save<SecretProviderConfig>(
+      config,
+      `providers/${config.id}`,
+      {
+        keysToEncrypt: ["config"],
+      }
+    );
   }
 
   async removeProviderConfig(id: string) {
@@ -34,21 +37,19 @@ export class SecretsManager {
   }
 
   async getProviderConfig(id: string): Promise<SecretProviderConfig> {
-    return this.encryptedStorage.load(`providers/${id}`, [
-      "config.accessKeyId",
-      "config.secretAccessKey",
-      "config.sessionToken",
-    ]);
-  }
-
-  private validateProviderConfig(config: SecretProviderConfig): boolean {
-    // implement validation logic
-    return true;
+    return this.encryptedStorage.load<SecretProviderConfig>(`providers/${id}`, {
+      keysToDecrypt: ["config"],
+    });
   }
 
   async testProviderConnection(id: string): Promise<boolean> {
     const provider = this.getProviderInstance(id);
     return provider?.testConnection();
+  }
+
+  private validateProviderConfig(config: SecretProviderConfig): boolean {
+    // implement validation logic
+    return true;
   }
 
   private registerProviderInstance(provider: ISecretProvider) {
