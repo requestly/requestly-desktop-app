@@ -47,6 +47,13 @@ export enum AuthType {
   BASIC_AUTH = "BASIC_AUTH",
 }
 
+export enum KeyValueDataType {
+  STRING = "string",
+  INTEGER = "integer",
+  BOOLEAN = "boolean",
+  NUMBER = "number",
+}
+
 const KeyValuePair = Type.Object({
   id: Type.Number(),
   key: Type.String(),
@@ -54,6 +61,7 @@ const KeyValuePair = Type.Object({
   isEnabled: Type.Boolean(),
   type: Type.Optional(Type.String()),
   description: Type.Optional(Type.String()),
+  dataType: Type.Optional(Type.Enum(KeyValueDataType)),
 });
 
 const formData = Type.Object({
@@ -133,6 +141,7 @@ export const PathVariable = Type.Object({
   key: Type.String(),
   value: Type.String(),
   description: Type.Optional(Type.String()),
+  dataType: Type.Optional(Type.Enum(KeyValueDataType)),
 });
 
 export const HttpRequest = Type.Intersect([
