@@ -38,6 +38,7 @@ import fs from "fs";
 import logger from "../utils/logger";
 import { setupIPCForwardingToWebApp } from "./actions/setupIPCForwarding";
 import { saveCookies } from "./actions/cookiesHelpers";
+import startBackgroundProcess from "./actions/startBackgroundProcess";
 
 if (process.env.IS_SETAPP_BUILD === "true") {
   log.log("[SETAPP] build identified")
@@ -302,20 +303,27 @@ const createWindow = async () => {
     webAppWindow = null;
     return;
   });
-  const enableBGWindowDebug = () => {
-    // Show bg window and toggle the devtools
+  const enableBGWindowDebug = async () => {
+    // Show bg window and open/close DevTools to match main window
     try {
       // Suppress Global object warnings
       const globalAny: any = global;
 
-      // eslint-disable-next-line
-      if (globalAny.backgroundWindow) {
-        // Show Window
-        // eslint-disable-next-line
+      if (!globalAny.backgroundWindow || globalAny.backgroundWindow.isDestroyed()) {
+        await startBackgroundProcess();
+      }
+
+      if (globalAny.backgroundWindow && !globalAny.backgroundWindow.isDestroyed()) {
         globalAny.backgroundWindow.show();
 
-        // eslint-disable-next-line
-        globalAny.backgroundWindow.webContents.toggleDevTools();
+        const shouldBeOpen = webAppWindow?.webContents?.isDevToolsOpened() ?? true;
+        const bgWebContents = globalAny.backgroundWindow.webContents;
+
+        if (shouldBeOpen) {
+          bgWebContents.openDevTools({ mode: "detach" });
+        } else if (bgWebContents.isDevToolsOpened()) {
+          bgWebContents.closeDevTools();
+        }
       }
     } catch (error) {
       console.error(error);
