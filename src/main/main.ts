@@ -316,7 +316,7 @@ const createWindow = async () => {
       if (globalAny.backgroundWindow && !globalAny.backgroundWindow.isDestroyed()) {
         globalAny.backgroundWindow.show();
 
-        const shouldBeOpen = webAppWindow?.webContents?.isDevToolsOpened() ?? true;
+        const shouldBeOpen = webAppWindow?.webContents?.isDevToolsOpened() ?? false;
         const bgWebContents = globalAny.backgroundWindow.webContents;
 
         if (shouldBeOpen) {
