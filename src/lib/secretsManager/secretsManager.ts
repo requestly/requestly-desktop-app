@@ -1,75 +1,41 @@
-import { EncryptedFsStorageService } from "./encryptedFsStorageService";
+import { IProviderRegistry } from "./providerRegistry/IProviderRegistry";
 import { ISecretProvider } from "./providerService/ISecretProvider";
 import { SecretProviderConfig } from "./types";
 
 export class SecretsManager {
   private providers: Map<string, ISecretProvider> = new Map();
 
-  constructor(private encryptedStorage: EncryptedFsStorageService) {}
+  constructor(private registry: IProviderRegistry) {}
 
   async initialize(): Promise<void> {
-    this.encryptedStorage.initialize();
-    this.listProviderConfigs().then((configs) => {
-      configs.forEach((config) => {
-        const providerInstance = this.createProviderInstance(config);
-        this.registerProviderInstance(providerInstance);
-      });
+    this.registry.initialize();
+    this.initProvidersFromManifest();
+  }
+
+  private async initProvidersFromManifest() {
+    const configs = await this.registry.loadAllProviderConfigs();
+    configs.forEach((config) => {
+      this.providers.set(config.id, this.createProviderInstance(config));
     });
   }
 
-  async configureProvider(config: SecretProviderConfig) {
-    // process the config
-    // validate the config
-    this.registerProviderInstance(this.createProviderInstance(config));
-
-    this.encryptedStorage.save<SecretProviderConfig>(
-      config,
-      `providers/${config.id}`,
-      {
-        keysToEncrypt: ["config"],
-      }
-    );
+  async addProviderConfig(config: SecretProviderConfig) {
+    this.providers.set(config.id, this.createProviderInstance(config));
+    this.registry.saveProviderConfig(config);
   }
 
   async removeProviderConfig(id: string) {
-    this.unregisterProviderInstance(id);
-    this.encryptedStorage.delete(`providers/${id}`);
+    this.providers.delete(id);
+    this.registry.deleteProviderConfig(id);
   }
 
-  async getProviderConfig(id: string): Promise<SecretProviderConfig> {
-    return this.encryptedStorage.load<SecretProviderConfig>(`providers/${id}`, {
-      keysToDecrypt: ["config"],
-    });
+  async getProviderConfig(id: string): Promise<SecretProviderConfig | null> {
+    return this.registry.getProviderConfig(id);
   }
 
   async testProviderConnection(id: string): Promise<boolean> {
-    const provider = this.getProviderInstance(id);
+    const provider = this.providers.get(id);
     return provider?.testConnection();
-  }
-
-  private validateProviderConfig(config: SecretProviderConfig): boolean {
-    // implement validation logic
-    return true;
-  }
-
-  private registerProviderInstance(provider: ISecretProvider) {
-    this.providers.set(provider.id, provider);
-  }
-
-  private getProviderInstance(id: string): ISecretProvider | undefined {
-    return this.providers.get(id);
-  }
-
-  private listProviderConfigs(): Promise<SecretProviderConfig[]> {
-    return [];
-  }
-
-  private hasProvider(id: string): boolean {
-    return this.providers.has(id);
-  }
-
-  private unregisterProviderInstance(id: string): boolean {
-    return this.providers.delete(id);
   }
 
   private createProviderInstance(

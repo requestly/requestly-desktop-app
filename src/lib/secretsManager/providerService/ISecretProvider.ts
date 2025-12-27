@@ -7,4 +7,6 @@ export interface ISecretProvider {
   testConnection(): Promise<boolean>;
   fetchSecret(secretName: string): Promise<string>;
   listSecrets(): Promise<string[]>;
+
+  validateConfig(): boolean;
 }

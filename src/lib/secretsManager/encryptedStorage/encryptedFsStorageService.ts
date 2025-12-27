@@ -1,14 +1,7 @@
 import { safeStorage } from "electron";
+import { IEncryptedStorage } from "./IEncryptedStorage";
 
-interface EncryptionConfig<T = any> {
-  keysToEncrypt?: (keyof T)[];
-}
-
-interface DecryptionConfig<T = any> {
-  keysToDecrypt?: (keyof T)[];
-}
-
-export class EncryptedFsStorageService {
+export class EncryptedFsStorageService implements IEncryptedStorage {
   constructor(private readonly baseFolderPath: string) {}
 
   async initialize(): Promise<void> {
@@ -21,17 +14,13 @@ export class EncryptedFsStorageService {
   }
 
   async save<T extends Record<string, any>>(
-    data: T,
-    path: string,
-    encryptConfig: EncryptionConfig<T>
+    key: string,
+    data: T
   ): Promise<void> {
     // encrypted
   }
 
-  async load<T extends Record<string, any>>(
-    path: string,
-    decryptConfig: DecryptionConfig<T>
-  ): Promise<T> {}
+  async load<T extends Record<string, any>>(key: string): Promise<T> {}
 
-  async delete(path: string): Promise<void> {}
+  async delete(key: string): Promise<void> {}
 }
