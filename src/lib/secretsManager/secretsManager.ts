@@ -3,9 +3,13 @@ import { ISecretProvider } from "./providerService/ISecretProvider";
 import { SecretProviderConfig } from "./types";
 
 export class SecretsManager {
+  private registry: IProviderRegistry;
+
   private providers: Map<string, ISecretProvider> = new Map();
 
-  constructor(private registry: IProviderRegistry) {}
+  constructor(registry: IProviderRegistry) {
+    this.registry = registry;
+  }
 
   async initialize(): Promise<void> {
     this.registry.initialize();
