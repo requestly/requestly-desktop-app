@@ -1101,7 +1101,7 @@ export async function parseFileToEnv(
 
     if (parsedFileResult.type === "error") {
       Sentry.captureEvent({
-        message: `Environment not found: ${parsedFileResult.error.message}`,
+        message: `parseFileToEnv() - Environment not found: ${parsedFileResult.error.message}`,
         level: "error",
         tags: {
           fileType: "environment",
@@ -1133,7 +1133,7 @@ export async function parseFileToEnv(
     };
   } catch (e: any) {
     Sentry.captureEvent({
-      message: `Environment load exception: ${e.message}`,
+      message: `parseFileToEnv() - Environment load exception: ${e.message}`,
       level: "error",
       tags: {
         fileType: "environment",
@@ -1173,7 +1173,7 @@ export function parseToEnvironmentEntity(
           ? (variable as any).value
           : undefined;
 
-      if (!variable.id) {
+      if (variable.id === undefined || variable.id === null) {
         missingFields.push("id");
       }
       if (resolvedValue === undefined) {
