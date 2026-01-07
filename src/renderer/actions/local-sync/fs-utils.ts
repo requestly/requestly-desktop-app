@@ -279,9 +279,14 @@ export async function writeContent(
     
     const parsedContentResult = parseRaw(content, fileType.validator);
     if (parsedContentResult.type === "error") {
-      // Send analytics event for validation failure
+      // Send analytics event for validation failure (avoid sending raw content)
+      const contentMeta =
+        typeof content === "string"
+          ? { contentLength: content.length }
+          : { keys: Object.keys(content).length };
+
       Sentry.captureEvent({
-        message: `Environment validation error: ${parsedContentResult.error.message}`,
+        message: `parseRaw() - Content validation error: ${parsedContentResult.error.message}`,
         level: "error",
         tags: {
           fileType: fileType.type,
@@ -290,7 +295,7 @@ export async function writeContent(
         extra: {
           path: resource.path,
           error: parsedContentResult.error.message,
-          content,
+          contentMeta,
         },
       });
       return createFileSystemError(
@@ -321,9 +326,9 @@ export async function writeContent(
       },
     };
   } catch (e: any) {
-    // Send analytics event for write exception
+    // Send analytics event for write exception (without raw content)
     Sentry.captureEvent({
-      message: `Environment write error: ${e.message}`,
+      message: `writeContent() - File write error: ${e.message}`,
       level: "error",
       tags: {
         fileType: fileType.type,
@@ -1196,7 +1201,7 @@ export function parseToEnvironmentEntity(
     // If any variables have missing fields, send analytics event
     if (Object.keys(missingFieldsPerVariable).length > 0) {
       Sentry.captureEvent({
-        message: `Environment variables with missing fields: ${Object.keys(missingFieldsPerVariable).length}`,
+        message: `parseToEnvironmentEntityEnvironment() - variables with missing fields: ${Object.keys(missingFieldsPerVariable).length}`,
         level: "warning",
         tags: {
           fileType: "environment",
@@ -1213,16 +1218,16 @@ export function parseToEnvironmentEntity(
     return newVariables;
   } catch (e: any) {
     Sentry.captureEvent({
-      message: `Environment variable transform exception: ${e.message}`,
-      level: "error",
-      tags: {
-        fileType: "environment",
-        errorType: "variable_transform_exception",
-      },
-      extra: {
-        error: e.message,
-        stack: e.stack,
-      },
+        message: `parseToEnvironmentEntity() - Environment variable transform exception: ${e.message}`,
+        level: "error",
+        tags: {
+          fileType: "environment",
+          errorType: "variable_transform_exception",
+        },
+        extra: {
+          error: e.message,
+          stack: e.stack,
+        },
     });
     throw e;
   }
