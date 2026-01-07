@@ -1101,7 +1101,7 @@ export async function parseFileToEnv(
 
     if (parsedFileResult.type === "error") {
       Sentry.captureEvent({
-        message: `parseFileToEnv() - Environment not found: ${parsedFileResult.error.message}`,
+        message: `parseFileToEnv() - Environment load failed: ${parsedFileResult.error.message}`,
         level: "error",
         tags: {
           fileType: "environment",
