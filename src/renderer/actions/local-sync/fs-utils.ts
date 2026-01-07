@@ -1201,7 +1201,7 @@ export function parseToEnvironmentEntity(
     // If any variables have missing fields, send analytics event
     if (Object.keys(missingFieldsPerVariable).length > 0) {
       Sentry.captureEvent({
-        message: `parseToEnvironmentEntityEnvironment() - variables with missing fields: ${Object.keys(missingFieldsPerVariable).length}`,
+        message: `parseToEnvironmentEntity() - variables with missing fields: ${Object.keys(missingFieldsPerVariable).length}`,
         level: "warning",
         tags: {
           fileType: "environment",
