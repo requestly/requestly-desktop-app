@@ -29,6 +29,11 @@ export class RPCServiceOverIPC {
   ) {
     const channelName = `${this.RPC_CHANNEL_PREFIX}${exposedMethodName}`;
     // console.log("DBG-1: exposing channel", channelName, Date.now());
+    
+    // CRITICAL FIX: Remove all existing listeners before adding a new one
+    // This prevents duplicate listeners from hot reloads, multiple builds, etc.
+    ipcRenderer.removeAllListeners(channelName);
+    
     ipcRenderer.on(channelName, async (_event, args) => {
       // console.log(
       //   "DBG-1: received event on channel",
