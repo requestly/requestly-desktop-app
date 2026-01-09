@@ -1,6 +1,8 @@
 import * as fs from "fs/promises";
 import * as path from "path";
-import { IProviderRegistry } from "./IProviderRegistry";
+import {
+  AbstractProviderRegistry,
+} from "./IProviderRegistry";
 import { SecretProviderConfig, SecretProviderType } from "../types";
 import { IEncryptedStorage } from "../encryptedStorage/IEncryptedStorage";
 
@@ -15,13 +17,19 @@ export interface ProvidersManifest {
   }[];
 }
 
-export class FileBasedProviderRegistry implements IProviderRegistry {
+// Functions
+// 1. initialize registry (create config dir if not exists)
+// 2. list providers
+// 3.
+
+export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   private manifestPath: string;
 
-  constructor(
-    private readonly encryptedStorage: IEncryptedStorage,
-    private readonly configDir: string
-  ) {
+  private configDir: string;
+
+  constructor(encryptedStorage: IEncryptedStorage, configDir: string) {
+    super(encryptedStorage);
+    this.configDir = configDir;
     this.manifestPath = path.join(configDir, MANIFEST_FILENAME);
   }
 
