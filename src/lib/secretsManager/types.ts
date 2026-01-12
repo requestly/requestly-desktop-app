@@ -26,12 +26,30 @@ export interface SecretReference {
   key?: string;
 }
 
+
+
 /**
  *
  * type SecretReference =
  *   | { type: "aws"; nameOrArn: string; versionId?: string; versionStage?: string }
  *   | { type: "vault"; path: string; version?: number; key?: string };
  */
+
+ProviderCache: {
+  [key: string]: {
+    value: string;
+    ttl: number;
+  }[]
+} = {
+  "foo": {
+      value: "bar",
+      ttl: 1000,
+  }
+}
+
+
+
+
 
 
 export interface CachedSecret {

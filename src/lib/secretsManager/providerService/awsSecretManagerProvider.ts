@@ -5,6 +5,7 @@ import {
   SecretProviderType,
   SecretReference,
 } from "../types";
+import { SecretsCacheService } from "../cacheService";
 
 // Functions
 // 1. validate config
@@ -17,12 +18,24 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
 
   readonly id: string;
 
+
   protected config: AWSSecretsManagerConfig;
 
-  constructor(providerConfig: SecretProviderConfig) {
+  protected cacheService: SecretsCacheService;
+
+  // { type: "aws"; nameOrArn: string; versionId?: string; versionStage?: string }
+  protected getSecretIdentfier(ref: AwsReference): string {
+    return `name=${this.nameOrArn};version:${ref.version}`;
+  }
+
+  constructor(
+    providerConfig: SecretProviderConfig,
+    cacheService: SecretsCacheService
+  ) {
     super();
     this.id = providerConfig.id;
     this.config = providerConfig.config as AWSSecretsManagerConfig;
+    this.cacheService = cacheService;
   }
 
   static validateConfig(config: AWSSecretsManagerConfig): boolean {

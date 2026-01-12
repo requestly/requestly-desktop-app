@@ -1,15 +1,16 @@
 import { SecretsCacheService } from "./cacheService";
-import { IProviderRegistry } from "./providerRegistry/IProviderRegistry";
-import { createProvider } from "./providerService/providerFactory";
 import { SecretProviderConfig, SecretReference } from "./types";
-import { AbstractSecretProvider } from "./providerService/ISecretProvider";
+import { EncryptedFsStorageService } from "./encryptedStorage/encryptedFsStorageService";
+import { FileBasedProviderRegistry } from "./providerRegistry/FsProviderRegistry";
+import { AbstractProviderRegistry } from "./providerRegistry/AbstractProviderRegistry";
 
 // Questions
-// 1. store multiple versions of the same secret or not?
+// 1. store multiple versions of the same secret or not?@
 // 2. use secretReference or do it like mp with union types?
-// 3. cache invalidation strategy?
+// 3. cache invalidation strategy?@
 // 4. Need a new method for refreshing all the cached secrets
 // --5. reuse the storage interface for encrypted storage and cache storage?
+// 6. // providerId in fetchByIdentifier ?? would be confusing and then I can name it key but without using "key" word. How can I make it generic? AI suggested using composite key.
 
 // Functions
 // 1. initialize registry and cache service
@@ -25,37 +26,44 @@ import { AbstractSecretProvider } from "./providerService/ISecretProvider";
 // 4. Refresh Secrets - bulk fetch and update all secrets from their providers and update the cache
 //
 
+// Merging secretManager and providerRegistry
+// Methods like createProviderInstance need to be moved to the providerRegistry
+
+const encryptedStorage = new EncryptedFsStorageService("");
+const providerRegistry = new FileBasedProviderRegistry(encryptedStorage, "");
+
+const secretsManager = new SecretsManager(providerRegistry);
+
+// createProviderInstance should have cache Storage as dependency.
+// providerRegistry cannot be exposed because it would have storage specific code like fs methods etc.
+
+// Why need to change cache storage at provider lever?
+// Different providers may have different cache storage requirements but why?
+// Different providers can have different source of truth but caching should be common. WHy not?
+// But agreed provider should be the one interacting with cache storage and repo layer and not secretmanager
+
+// Changes
+// 1. cacheService associated with provider instance instead of secretManager.
+// 2. registry manages the providers map
+// 3. All the methods from secretManager delegated to registry and provider instances.
+// 4. provider instance creation is moved to registry.
+
 export class SecretsManager {
-  private registry: IProviderRegistry;
+  private registry: AbstractProviderRegistry;
 
-  private cacheService: SecretsCacheService;
-
-  private providers: Map<string, AbstractSecretProvider> = new Map();
-
-  constructor(registry: IProviderRegistry, cacheService: SecretsCacheService) {
+  constructor(registry: AbstractProviderRegistry) {
     this.registry = registry;
-    this.cacheService = cacheService;
   }
 
   async initialize(): Promise<void> {
     this.registry.initialize();
-    this.initProvidersFromManifest();
-  }
-
-  private async initProvidersFromManifest() {
-    const configs = await this.registry.loadAllProviderConfigs();
-    configs.forEach((config) => {
-      this.providers.set(config.id, this.createProviderInstance(config));
-    });
   }
 
   async addProviderConfig(config: SecretProviderConfig) {
-    this.providers.set(config.id, this.createProviderInstance(config));
-    this.registry.saveProviderConfig(config);
+    this.registry.setProviderConfig(config);
   }
 
   async removeProviderConfig(id: string) {
-    this.providers.delete(id);
     this.registry.deleteProviderConfig(id);
   }
 
@@ -64,37 +72,12 @@ export class SecretsManager {
   }
 
   async testProviderConnection(id: string): Promise<boolean> {
-    const provider = this.providers.get(id);
+    const provider = this.registry.getProvider(id);
     return provider?.testConnection() ?? false;
   }
 
   async fetchSecret(providerId: string, ref: SecretReference): Promise<string> {
-    const cached = await this.cacheService.get(
-      providerId,
-      ref.identifier,
-      ref.version
-    );
-
-    if (cached) {
-      return cached;
-    }
-
-    const provider = this.providers.get(providerId);
-    if (!provider) {
-      throw new Error(`Provider not found: ${providerId}`);
-    }
-
-    const secret = await provider.fetchSecret(ref);
-
-    await this.cacheService.set(
-      providerId,
-      provider.type,
-      ref.identifier,
-      secret,
-      ref.version
-    );
-
-    return secret;
+    this.registry.getProvider(providerId)?.fetchSecret(ref);
   }
 
   async refreshSecrets(
@@ -114,33 +97,8 @@ export class SecretsManager {
     }
   }
 
-  // Do we need this method?
-  async fetchSecretFresh(
-    providerId: string,
-    ref: SecretReference
-  ): Promise<string> {
-    await this.cacheService.invalidate(providerId, ref.identifier, ref.version);
-
-    const provider = this.providers.get(providerId);
-    if (!provider) {
-      throw new Error(`Provider not found: ${providerId}`);
-    }
-
-    const secret = await provider.fetchSecret(ref);
-
-    await this.cacheService.set(
-      providerId,
-      provider.type,
-      ref.identifier,
-      secret,
-      ref.version
-    );
-
-    return secret;
-  }
-
   async listSecrets(providerId: string): Promise<string[]> {
-    const provider = this.providers.get(providerId);
+    const provider = this.registry.getProvider(providerId);
     if (!provider) {
       throw new Error(`Provider not found: ${providerId}`);
     }
@@ -148,18 +106,11 @@ export class SecretsManager {
     return provider.listSecrets();
   }
 
-  async invalidateCache(providerId?: string): Promise<void> {
-    if (providerId) {
-      await this.cacheService.invalidateByProvider(providerId);
-    } else {
-      await this.cacheService.clear();
+  async invalidateCache(providerId: string): Promise<void> {
+    const provider = this.registry.getProvider(providerId);
+    if (!provider) {
+      throw new Error(`Provider not found: ${providerId}`);
     }
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  private createProviderInstance(
-    config: SecretProviderConfig
-  ): AbstractSecretProvider {
-    return createProvider(config);
+    await provider.invalidateCache();
   }
 }

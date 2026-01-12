@@ -1,21 +1,14 @@
-import * as fs from "fs/promises";
+import * as fs from "fs";
 import * as path from "path";
-import {
-  AbstractProviderRegistry,
-} from "./IProviderRegistry";
 import { SecretProviderConfig, SecretProviderType } from "../types";
-import { IEncryptedStorage } from "../encryptedStorage/IEncryptedStorage";
+import { createProvider } from "../providerService/providerFactory";
+import { AbstractProviderRegistry } from "./AbstractProviderRegistry";
+import { AbstractEncryptedStorage } from "../encryptedStorage/AbstractEncryptedStorage";
+import { AbstractSecretProvider } from "../providerService/AbstractSecretProvider";
 
 const MANIFEST_FILENAME = "providers.json";
 
-export interface ProvidersManifest {
-  version: string;
-  providers: {
-    id: string;
-    storagePath: string;
-    type: SecretProviderType;
-  }[];
-}
+
 
 // Functions
 // 1. initialize registry (create config dir if not exists)
@@ -27,24 +20,45 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
 
   private configDir: string;
 
-  constructor(encryptedStorage: IEncryptedStorage, configDir: string) {
+  protected providers: Map<string, AbstractSecretProvider> = new Map();
+
+  constructor(encryptedStorage: AbstractEncryptedStorage, configDir: string) {
     super(encryptedStorage);
     this.configDir = configDir;
     this.manifestPath = path.join(configDir, MANIFEST_FILENAME);
   }
 
+  getProvider(providerId: string): AbstractSecretProvider | null {
+    return this.providers.get(providerId) || null;
+  }
+
   async initialize(): Promise<void> {
     await this.ensureConfigDir();
+    this.initProvidersFromManifest();
   }
 
-  async listProviders(): Promise<string[]> {
+  private async initProvidersFromManifest() {
+    const configs = await this.getAllProviderConfigs();
+    configs.forEach((config) => {
+      this.providers.set(config.id, this.createProviderInstance(config));
+    });
+  }
+
+  async getAllProviderConfigs(): Promise<SecretProviderConfig[]> {
     const manifest = await this.loadManifest();
-    return manifest.providers.map((p) => p.id);
+    const configs: SecretProviderConfig[] = [];
+
+    for (const entry of manifest.providers) {
+      const config = await this.encryptedStorage.load<SecretProviderConfig>(
+        entry.id
+      );
+      configs.push(config);
+    }
+
+    return configs;
   }
 
-  async loadAllProviderConfigs(): Promise<SecretProviderConfig[]> {}
-
-  async saveProviderConfig(config: SecretProviderConfig): Promise<void> {
+  async setProviderConfig(config: SecretProviderConfig): Promise<void> {
     const manifest = await this.loadManifest();
     const storageKey = config.id;
 
@@ -53,6 +67,7 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
     // Update manifest
 
     await this.saveManifest(manifest);
+    this.providers.set(config.id, this.createProviderInstance(config));
   }
 
   async deleteProviderConfig(id: string): Promise<void> {
@@ -64,6 +79,7 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
 
     manifest.providers = manifest.providers.filter((p) => p.id !== id);
     await this.saveManifest(manifest);
+    this.providers.delete(id);
   }
 
   async getProviderConfig(id: string): Promise<SecretProviderConfig | null> {
@@ -82,7 +98,14 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
     }
   }
 
-  private async loadManifest(): Promise<ProvidersManifest> {}
+  protected async loadManifest(): Promise<ProvidersManifest> {}
 
-  private async saveManifest(manifest: ProvidersManifest): Promise<void> {}
+  protected async saveManifest(manifest: ProvidersManifest): Promise<void> {}
+
+  // eslint-disable-next-line class-methods-use-this
+  protected createProviderInstance(
+    config: SecretProviderConfig
+  ): AbstractSecretProvider {
+    return createProvider(config);
+  }
 }
