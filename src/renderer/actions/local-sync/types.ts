@@ -82,6 +82,7 @@ export type API = {
   id: string;
   data: {
     name: string;
+    rank?: string;
     request: Static<typeof ApiRequest>;
   };
 };
