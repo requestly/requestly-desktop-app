@@ -68,6 +68,8 @@ export default merge(baseConfig, {
       DEBUG_PROD: false,
       START_MINIMIZED: false,
       IS_SETAPP_BUILD: false,
+      IS_BETA_BUILD: false,
+      PREVIEW_URL: ''
     }),
   ],
 

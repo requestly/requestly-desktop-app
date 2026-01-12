@@ -68,6 +68,11 @@ const getAssetPath = (...paths: string[]): string => {
 const isDevelopment =
   process.env.NODE_ENV === "development" || process.env.DEBUG_PROD === "true";
 
+const DESKTOP_APP_URL = isDevelopment ? 'http://localhost:3000' : 
+  process.env.IS_BETA_BUILD == "true" ? 
+    process.env.PREVIEW_URL ? process.env.PREVIEW_URL : "https://beta.requestly.io" :
+    "https://app.requestly.io"
+
 if (isDevelopment) {
   const sourceMapSupport = require("source-map-support");
   sourceMapSupport.install();
@@ -232,10 +237,6 @@ const createWindow = async () => {
   new AutoUpdate(webAppWindow);
   remote.enable(webAppWindow.webContents);
 
-  // TODO @sahil: Prod and Local Urls should be supplied by @requestly/requestly-core-npm package.
-  const DESKTOP_APP_URL = isDevelopment
-    ? "http://localhost:3000"
-    : "https://app.requestly.io";
   webAppWindow.loadURL(DESKTOP_APP_URL, {
     extraHeaders: "pragma: no-cache\n",
   });
