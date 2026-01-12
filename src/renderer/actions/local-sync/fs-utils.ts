@@ -27,6 +27,7 @@ import {
   COLLECTION_VARIABLES_FILE,
   CONFIG_FILE,
   CORE_CONFIG_FILE_VERSION,
+  DEFAULT_WORKSPACE_NAME,
   DESCRIPTION_FILE,
   DS_STORE_FILE,
   ENVIRONMENT_VARIABLES_FOLDER,
@@ -35,6 +36,7 @@ import {
   GLOBAL_CONFIG_FILE_NAME,
   GLOBAL_CONFIG_FOLDER_PATH,
   GLOBAL_ENV_FILE,
+  LOCAL_WORKSPACES_DIRECTORY_NAME,
   WORKSPACE_CONFIG_FILE_VERSION,
 } from "./constants";
 import { Static, TSchema } from "@sinclair/typebox";
@@ -61,6 +63,7 @@ import path from "node:path";
 import { FsService } from "./fs/fs.service";
 import type { FsIgnoreManager } from "./fsIgnore-manager";
 import { fileIndex } from "./file-index";
+import { homedir } from "os";
 
 // TODO: Fix the delimiters added by electron on file paths
 function sanitizePath(rawPath: string) {
@@ -111,8 +114,8 @@ export async function deleteFsResource(
       }
       await FsService.unlink(resource.path);
       fileIndex.remove({
-        type: 'path',
-        path: resource.path
+        type: "path",
+        path: resource.path,
       });
     } else {
       const exists = await getIfFolderExists(resource);
@@ -126,8 +129,8 @@ export async function deleteFsResource(
       }
       await FsService.rmdir(resource.path, { recursive: true });
       fileIndex.remove({
-        type: 'path',
-        path: resource.path
+        type: "path",
+        path: resource.path,
       });
     }
     return {
@@ -170,8 +173,6 @@ export async function createFolder(
       } else {
         fileIndex.getId(resource.path);
       }
-
-
     } else if (errorIfExist) {
       return createFileSystemError(
         { message: "Folder already exists!" },
@@ -196,21 +197,23 @@ export async function rename<T extends FsResource>(
 ): Promise<FileSystemResult<T>> {
   try {
     const alreadyExists = await (async () => {
-      if (newResource.type === 'folder') {
+      if (newResource.type === "folder") {
         return getIfFolderExists(newResource);
       }
       return getIfFileExists(newResource);
     })();
-    const isSamePath = getNormalizedPath(oldResource.path).toLowerCase() === getNormalizedPath(newResource.path).toLowerCase();
+    const isSamePath =
+      getNormalizedPath(oldResource.path).toLowerCase() ===
+      getNormalizedPath(newResource.path).toLowerCase();
     if (!isSamePath && alreadyExists) {
       return {
-        type: 'error',
+        type: "error",
         error: {
-          message: 'Entity already exists!',
+          message: "Entity already exists!",
           fileType: FileTypeEnum.UNKNOWN,
           path: newResource.path,
           code: ErrorCode.EntityAlreadyExists,
-        }
+        },
       };
     }
     await FsService.rename(oldResource.path, newResource.path);
@@ -259,19 +262,20 @@ export async function writeContent(
   }
 ): Promise<FileSystemResult<{ resource: FileResource }>> {
   try {
-    const { writeWithElevatedAccess = false, performExistenceCheck = false } = options || {};
+    const { writeWithElevatedAccess = false, performExistenceCheck = false } =
+      options || {};
 
     if (performExistenceCheck) {
       const alreadyExists = await getIfFileExists(resource);
       if (alreadyExists) {
         return {
-          type: 'error',
+          type: "error",
           error: {
-            message: 'Entity already exists!',
+            message: "Entity already exists!",
             fileType: fileType.type,
             path: resource.path,
             code: ErrorCode.EntityAlreadyExists,
-          }
+          },
         };
       }
     }
@@ -608,6 +612,57 @@ export async function createWorkspaceFolder(
   });
 }
 
+export async function createDefaultWorkspace(): Promise<
+  FileSystemResult<{ name: string; id: string; path: string }>
+> {
+  const rqDirectoryPath = path.join(
+    homedir(),
+    "Documents",
+    LOCAL_WORKSPACES_DIRECTORY_NAME
+  );
+  const rqDirectoryExists = await FsService.lstat(rqDirectoryPath)
+    .then((stats) => stats.isDirectory())
+    .catch(() => false);
+
+  const workspaceFolderPath = appendPath(
+    rqDirectoryPath,
+    DEFAULT_WORKSPACE_NAME
+  );
+
+  const doesWorkspaceFolderExists = await FsService.lstat(workspaceFolderPath)
+    .then((stats) => stats.isDirectory())
+    .catch(() => false);
+
+  if (doesWorkspaceFolderExists) {
+    return {
+      type: "error",
+      error: {
+        message: "Workspace already exists!",
+        fileType: FileTypeEnum.UNKNOWN,
+        path: workspaceFolderPath,
+        code: ErrorCode.EntityAlreadyExists,
+      },
+    };
+  }
+  if (!rqDirectoryExists) {
+    const rqDirectoryCreationResult = await createFolder(
+      createFsResource({
+        rootPath: rqDirectoryPath,
+        path: rqDirectoryPath,
+        type: "folder",
+      }),
+      {
+        createWithElevatedAccess: true,
+      }
+    );
+    if (rqDirectoryCreationResult.type === "error") {
+      return rqDirectoryCreationResult;
+    }
+  }
+
+  return createWorkspaceFolder(DEFAULT_WORKSPACE_NAME, rqDirectoryPath);
+}
+
 export async function migrateGlobalConfig(oldConfig: any) {
   if (!oldConfig.version) {
     return {
@@ -621,14 +676,14 @@ export async function migrateGlobalConfig(oldConfig: any) {
 
 type WorkspaceValidationResult =
   | {
-    valid: true;
-    ws: Static<typeof GlobalConfig>["workspaces"][number];
-  }
+      valid: true;
+      ws: Static<typeof GlobalConfig>["workspaces"][number];
+    }
   | {
-    valid: false;
-    ws: Static<typeof GlobalConfig>["workspaces"][number];
-    error: { message: string };
-  };
+      valid: false;
+      ws: Static<typeof GlobalConfig>["workspaces"][number];
+      error: { message: string };
+    };
 
 async function validateWorkspace(
   ws: Static<typeof GlobalConfig>["workspaces"][number]
