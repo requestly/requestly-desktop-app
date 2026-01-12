@@ -20,37 +20,13 @@ export interface SecretProviderConfig {
   config: ProviderSpecificConfig;
 }
 
-export interface SecretReference {
-  identifier: string;
+export type AwsSecretReference = {
+  type: SecretProviderType.AWS_SECRETS_MANAGER;
+  nameOrArn: string;
   version?: string;
-  key?: string;
-}
+};
 
-
-
-/**
- *
- * type SecretReference =
- *   | { type: "aws"; nameOrArn: string; versionId?: string; versionStage?: string }
- *   | { type: "vault"; path: string; version?: number; key?: string };
- */
-
-ProviderCache: {
-  [key: string]: {
-    value: string;
-    ttl: number;
-  }[]
-} = {
-  "foo": {
-      value: "bar",
-      ttl: 1000,
-  }
-}
-
-
-
-
-
+export type SecretReference = AwsSecretReference; // | VaultSecretReference; // | OtherProviderSecretReference;
 
 export interface CachedSecret {
   id: string; // Unique identifier

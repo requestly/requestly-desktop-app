@@ -1,15 +1,9 @@
-import { SecretsCacheService } from "./cacheService";
 import { SecretProviderConfig, SecretReference } from "./types";
 import { EncryptedFsStorageService } from "./encryptedStorage/encryptedFsStorageService";
 import { FileBasedProviderRegistry } from "./providerRegistry/FsProviderRegistry";
 import { AbstractProviderRegistry } from "./providerRegistry/AbstractProviderRegistry";
 
 // Questions
-// 1. store multiple versions of the same secret or not?@
-// 2. use secretReference or do it like mp with union types?
-// 3. cache invalidation strategy?@
-// 4. Need a new method for refreshing all the cached secrets
-// --5. reuse the storage interface for encrypted storage and cache storage?
 // 6. // providerId in fetchByIdentifier ?? would be confusing and then I can name it key but without using "key" word. How can I make it generic? AI suggested using composite key.
 
 // Functions
@@ -25,9 +19,6 @@ import { AbstractProviderRegistry } from "./providerRegistry/AbstractProviderReg
 // 3. FETCH SECRET - check cache first, if not found or expired, fetch from provider, store in cache, return secret.
 // 4. Refresh Secrets - bulk fetch and update all secrets from their providers and update the cache
 //
-
-// Merging secretManager and providerRegistry
-// Methods like createProviderInstance need to be moved to the providerRegistry
 
 const encryptedStorage = new EncryptedFsStorageService("");
 const providerRegistry = new FileBasedProviderRegistry(encryptedStorage, "");
@@ -77,7 +68,7 @@ export class SecretsManager {
   }
 
   async fetchSecret(providerId: string, ref: SecretReference): Promise<string> {
-    this.registry.getProvider(providerId)?.fetchSecret(ref);
+    this.registry.getProvider(providerId)?.getSecret(ref);
   }
 
   async refreshSecrets(
@@ -95,22 +86,5 @@ export class SecretsManager {
     for (const s of secrets) {
       const secret = await this.fetchSecret(s.providerId, s.ref);
     }
-  }
-
-  async listSecrets(providerId: string): Promise<string[]> {
-    const provider = this.registry.getProvider(providerId);
-    if (!provider) {
-      throw new Error(`Provider not found: ${providerId}`);
-    }
-
-    return provider.listSecrets();
-  }
-
-  async invalidateCache(providerId: string): Promise<void> {
-    const provider = this.registry.getProvider(providerId);
-    if (!provider) {
-      throw new Error(`Provider not found: ${providerId}`);
-    }
-    await provider.invalidateCache();
   }
 }

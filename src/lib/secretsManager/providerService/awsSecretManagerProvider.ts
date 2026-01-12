@@ -1,11 +1,13 @@
-import { AbstractSecretProvider } from "./ISecretProvider";
+/* eslint-disable class-methods-use-this */
 import {
+  AwsSecretReference,
   AWSSecretsManagerConfig,
+  CachedSecret,
   SecretProviderConfig,
   SecretProviderType,
   SecretReference,
 } from "../types";
-import { SecretsCacheService } from "../cacheService";
+import { AbstractSecretProvider } from "./AbstractSecretProvider";
 
 // Functions
 // 1. validate config
@@ -13,35 +15,25 @@ import { SecretsCacheService } from "../cacheService";
 // 3. fetch secret
 // 4. list secrets
 
+const DEFAULT_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 export class AWSSecretsManagerProvider extends AbstractSecretProvider {
   readonly type = SecretProviderType.AWS_SECRETS_MANAGER;
 
   readonly id: string;
 
-
   protected config: AWSSecretsManagerConfig;
 
-  protected cacheService: SecretsCacheService;
+  protected cache: Map<string, CachedSecret> = new Map();
 
-  // { type: "aws"; nameOrArn: string; versionId?: string; versionStage?: string }
-  protected getSecretIdentfier(ref: AwsReference): string {
-    return `name=${this.nameOrArn};version:${ref.version}`;
+  protected getSecretIdentfier(ref: AwsSecretReference): string {
+    return `name=${ref.nameOrArn};version:${ref.version}`;
   }
 
-  constructor(
-    providerConfig: SecretProviderConfig,
-    cacheService: SecretsCacheService
-  ) {
+  constructor(providerConfig: SecretProviderConfig) {
     super();
     this.id = providerConfig.id;
     this.config = providerConfig.config as AWSSecretsManagerConfig;
-    this.cacheService = cacheService;
-  }
-
-  static validateConfig(config: AWSSecretsManagerConfig): boolean {
-    return Boolean(
-      config.accessKeyId && config.secretAccessKey && config.region
-    );
   }
 
   async testConnection(): Promise<boolean> {
@@ -52,7 +44,39 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
     return true;
   }
 
-  async fetchSecret(ref: SecretReference): Promise<string> {}
+  async getSecret(ref: AwsSecretReference): Promise<string> {
+    const secretKey = this.getSecretIdentfier(ref);
+    const cachedSecret = this.cache.get(secretKey);
+    const now = Date.now();
 
-  async listSecrets(): Promise<string[]> {}
+    if (cachedSecret && cachedSecret.expiry > now) {
+      return cachedSecret.value;
+    }
+
+    // Fetch from AWS Secrets Manager
+    const secretValue = "fetched-secret-value"; // Placeholder for actual fetch logic
+
+    this.cache.set(secretKey, {
+      value: secretValue,
+      expiry: now + DEFAULT_CACHE_TTL_MS,
+    });
+
+    return secretValue;
+  }
+
+  async getSecrets(): Promise<string[]> {}
+
+  async setSecret(): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+
+  async setSecrets(): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+
+  static validateConfig(config: AWSSecretsManagerConfig): boolean {
+    return Boolean(
+      config.accessKeyId && config.secretAccessKey && config.region
+    );
+  }
 }

@@ -3,13 +3,13 @@ import { CachedSecret, SecretProviderType, SecretReference } from "../types";
 export abstract class AbstractSecretProvider {
   protected cache: Map<string, CachedSecret> = new Map();
 
-  abstract getSecretIdentfier(ref: SecretReference): string;
-
   abstract readonly type: SecretProviderType;
 
   abstract readonly id: string;
 
   protected config: any;
+
+  protected abstract getSecretIdentfier(ref: SecretReference): string;
 
   abstract testConnection(): Promise<boolean>;
 

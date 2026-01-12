@@ -62,6 +62,7 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
     const manifest = await this.loadManifest();
     const storageKey = config.id;
 
+    // do atomic write
     await this.encryptedStorage.save(storageKey, config);
 
     // Update manifest
