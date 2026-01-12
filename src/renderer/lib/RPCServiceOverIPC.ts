@@ -8,6 +8,12 @@ import { ipcRenderer } from "electron";
  * - Requires Arguments and Responses of those methods to be serializable. (limitation imposed by electron IPC)
  * - Currently only allows one generic fire-and-forget event channel for the service to send events to the webapp -> relayed over "send-from-background-to-webapp" channel.
  */
+
+/**
+ * Making it a Global to prevent re-creation of channels during HMR
+ */
+const REGISTERED_CHANNELS = new Set<string>();
+
 export class RPCServiceOverIPC {
   private RPC_CHANNEL_PREFIX: string;
 
@@ -28,11 +34,12 @@ export class RPCServiceOverIPC {
     method: (..._args: any[]) => Promise<any>
   ) {
     const channelName = `${this.RPC_CHANNEL_PREFIX}${exposedMethodName}`;
-    // console.log("DBG-1: exposing channel", channelName, Date.now());
+
+    if (REGISTERED_CHANNELS.has(channelName)) {
+      return;
+    }
     
-    // CRITICAL FIX: Remove all existing listeners before adding a new one
-    // This prevents duplicate listeners from hot reloads, multiple builds, etc.
-    ipcRenderer.removeAllListeners(channelName);
+    REGISTERED_CHANNELS.add(channelName);
     
     ipcRenderer.on(channelName, async (_event, args) => {
       // console.log(
