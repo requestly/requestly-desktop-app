@@ -41,7 +41,17 @@ export class RPCServiceOverIPC {
     
     REGISTERED_CHANNELS.add(channelName);
     
-    ipcRenderer.on(channelName, async (_event, args) => {
+    ipcRenderer.on(channelName, async (_event, payload) => {
+      // Support both old format (args only) and new format (with requestId)
+      let requestId: string | undefined;
+      let args: any;
+      
+      if (payload && typeof payload === 'object' && 'requestId' in payload && 'args' in payload) {
+        requestId = payload.requestId;
+        args = payload.args;
+      } else {
+        args = payload;
+      }
       // console.log(
       //   "DBG-1: received event on channel",
       //   channelName,
@@ -61,7 +71,9 @@ export class RPCServiceOverIPC {
         //   exposedMethodName,
         //   Date.now()
         // );
-        ipcRenderer.send(`reply-${channelName}`, {
+        
+        const replyChannel = requestId ? `reply-${channelName}-${requestId}` : `reply-${channelName}`;
+        ipcRenderer.send(replyChannel, {
           success: true,
           data: result,
         });
@@ -71,7 +83,9 @@ export class RPCServiceOverIPC {
         //   error,
         //   Date.now()
         // );
-        ipcRenderer.send(`reply-${channelName}`, {
+        
+        const replyChannel = requestId ? `reply-${channelName}-${requestId}` : `reply-${channelName}`;
+        ipcRenderer.send(replyChannel, {
           success: false,
           data: error.message,
         });

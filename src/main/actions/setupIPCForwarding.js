@@ -1,15 +1,23 @@
 import { ipcMain } from "electron";
 
 export const setupIPCForwardingToBackground = (backgroundWindow) => {
+  let requestIdCounter = 0;
+  
   ipcMain.handle(
     "forward-event-from-webapp-to-background-and-await-reply",
     async (event, incomingData) => {
       return new Promise((resolve) => {
         const { actualPayload, eventName } = incomingData;
-        ipcMain.once(`reply-${eventName}`, (responseEvent, responsePayload) => {
+        // Generate unique ID for this specific request to avoid reply channel collision
+        const requestId = `${eventName}-${Date.now()}-${++requestIdCounter}`;
+        
+        // Each request gets its own unique reply channel
+        ipcMain.once(`reply-${eventName}-${requestId}`, (responseEvent, responsePayload) => {
           resolve(responsePayload);
         });
-        backgroundWindow.webContents.send(eventName, actualPayload);
+        
+        // Send requestId so background can reply on the correct channel
+        backgroundWindow.webContents.send(eventName, { requestId, args: actualPayload });
       });
     }
   );
