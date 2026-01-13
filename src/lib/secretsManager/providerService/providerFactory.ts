@@ -1,8 +1,10 @@
 import { SecretProviderConfig, SecretProviderType } from "../types";
-import { ISecretProvider } from "./ISecretProvider";
 import { AWSSecretsManagerProvider } from "./awsSecretManagerProvider";
+import { AbstractSecretProvider } from "./AbstractSecretProvider";
 
-export function createProvider(config: SecretProviderConfig): ISecretProvider {
+export function createProvider(
+  config: SecretProviderConfig
+): AbstractSecretProvider {
   switch (config.type) {
     case SecretProviderType.AWS_SECRETS_MANAGER:
       return new AWSSecretsManagerProvider(config);
@@ -10,4 +12,3 @@ export function createProvider(config: SecretProviderConfig): ISecretProvider {
       throw new Error(`Unknown provider type: ${config.type}`);
   }
 }
-
