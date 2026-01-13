@@ -79,11 +79,11 @@ async function hasWorkspaceConfigInAncestors(
   while (true) {
     const configPath = appendPath(currentDir, CONFIG_FILE);
 
-    const isWorkspaceAtCurrentLevel = await FsService.lstat(configPath)
+    const doesConfigFileExist = await FsService.lstat(configPath)
       .then((stats) => stats.isFile())
       .catch(() => false);
 
-    if (isWorkspaceAtCurrentLevel) {
+    if (doesConfigFileExist) {
       return true;
     }
 
