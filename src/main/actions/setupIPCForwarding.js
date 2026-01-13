@@ -8,16 +8,28 @@ export const setupIPCForwardingToBackground = (backgroundWindow) => {
     async (event, incomingData) => {
       return new Promise((resolve) => {
         const { actualPayload, eventName } = incomingData;
-        // Generate unique ID for this specific request to avoid reply channel collision
-        const requestId = `${eventName}-${Date.now()}-${++requestIdCounter}`;
-        
-        // Each request gets its own unique reply channel
-        ipcMain.once(`reply-${eventName}-${requestId}`, (responseEvent, responsePayload) => {
-          resolve(responsePayload);
-        });
-        
-        // Send requestId so background can reply on the correct channel
-        backgroundWindow.webContents.send(eventName, { requestId, args: actualPayload });
+        // Doing this only for local_sync calls, rest calls are handled by the old code.
+        const isRPCCall = eventName && eventName.includes('local_sync');
+
+        if(isRPCCall) {
+          // Generate unique ID for this specific request to avoid reply channel collision
+            const requestId = `${eventName}-${Date.now()}-${++requestIdCounter}`;
+
+            // Each request gets its own unique reply channel
+          ipcMain.once(`reply-${eventName}-${requestId}`, (responseEvent, responsePayload) => {
+            resolve(responsePayload);
+          });
+          
+          // Send requestId so background can reply on the correct channel
+          backgroundWindow.webContents.send(eventName, { requestId, args: actualPayload });
+        }
+        else{
+          ipcMain.once(`reply-${eventName}`, (responseEvent, responsePayload) => {
+            resolve(responsePayload);
+          });
+
+          backgroundWindow.webContents.send(eventName, actualPayload);
+        }        
       });
     }
   );

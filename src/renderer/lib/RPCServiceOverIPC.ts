@@ -10,9 +10,11 @@ import { ipcRenderer } from "electron";
  */
 
 /**
- * Making it a Global to prevent re-creation of channels during HMR
+ * Global registry to track registered channels and their handlers for HMR
+ * Maps channel name to handler function so we can remove old handlers during reload
+ * now keeping track of the channelName - handler attached to it
  */
-const REGISTERED_CHANNELS = new Set<string>();
+const REGISTERED_CHANNELS = new Map<string, Function>();
 
 export class RPCServiceOverIPC {
   private RPC_CHANNEL_PREFIX: string;
@@ -35,13 +37,16 @@ export class RPCServiceOverIPC {
   ) {
     const channelName = `${this.RPC_CHANNEL_PREFIX}${exposedMethodName}`;
 
+    // if channel is alrady registered, remove old listener first during HMR
     if (REGISTERED_CHANNELS.has(channelName)) {
-      return;
+      const oldHandler = REGISTERED_CHANNELS.get(channelName);
+      if (oldHandler) {
+        ipcRenderer.removeListener(channelName, oldHandler as any);
+      }
     }
     
-    REGISTERED_CHANNELS.add(channelName);
-    
-    ipcRenderer.on(channelName, async (_event, payload) => {
+    // Define the handler function so we can store reference for future removal
+    const handler = async (_event: any, payload: any) => {
       // Support both old format (args only) and new format (with requestId)
       let requestId: string | undefined;
       let args: any;
@@ -90,7 +95,13 @@ export class RPCServiceOverIPC {
           data: error.message,
         });
       }
-    });
+    };
+    
+    // Register the new handler
+    ipcRenderer.on(channelName, handler);
+    
+    // Store handler reference for future removal during HMR
+    REGISTERED_CHANNELS.set(channelName, handler);
   }
 
   sendServiceEvent(event: any) {
