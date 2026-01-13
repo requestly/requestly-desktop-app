@@ -70,6 +70,34 @@ function sanitizePath(rawPath: string) {
   return rawPath;
 }
 
+async function hasWorkspaceConfigInAncestors(
+  dirPath: string
+): Promise<boolean> {
+  let currentDir = sanitizePath(dirPath);
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const configPath = appendPath(currentDir, CONFIG_FILE);
+
+    const isWorkspaceAtCurrentLevel = await FsService.lstat(configPath)
+      .then((stats) => stats.isFile())
+      .catch(() => false);
+
+    if (isWorkspaceAtCurrentLevel) {
+      return true;
+    }
+
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) {
+      break;
+    }
+
+    currentDir = parentDir;
+  }
+
+  return false;
+}
+
 export async function getFsResourceStats(
   resource: FsResource
 ): Promise<FileSystemResult<Stats>> {
@@ -572,7 +600,21 @@ export async function createWorkspaceFolder(
   workspacePath: string
 ): Promise<FileSystemResult<{ name: string; id: string; path: string }>> {
   const sanitizedWorkspacePath = sanitizePath(workspacePath);
+  const isPathAlreadyAWorkspace = await hasWorkspaceConfigInAncestors(
+    sanitizedWorkspacePath
+  );
 
+  if (isPathAlreadyAWorkspace) {
+    return {
+      type: "error",
+      error: {
+        message: "Selected folder is already a local workspace!",
+        fileType: FileTypeEnum.UNKNOWN,
+        path: sanitizedWorkspacePath,
+        code: ErrorCode.PathIsAlreadyAWorkspace,
+      },
+    };
+  }
   const workspaceFolderPath = appendPath(sanitizedWorkspacePath, name);
   const folderCreationResult = await createFolder(
     createFsResource({
