@@ -655,8 +655,8 @@ export async function createWorkspaceFolder(
 }
 
 async function getWorkspaceIdFromConfig(
-  workspaceFolderePath: string
-): Promise<string> {
+  workspaceFolderPath: string | null
+): Promise<string | null> {
   const globalConfigFileResource = createFsResource({
     rootPath: GLOBAL_CONFIG_FOLDER_PATH,
     path: appendPath(GLOBAL_CONFIG_FOLDER_PATH, GLOBAL_CONFIG_FILE_NAME),
@@ -672,10 +672,10 @@ async function getWorkspaceIdFromConfig(
   }
   const config = readResult.content;
   const workspace = config.workspaces.find(
-    (ws) => ws.path === workspaceFolderePath
+    (ws) => ws.path === workspaceFolderPath
   );
   if (!workspace) {
-    throw new Error("Workspace not found in global config");
+    return null;
   }
   return workspace.id;
 }
@@ -704,19 +704,21 @@ export async function createDefaultWorkspace(): Promise<
 
     if (doesWorkspaceFolderExists) {
       const workspaceId = await getWorkspaceIdFromConfig(workspaceFolderPath);
-
-      return {
-        type: "error",
-        error: {
-          message: "Workspace already exists!",
-          fileType: FileTypeEnum.UNKNOWN,
-          path: workspaceFolderPath,
-          code: ErrorCode.EntityAlreadyExists,
-          metadata: {
-            workspaceId,
+      if (workspaceId) {
+        return {
+          type: "error",
+          error: {
+            message: "Workspace already exists!",
+            fileType: FileTypeEnum.UNKNOWN,
+            path: workspaceFolderPath,
+            code: ErrorCode.EntityAlreadyExists,
+            metadata: {
+              workspaceId,
+            },
           },
-        },
-      };
+        };
+      }
+      // TBD: Action to be decided here if folder is present but not in global config
     }
     if (!rqDirectoryExists) {
       const rqDirectoryCreationResult = await createFolder(
