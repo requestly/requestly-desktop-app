@@ -612,6 +612,32 @@ export async function createWorkspaceFolder(
   });
 }
 
+async function getWorkspaceIdFromConfig(
+  workspaceFolderePath: string
+): Promise<string> {
+  const globalConfigFileResource = createFsResource({
+    rootPath: GLOBAL_CONFIG_FOLDER_PATH,
+    path: appendPath(GLOBAL_CONFIG_FOLDER_PATH, GLOBAL_CONFIG_FILE_NAME),
+    type: "file",
+  });
+  const readResult = await parseFile({
+    resource: globalConfigFileResource,
+    fileType: new GlobalConfigRecordFileType(),
+  });
+
+  if (readResult.type === "error") {
+    throw new Error("Failed to read global config file");
+  }
+  const config = readResult.content;
+  const workspace = config.workspaces.find(
+    (ws) => ws.path === workspaceFolderePath
+  );
+  if (!workspace) {
+    throw new Error("Workspace not found in global config");
+  }
+  return workspace.id;
+}
+
 export async function createDefaultWorkspace(): Promise<
   FileSystemResult<{ name: string; id: string; path: string }>
 > {
@@ -620,47 +646,64 @@ export async function createDefaultWorkspace(): Promise<
     "Documents",
     LOCAL_WORKSPACES_DIRECTORY_NAME
   );
-  const rqDirectoryExists = await FsService.lstat(rqDirectoryPath)
-    .then((stats) => stats.isDirectory())
-    .catch(() => false);
+  try {
+    const rqDirectoryExists = await FsService.lstat(rqDirectoryPath)
+      .then((stats) => stats.isDirectory())
+      .catch(() => false);
 
-  const workspaceFolderPath = appendPath(
-    rqDirectoryPath,
-    DEFAULT_WORKSPACE_NAME
-  );
-
-  const doesWorkspaceFolderExists = await FsService.lstat(workspaceFolderPath)
-    .then((stats) => stats.isDirectory())
-    .catch(() => false);
-
-  if (doesWorkspaceFolderExists) {
-    return {
-      type: "error",
-      error: {
-        message: "Workspace already exists!",
-        fileType: FileTypeEnum.UNKNOWN,
-        path: workspaceFolderPath,
-        code: ErrorCode.EntityAlreadyExists,
-      },
-    };
-  }
-  if (!rqDirectoryExists) {
-    const rqDirectoryCreationResult = await createFolder(
-      createFsResource({
-        rootPath: rqDirectoryPath,
-        path: rqDirectoryPath,
-        type: "folder",
-      }),
-      {
-        createWithElevatedAccess: true,
-      }
+    const workspaceFolderPath = appendPath(
+      rqDirectoryPath,
+      DEFAULT_WORKSPACE_NAME
     );
-    if (rqDirectoryCreationResult.type === "error") {
-      return rqDirectoryCreationResult;
-    }
-  }
 
-  return createWorkspaceFolder(DEFAULT_WORKSPACE_NAME, rqDirectoryPath);
+    const doesWorkspaceFolderExists = await FsService.lstat(workspaceFolderPath)
+      .then((stats) => stats.isDirectory())
+      .catch(() => false);
+
+    if (doesWorkspaceFolderExists) {
+      const workspaceId = await getWorkspaceIdFromConfig(workspaceFolderPath);
+
+      return {
+        type: "error",
+        error: {
+          message: "Workspace already exists!",
+          fileType: FileTypeEnum.UNKNOWN,
+          path: workspaceFolderPath,
+          code: ErrorCode.EntityAlreadyExists,
+          metadata: {
+            workspaceId,
+          },
+        },
+      };
+    }
+    if (!rqDirectoryExists) {
+      const rqDirectoryCreationResult = await createFolder(
+        createFsResource({
+          rootPath: rqDirectoryPath,
+          path: rqDirectoryPath,
+          type: "folder",
+        }),
+        {
+          createWithElevatedAccess: true,
+        }
+      );
+      if (rqDirectoryCreationResult.type === "error") {
+        return rqDirectoryCreationResult;
+      }
+    }
+
+    return createWorkspaceFolder(DEFAULT_WORKSPACE_NAME, rqDirectoryPath);
+  } catch (err: any) {
+    return createFileSystemError(
+      {
+        message:
+          err.message ||
+          "Something went wrong while creating the default workspace",
+      },
+      rqDirectoryPath,
+      FileTypeEnum.UNKNOWN
+    );
+  }
 }
 
 export async function migrateGlobalConfig(oldConfig: any) {
