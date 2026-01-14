@@ -787,6 +787,12 @@ export async function openExistingLocalWorkspace(
       };
     }
 
+    const workspaceFolderResource = createFsResource({
+      rootPath: workspaceRootPath,
+      path: workspaceRootPath,
+      type: "folder",
+    });
+
     const workspaceId = await getWorkspaceIdFromConfig(workspaceRootPath);
     if (workspaceId) {
       return {
@@ -796,15 +802,13 @@ export async function openExistingLocalWorkspace(
           path: workspaceRootPath,
           fileType: FileTypeEnum.UNKNOWN,
           code: ErrorCode.EntityAlreadyExists,
-          metadata: { workspaceId },
+          metadata: {
+            workspaceId,
+            name: getNameOfResource(workspaceFolderResource),
+          },
         },
       };
     }
-    const workspaceFolderResource = createFsResource({
-      rootPath: workspaceRootPath,
-      path: workspaceRootPath,
-      type: "folder",
-    });
 
     const result = await addWorkspaceToGlobalConfig({
       name: getNameOfResource(workspaceFolderResource),
