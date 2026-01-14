@@ -23,6 +23,10 @@ import { createOrUpdateAxiosInstance } from "./actions/getProxiedAxios";
 // and then build these utilites elsewhere
 // eslint-disable-next-line import/no-cycle
 import createTrayMenu from "./main";
+import { FileBasedProviderRegistry } from "../lib/secretsManager/providerRegistry/FsProviderRegistry";
+import { EncryptedFsStorageService } from "../lib/secretsManager/encryptedStorage/encryptedFsStorageService";
+import { GLOBAL_CONFIG_FOLDER_PATH } from "../renderer/actions/local-sync/constants";
+import { SecretsManager } from "../lib/secretsManager/secretsManager";
 
 const getFileCategory = (fileExtension) => {
   switch (fileExtension) {
@@ -268,6 +272,24 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
 
   ipcMain.handle("helper-server-hit", () => {
     webAppWindow?.send("helper-server-hit");
+  });
+
+  ipcMain.handle("init-secretsManager", () => {
+    const encryptedStorage = new EncryptedFsStorageService(
+      path.join(GLOBAL_CONFIG_FOLDER_PATH, "providers")
+    );
+    const registry = new FileBasedProviderRegistry(
+      encryptedStorage,
+      GLOBAL_CONFIG_FOLDER_PATH
+    );
+
+    const secretsManager = new SecretsManager(registry);
+
+    try {
+      secretsManager.initialize();
+    } catch (err) {
+      console.error("Error initializing Secrets Manager", err);
+    }
   });
 };
 

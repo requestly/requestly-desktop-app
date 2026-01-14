@@ -2,19 +2,24 @@ import * as fs from "fs";
 import * as path from "path";
 import { SecretProviderConfig, SecretProviderType } from "../types";
 import { createProvider } from "../providerService/providerFactory";
-import { AbstractProviderRegistry } from "./AbstractProviderRegistry";
+import {
+  AbstractProviderRegistry,
+  ProvidersManifest,
+} from "./AbstractProviderRegistry";
 import { AbstractEncryptedStorage } from "../encryptedStorage/AbstractEncryptedStorage";
 import { AbstractSecretProvider } from "../providerService/AbstractSecretProvider";
+import { createFsResource } from "../../../renderer/actions/local-sync/common-utils";
+import {
+  createGlobalConfigFolder,
+  getIfFileExists,
+  getIfFolderExists,
+  parseFile,
+} from "../../../renderer/actions/local-sync/fs-utils";
+import { GLOBAL_CONFIG_FILE_NAME } from "../../../renderer/actions/local-sync/constants";
+import { GlobalConfigRecordFileType } from "../../../renderer/actions/local-sync/file-types/file-types";
 
-const MANIFEST_FILENAME = "providers.json";
-
-
-
-// Functions
-// 1. initialize registry (create config dir if not exists)
-// 2. list providers
-// 3.
-
+// TODO:@nafees check version of config.json
+const MANIFEST_FILENAME = GLOBAL_CONFIG_FILE_NAME;
 export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   private manifestPath: string;
 
@@ -46,16 +51,18 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
 
   async getAllProviderConfigs(): Promise<SecretProviderConfig[]> {
     const manifest = await this.loadManifest();
+
+    console.log("!!!debug","manifest loaded",)
     const configs: SecretProviderConfig[] = [];
 
-    for (const entry of manifest.providers) {
-      const config = await this.encryptedStorage.load<SecretProviderConfig>(
-        entry.id
-      );
-      configs.push(config);
-    }
+    // for (const entry of manifest.providers) {
+    //   const config = await this.encryptedStorage.load<SecretProviderConfig>(
+    //     entry.id
+    //   );
+    //   configs.push(config);
+    // }
 
-    return configs;
+    // return configs;
   }
 
   async setProviderConfig(config: SecretProviderConfig): Promise<void> {
@@ -93,13 +100,52 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
 
   private async ensureConfigDir(): Promise<void> {
     try {
-      await fs.mkdir(this.configDir, { recursive: true });
+      const globalConfigFolderResource = createFsResource({
+        rootPath: this.configDir,
+        path: this.configDir,
+        type: "folder",
+      });
+      const globalConfigFolderExists = await getIfFolderExists(
+        globalConfigFolderResource
+      );
+
+      if (!globalConfigFolderExists) {
+        await createGlobalConfigFolder();
+      }
     } catch (error) {
       console.error("Failed to create config directory:", error);
+      throw new Error("Failed to create config directory.");
     }
   }
 
-  protected async loadManifest(): Promise<ProvidersManifest> {}
+  protected async loadManifest(): Promise<ProvidersManifest> {
+    const globalConfigFileResource = createFsResource({
+      rootPath: this.configDir,
+      path: this.manifestPath,
+      type: "file",
+    });
+
+    const globalConfigFileExists = await getIfFileExists(
+      globalConfigFileResource
+    );
+
+    if (!globalConfigFileExists) {
+      return { providers: [] };
+    }
+
+    const readResult = await parseFile({
+      resource: globalConfigFileResource,
+      fileType: new GlobalConfigRecordFileType(),
+    });
+
+    if (readResult.type === "error") {
+      throw new Error("Failed to parse manifest file.");
+    }
+
+    console.log("!!!debug", "readResult", readResult);
+    // TODO:@nafees handle versioning and schema in schema.ts
+    return (readResult.content.providers ?? []) as ProvidersManifest;
+  }
 
   protected async saveManifest(manifest: ProvidersManifest): Promise<void> {}
 

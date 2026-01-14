@@ -20,10 +20,10 @@ import { AbstractProviderRegistry } from "./providerRegistry/AbstractProviderReg
 // 4. Refresh Secrets - bulk fetch and update all secrets from their providers and update the cache
 //
 
-const encryptedStorage = new EncryptedFsStorageService("");
-const providerRegistry = new FileBasedProviderRegistry(encryptedStorage, "");
+// const encryptedStorage = new EncryptedFsStorageService("");
+// const providerRegistry = new FileBasedProviderRegistry(encryptedStorage, "");
 
-const secretsManager = new SecretsManager(providerRegistry);
+// const secretsManager = new SecretsManager(providerRegistry);
 
 // createProviderInstance should have cache Storage as dependency.
 // providerRegistry cannot be exposed because it would have storage specific code like fs methods etc.

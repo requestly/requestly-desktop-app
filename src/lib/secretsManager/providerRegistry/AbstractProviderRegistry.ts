@@ -3,7 +3,7 @@ import { AbstractEncryptedStorage } from "../encryptedStorage/AbstractEncryptedS
 import { AbstractSecretProvider } from "../providerService/AbstractSecretProvider";
 
 export interface ProvidersManifest {
-  version: string;
+  // version: string;
   providers: {
     id: string;
     storagePath: string;
