@@ -595,6 +595,24 @@ export async function addWorkspaceToGlobalConfig(params: {
   };
 }
 
+async function getWorkspacePathFromSelectedPath(
+  selectedPath: string
+): Promise<string | null> {
+  let currentPath = selectedPath;
+  while (currentPath !== "/") {
+    const workspacePathExists = await FsService.lstat(
+      appendPath(currentPath, CONFIG_FILE)
+    )
+      .then((stats) => stats.isFile())
+      .catch(() => false);
+    if (workspacePathExists) {
+      return currentPath;
+    }
+    currentPath = path.dirname(currentPath);
+  }
+  return null;
+}
+
 export async function createWorkspaceFolder(
   name: string,
   workspacePath: string
@@ -751,32 +769,31 @@ export async function createDefaultWorkspace(): Promise<
 }
 
 export async function openExistingLocalWorkspace(
-  workspacePath: string
+  selectedPath: string
 ): Promise<FileSystemResult<{ name: string; id: string; path: string }>> {
   try {
-    const workspaceConfigPath = appendPath(workspacePath, CONFIG_FILE);
-    const workspaceConfigExists = await FsService.lstat(workspaceConfigPath)
-      .then((stats) => stats.isFile())
-      .catch(() => false);
-
-    if (!workspaceConfigExists) {
+    const workspaceRootPath = await getWorkspacePathFromSelectedPath(
+      selectedPath
+    );
+    if (!workspaceRootPath) {
       return {
         type: "error",
         error: {
           message: "The selected folder is not a valid workspace folder",
-          path: workspacePath,
+          path: selectedPath,
           fileType: FileTypeEnum.UNKNOWN,
           code: ErrorCode.NotFound,
         },
       };
     }
-    const workspaceId = await getWorkspaceIdFromConfig(workspacePath);
+
+    const workspaceId = await getWorkspaceIdFromConfig(workspaceRootPath);
     if (workspaceId) {
       return {
         type: "error",
         error: {
           message: "Workspace already exists",
-          path: workspacePath,
+          path: workspaceRootPath,
           fileType: FileTypeEnum.UNKNOWN,
           code: ErrorCode.EntityAlreadyExists,
           metadata: { workspaceId },
@@ -784,19 +801,19 @@ export async function openExistingLocalWorkspace(
       };
     }
     const workspaceFolderResource = createFsResource({
-      rootPath: workspacePath,
-      path: workspacePath,
+      rootPath: workspaceRootPath,
+      path: workspaceRootPath,
       type: "folder",
     });
 
     const result = await addWorkspaceToGlobalConfig({
       name: getNameOfResource(workspaceFolderResource),
-      path: workspacePath,
+      path: workspaceRootPath,
     });
     if (result.type === "error") {
       return createFileSystemError(
         result.error,
-        workspacePath,
+        workspaceRootPath,
         FileTypeEnum.UNKNOWN
       );
     }
@@ -805,11 +822,11 @@ export async function openExistingLocalWorkspace(
       content: {
         name: getNameOfResource(workspaceFolderResource),
         id: result.content.id,
-        path: workspacePath,
+        path: workspaceRootPath,
       },
     };
   } catch (err: any) {
-    return createFileSystemError(err, workspacePath, FileTypeEnum.UNKNOWN);
+    return createFileSystemError(err, selectedPath, FileTypeEnum.UNKNOWN);
   }
 }
 
