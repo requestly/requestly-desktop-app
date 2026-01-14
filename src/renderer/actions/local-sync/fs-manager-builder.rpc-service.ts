@@ -4,6 +4,7 @@ import {
   getAllWorkspaces,
   removeWorkspace,
   createDefaultWorkspace,
+  openExistingLocalWorkspace,
 } from "./fs-utils";
 import { FsManagerRPCService } from "./fs-manager.rpc-service";
 
@@ -20,6 +21,10 @@ export class FsManagerBuilderRPCService extends RPCServiceOverIPC {
   init() {
     this.exposeMethodOverIPC("createWorkspaceFolder", createWorkspaceFolder);
     this.exposeMethodOverIPC("createDefaultWorkspace", createDefaultWorkspace);
+    this.exposeMethodOverIPC(
+      "openExistingLocalWorkspace",
+      openExistingLocalWorkspace
+    );
     this.exposeMethodOverIPC("getAllWorkspaces", getAllWorkspaces);
     this.exposeMethodOverIPC("removeWorkspace", removeWorkspace);
     this.exposeMethodOverIPC("build", this.build.bind(this));
