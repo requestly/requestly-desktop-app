@@ -37,6 +37,7 @@ export type FileSystemError = {
     path: string;
     fileType: FileTypeEnum;
     code: ErrorCode;
+    metadata?: Record<string, any>;
   };
 };
 
