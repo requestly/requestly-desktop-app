@@ -201,4 +201,11 @@ export const GlobalConfig = Type.Object({
       path: Type.String(),
     })
   ),
+  // TODO:@nafees Should this be optional?
+  providers: Type.Array(
+    Type.Object({
+      id: Type.String(),
+      type: Type.String(),
+    })
+  ),
 });

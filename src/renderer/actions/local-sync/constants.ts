@@ -1,6 +1,6 @@
 import { homedir } from "os";
 
-export const CORE_CONFIG_FILE_VERSION = 0.1;
+export const CORE_CONFIG_FILE_VERSION = 0.2;
 export const WORKSPACE_CONFIG_FILE_VERSION = "0.0.3";
 export const CONFIG_FILE = "requestly.json";
 export const COLLECTION_AUTH_FILE = "auth.json";

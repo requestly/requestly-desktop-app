@@ -2,7 +2,7 @@ import { SecretProviderConfig, SecretProviderType } from "../types";
 import { AWSSecretsManagerProvider } from "./awsSecretManagerProvider";
 import { AbstractSecretProvider } from "./AbstractSecretProvider";
 
-export function createProvider(
+export function createProviderInstance(
   config: SecretProviderConfig
 ): AbstractSecretProvider {
   switch (config.type) {

@@ -111,8 +111,8 @@ export async function deleteFsResource(
       }
       await FsService.unlink(resource.path);
       fileIndex.remove({
-        type: 'path',
-        path: resource.path
+        type: "path",
+        path: resource.path,
       });
     } else {
       const exists = await getIfFolderExists(resource);
@@ -126,8 +126,8 @@ export async function deleteFsResource(
       }
       await FsService.rmdir(resource.path, { recursive: true });
       fileIndex.remove({
-        type: 'path',
-        path: resource.path
+        type: "path",
+        path: resource.path,
       });
     }
     return {
@@ -170,8 +170,6 @@ export async function createFolder(
       } else {
         fileIndex.getId(resource.path);
       }
-
-
     } else if (errorIfExist) {
       return createFileSystemError(
         { message: "Folder already exists!" },
@@ -196,21 +194,23 @@ export async function rename<T extends FsResource>(
 ): Promise<FileSystemResult<T>> {
   try {
     const alreadyExists = await (async () => {
-      if (newResource.type === 'folder') {
+      if (newResource.type === "folder") {
         return getIfFolderExists(newResource);
       }
       return getIfFileExists(newResource);
     })();
-    const isSamePath = getNormalizedPath(oldResource.path).toLowerCase() === getNormalizedPath(newResource.path).toLowerCase();
+    const isSamePath =
+      getNormalizedPath(oldResource.path).toLowerCase() ===
+      getNormalizedPath(newResource.path).toLowerCase();
     if (!isSamePath && alreadyExists) {
       return {
-        type: 'error',
+        type: "error",
         error: {
-          message: 'Entity already exists!',
+          message: "Entity already exists!",
           fileType: FileTypeEnum.UNKNOWN,
           path: newResource.path,
           code: ErrorCode.EntityAlreadyExists,
-        }
+        },
       };
     }
     await FsService.rename(oldResource.path, newResource.path);
@@ -259,19 +259,20 @@ export async function writeContent(
   }
 ): Promise<FileSystemResult<{ resource: FileResource }>> {
   try {
-    const { writeWithElevatedAccess = false, performExistenceCheck = false } = options || {};
+    const { writeWithElevatedAccess = false, performExistenceCheck = false } =
+      options || {};
 
     if (performExistenceCheck) {
       const alreadyExists = await getIfFileExists(resource);
       if (alreadyExists) {
         return {
-          type: 'error',
+          type: "error",
           error: {
-            message: 'Entity already exists!',
+            message: "Entity already exists!",
             fileType: fileType.type,
             path: resource.path,
             code: ErrorCode.EntityAlreadyExists,
-          }
+          },
         };
       }
     }
@@ -430,7 +431,7 @@ export async function parseFileRaw(params: {
 /* NOTE: This is the ONLY function that should write to the global config file.
          All global config mutations must go through this writer to avoid
          partial writes & concurrency issues. */
-async function writeToGlobalConfig(
+export async function writeToGlobalConfig(
   config: Static<typeof GlobalConfig>
 ): Promise<FileSystemResult<{ resource: FileResource }>> {
   const originalPath = appendPath(
@@ -527,6 +528,7 @@ export async function addWorkspaceToGlobalConfig(params: {
     const config: Static<typeof GlobalConfig> = {
       version: CORE_CONFIG_FILE_VERSION,
       workspaces: [newWorkspace],
+      providers: [],
     };
     const writeResult = await writeToGlobalConfig(config);
     if (writeResult.type === "error") {
@@ -548,6 +550,7 @@ export async function addWorkspaceToGlobalConfig(params: {
   }
 
   const updatedConfig = {
+    ...readResult.content,
     version: readResult.content.version,
     workspaces: [...readResult.content.workspaces, newWorkspace],
   };
@@ -613,6 +616,15 @@ export async function migrateGlobalConfig(oldConfig: any) {
     return {
       version: CORE_CONFIG_FILE_VERSION,
       workspaces: oldConfig,
+      providers: [],
+    };
+  }
+
+  if (oldConfig.version === 0.1) {
+    return {
+      version: CORE_CONFIG_FILE_VERSION,
+      workspaces: oldConfig.workspaces,
+      providers: [],
     };
   }
 
@@ -621,14 +633,14 @@ export async function migrateGlobalConfig(oldConfig: any) {
 
 type WorkspaceValidationResult =
   | {
-    valid: true;
-    ws: Static<typeof GlobalConfig>["workspaces"][number];
-  }
+      valid: true;
+      ws: Static<typeof GlobalConfig>["workspaces"][number];
+    }
   | {
-    valid: false;
-    ws: Static<typeof GlobalConfig>["workspaces"][number];
-    error: { message: string };
-  };
+      valid: false;
+      ws: Static<typeof GlobalConfig>["workspaces"][number];
+      error: { message: string };
+    };
 
 async function validateWorkspace(
   ws: Static<typeof GlobalConfig>["workspaces"][number]
@@ -730,6 +742,7 @@ export async function getAllWorkspaces(): Promise<
       const updatedConfig: Static<typeof GlobalConfig> = {
         version: effectiveConfig.version || CORE_CONFIG_FILE_VERSION,
         workspaces: valid,
+        providers: effectiveConfig.providers || [],
       };
       const pruneWriteResult = await writeToGlobalConfig(updatedConfig);
       if (pruneWriteResult.type === "error") {

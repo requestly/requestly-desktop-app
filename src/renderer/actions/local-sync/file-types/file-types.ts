@@ -13,7 +13,7 @@ import { FileTypeEnum } from "../types";
 import { parseJsonContent, parseRaw } from "../common-utils";
 
 export class ApiRecordFileType extends FileType<typeof ApiRecord> {
-  validator = ApiRecord;
+  validator: typeof ApiRecord = ApiRecord;
 
   type = FileTypeEnum.API;
 
@@ -25,7 +25,7 @@ export class ApiRecordFileType extends FileType<typeof ApiRecord> {
 export class EnvironmentRecordFileType extends FileType<
   typeof EnvironmentRecord
 > {
-  validator = EnvironmentRecord;
+  validator: typeof EnvironmentRecord = EnvironmentRecord;
 
   type = FileTypeEnum.ENVIRONMENT;
 
@@ -37,7 +37,7 @@ export class EnvironmentRecordFileType extends FileType<
 export class CollectionVariablesRecordFileType extends FileType<
   typeof Variables
 > {
-  validator = Variables;
+  validator: typeof Variables = Variables;
 
   type = FileTypeEnum.COLLECTION_VARIABLES;
 
@@ -47,7 +47,7 @@ export class CollectionVariablesRecordFileType extends FileType<
 }
 
 export class ReadmeRecordFileType extends FileType<typeof Description> {
-  validator = Description;
+  validator: typeof Description = Description;
 
   type = FileTypeEnum.DESCRIPTION;
 
@@ -57,7 +57,7 @@ export class ReadmeRecordFileType extends FileType<typeof Description> {
 }
 
 export class AuthRecordFileType extends FileType<typeof Auth> {
-  validator = Auth;
+  validator: typeof Auth = Auth;
 
   type = FileTypeEnum.AUTH;
 
@@ -67,7 +67,7 @@ export class AuthRecordFileType extends FileType<typeof Auth> {
 }
 
 export class GlobalConfigRecordFileType extends FileType<typeof GlobalConfig> {
-  validator = GlobalConfig;
+  validator: typeof GlobalConfig = GlobalConfig;
 
   type = FileTypeEnum.GLOBAL_CONFIG;
 

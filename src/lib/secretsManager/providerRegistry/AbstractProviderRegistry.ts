@@ -2,14 +2,12 @@ import { SecretProviderConfig, SecretProviderType } from "../types";
 import { AbstractEncryptedStorage } from "../encryptedStorage/AbstractEncryptedStorage";
 import { AbstractSecretProvider } from "../providerService/AbstractSecretProvider";
 
-export interface ProvidersManifest {
-  // version: string;
-  providers: {
-    id: string;
-    storagePath: string;
-    type: SecretProviderType;
-  }[];
-}
+type ProviderManifestItem = {
+  id: string;
+  type: SecretProviderType;
+};
+
+export type ProviderManifest = ProviderManifestItem[];
 
 export abstract class AbstractProviderRegistry {
   protected encryptedStorage: AbstractEncryptedStorage;
@@ -22,13 +20,9 @@ export abstract class AbstractProviderRegistry {
 
   abstract initialize(): Promise<void>;
 
-  protected abstract createProviderInstance(
-    config: SecretProviderConfig
-  ): AbstractSecretProvider;
+  protected abstract loadManifest(): Promise<ProviderManifest>;
 
-  protected abstract loadManifest(): Promise<ProvidersManifest>;
-
-  protected abstract saveManifest(manifest: ProvidersManifest): Promise<void>;
+  protected abstract saveManifest(manifest: ProviderManifest): Promise<void>;
 
   abstract getAllProviderConfigs(): Promise<SecretProviderConfig[]>;
 

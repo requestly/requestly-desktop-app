@@ -1,6 +1,4 @@
 import { SecretProviderConfig, SecretReference } from "./types";
-import { EncryptedFsStorageService } from "./encryptedStorage/encryptedFsStorageService";
-import { FileBasedProviderRegistry } from "./providerRegistry/FsProviderRegistry";
 import { AbstractProviderRegistry } from "./providerRegistry/AbstractProviderRegistry";
 
 // Questions
@@ -51,6 +49,7 @@ export class SecretsManager {
   }
 
   async addProviderConfig(config: SecretProviderConfig) {
+    console.log("!!!debug", "addconfig", config);
     this.registry.setProviderConfig(config);
   }
 
@@ -71,14 +70,14 @@ export class SecretsManager {
     this.registry.getProvider(providerId)?.getSecret(ref);
   }
 
-  async refreshSecrets(
-    secrets: Array<{ providerId: string; ref: SecretReference }>
-  ): Promise<void> {
-    for (const s of secrets) {
-      // Invalidate cache
-      // Fetch fresh secret and update cache
-    }
-  }
+  // async refreshSecrets(
+  //   secrets: Array<{ providerId: string; ref: SecretReference }>
+  // ): Promise<void> {
+  //   for (const s of secrets) {
+  //     // Invalidate cache
+  //     // Fetch fresh secret and update cache
+  //   }
+  // }
 
   async fetchSecrets(
     secrets: Array<{ providerId: string; ref: SecretReference }>
