@@ -294,18 +294,49 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
     }
   });
 
-  ipcMain.handle("secretsManager:addProviderConfig", async (event, config) => {
-    await secretsManager.addProviderConfig(config);
-  });
+  ipcMain.handle(
+    "secretsManager:addProviderConfig",
+    async (event, { config }) => {
+      await secretsManager.addProviderConfig(config);
+    }
+  );
 
-  ipcMain.handle("secretsManager:getProviderConfig", async (event, id) => {
+  ipcMain.handle("secretsManager:getProviderConfig", async (event, { id }) => {
     const providerConfig = await secretsManager.getProviderConfig(id);
     console.log("!!!debug", "getConfig", providerConfig);
+    return providerConfig;
   });
 
-  ipcMain.handle("secretsManager:removeProviderConfig", async (event, id) => {
-    await secretsManager.removeProviderConfig(id);
-  });
+  ipcMain.handle(
+    "secretsManager:removeProviderConfig",
+    async (event, { id }) => {
+      await secretsManager.removeProviderConfig(id);
+    }
+  );
+
+  ipcMain.handle(
+    "secretsManager:testConnection",
+    async (event, { providerId }) => {
+      const providerConnection = await secretsManager.testProviderConnection(
+        providerId
+      );
+
+      return providerConnection;
+    }
+  );
+
+  ipcMain.handle(
+    "secretsManager:resolveSecret",
+    async (event, { providerId, ref }) => {
+      console.log("!!!debug", "resolve", {
+        providerId,
+        ref,
+      });
+      const secretValue = await secretsManager.fetchSecret(providerId, ref);
+      console.log("!!!debug", "resolveSecret value", secretValue);
+      return secretValue;
+    }
+  );
 };
 
 export const registerMainProcessCommonEvents = () => {

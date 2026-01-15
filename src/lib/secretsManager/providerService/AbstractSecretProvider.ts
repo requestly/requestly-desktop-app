@@ -16,11 +16,21 @@ export abstract class AbstractSecretProvider {
 
   abstract getSecret(ref: SecretReference): Promise<SecretValue | null>;
 
-  abstract getSecrets(ref: SecretReference[]): Promise<SecretValue[]>;
+  abstract getSecrets(refs: SecretReference[]): Promise<SecretValue[]>;
 
   abstract setSecret(): Promise<void>;
 
   abstract setSecrets(): Promise<void>;
+
+  abstract removeSecret(): Promise<void>;
+
+  abstract removeSecrets(): Promise<void>;
+
+  protected invalidateCache(): void {
+    this.cache.clear();
+  }
+
+  abstract refreshSecrets(): Promise<SecretValue[]>;
 
   static validateConfig(config: any): boolean {
     if (!config) {

@@ -81,6 +81,7 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
     const now = Date.now();
 
     if (cachedSecret && cachedSecret.fetchedAt + DEFAULT_CACHE_TTL_MS > now) {
+      console.log("!!!debug", "returning from cache", cachedSecret);
       return cachedSecret;
     }
 
@@ -110,6 +111,8 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
       ARN: secretResponse.ARN,
       versionId: secretResponse.VersionId,
     };
+
+    console.log("!!!debug", "returning after fetching", awsSecret);
 
     this.cache.set(cacheKey, awsSecret);
 
@@ -204,6 +207,24 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
 
   async setSecrets(): Promise<void> {
     throw new Error("Method not implemented.");
+  }
+
+  async removeSecret(): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+
+  async removeSecrets(): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+
+  async refreshSecrets(): Promise<AwsSecretValue[]> {
+    const allSecretRefs = Array.from(this.cache.values()).map(
+      (secret) => secret.secretReference
+    );
+
+    this.invalidateCache();
+
+    return this.getSecrets(allSecretRefs);
   }
 
   static validateConfig(config: AWSSecretsManagerConfig): boolean {

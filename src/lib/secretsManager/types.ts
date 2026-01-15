@@ -30,14 +30,6 @@ export type AwsSecretReference = {
 
 export type SecretReference = AwsSecretReference; // | VaultSecretReference; // | OtherProviderSecretReference;
 
-// export interface CachedSecret {
-//   cacheKey: string; // Unique identifier
-//   identifier: string; // Secret identifier (name, ARN, or path)
-//   secretReference: SecretReference;
-//   value: string; // The actual secret value
-//   fetchedAt: number;
-// }
-
 interface BaseSecretValue {
   providerId: string;
   secretReference: SecretReference;
