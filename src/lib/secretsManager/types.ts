@@ -24,7 +24,7 @@ export interface SecretProviderConfig {
 
 export type AwsSecretReference = {
   type: SecretProviderType.AWS_SECRETS_MANAGER;
-  nameOrArn: string;
+  identifier: string; // ARN or Name
   version?: string;
 };
 

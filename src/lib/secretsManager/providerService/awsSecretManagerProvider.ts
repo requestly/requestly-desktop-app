@@ -43,7 +43,7 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
   }
 
   protected getCacheKey(ref: AwsSecretReference): string {
-    return `name=${ref.nameOrArn};version:${ref.version}`;
+    return `name=${ref.identifier};version:${ref.version}`;
   }
 
   async testConnection(): Promise<boolean> {
@@ -86,7 +86,7 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
     }
 
     const getSecretCommand = new GetSecretValueCommand({
-      SecretId: ref.nameOrArn,
+      SecretId: ref.identifier,
       VersionId: ref.version,
     });
 
@@ -147,7 +147,7 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
 
     try {
       const batchGetCommand = new BatchGetSecretValueCommand({
-        SecretIdList: cacheMisses.map((ref) => ref.nameOrArn),
+        SecretIdList: cacheMisses.map((ref) => ref.identifier),
       });
 
       const response = await this.client.send(batchGetCommand);
@@ -170,8 +170,8 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
 
           const ref = cacheMisses.find(
             (r) =>
-              r.nameOrArn === secretResponse.Name ||
-              r.nameOrArn === secretResponse.ARN
+              r.identifier === secretResponse.Name ||
+              r.identifier === secretResponse.ARN
           );
 
           if (!ref) {
