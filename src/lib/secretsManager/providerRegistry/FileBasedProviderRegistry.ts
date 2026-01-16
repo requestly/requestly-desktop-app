@@ -65,11 +65,12 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
       const config = await this.encryptedStorage.load<SecretProviderConfig>(
         entry.id
       );
+
       if (config) {
         configs.push(config);
       } else {
-        // TODO:@nafees Should we throw error here?
-        console.log("!!!debug", "config not found for entry", entry);
+        // Should we throw error for this case?
+        console.log("!!!debug", "Config not found for entry", entry);
       }
     }
 
