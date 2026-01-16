@@ -16,7 +16,7 @@ export abstract class AbstractSecretProvider {
 
   abstract getSecret(ref: SecretReference): Promise<SecretValue | null>;
 
-  abstract getSecrets(refs: SecretReference[]): Promise<SecretValue[]>;
+  abstract getSecrets(refs: SecretReference[]): Promise<(SecretValue | null)[]>;
 
   abstract setSecret(): Promise<void>;
 
@@ -30,7 +30,7 @@ export abstract class AbstractSecretProvider {
     this.cache.clear();
   }
 
-  abstract refreshSecrets(): Promise<SecretValue[]>;
+  abstract refreshSecrets(): Promise<(SecretValue | null)[]>;
 
   static validateConfig(config: any): boolean {
     // Base implementation rejects all configs as a fail-safe.

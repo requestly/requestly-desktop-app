@@ -112,14 +112,17 @@ export class SecretsManager {
       const provider = this.registry.getProvider(providerId);
       if (provider) {
         const secretValues = await provider.getSecrets(refs);
-        results.push(...secretValues);
+
+        results.push(
+          ...secretValues.filter((sv): sv is SecretValue => sv !== null)
+        );
       }
     }
 
     return results;
   }
 
-  async refreshSecrets(providerId: string): Promise<SecretValue[]> {
+  async refreshSecrets(providerId: string): Promise<(SecretValue | null)[]> {
     const provider = this.registry.getProvider(providerId);
     if (!provider) {
       throw new Error(`Provider with id ${providerId} not found`);

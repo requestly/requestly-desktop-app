@@ -56,10 +56,12 @@ export class EncryptedFsStorage extends AbstractEncryptedStorage {
       type: "file",
     });
 
-    try {
-      await writeContentRaw(fsResource, encryptedData.toString("base64"));
-    } catch (err) {
-      console.error("!!!debug", "Error writing encrypted data", err);
+    const res = await writeContentRaw(
+      fsResource,
+      encryptedData.toString("base64")
+    );
+    if (res.type === "error") {
+      throw new Error(res.error.message);
     }
   }
 
@@ -81,7 +83,11 @@ export class EncryptedFsStorage extends AbstractEncryptedStorage {
 
     const encryptedBuffer = Buffer.from(fileContent.content, "base64");
     const decryptedString = safeStorage.decryptString(encryptedBuffer);
-    return JSON.parse(decryptedString) as T;
+    try {
+      return JSON.parse(decryptedString) as T;
+    } catch (error) {
+      return decryptedString as unknown as T;
+    }
   }
 
   async delete(key: string): Promise<void> {
@@ -91,6 +97,9 @@ export class EncryptedFsStorage extends AbstractEncryptedStorage {
       type: "file",
     });
 
-    await deleteFsResource(fsResource);
+    const res = await deleteFsResource(fsResource);
+    if (res.type === "error") {
+      throw new Error(res.error.message);
+    }
   }
 }

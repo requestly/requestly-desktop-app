@@ -9,7 +9,6 @@ import {
 } from "../types";
 import { AbstractSecretProvider } from "./AbstractSecretProvider";
 import {
-  BatchGetSecretValueCommand,
   GetSecretValueCommand,
   ListSecretsCommand,
   SecretsManagerClient,
@@ -119,86 +118,15 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
     return awsSecret;
   }
 
-  async getSecrets(refs: AwsSecretReference[]): Promise<AwsSecretValue[]> {
+  async getSecrets(
+    refs: AwsSecretReference[]
+  ): Promise<(AwsSecretValue | null)[]> {
     if (!this.client) {
       throw new Error("AWS Secrets Manager client is not initialized.");
     }
 
-    const cacheHits: AwsSecretReference[] = [];
-    const cacheMisses: AwsSecretReference[] = [];
-    const awsSecrets: AwsSecretValue[] = [];
-
-    for (const ref of refs) {
-      const cacheKey = this.getCacheKey(ref);
-      const cached = this.cache.get(cacheKey);
-      const now = Date.now();
-
-      if (cached && cached.fetchedAt + DEFAULT_CACHE_TTL_MS > now) {
-        cacheHits.push(ref);
-        awsSecrets.push(cached);
-      } else {
-        cacheMisses.push(ref);
-      }
-    }
-
-    if (cacheMisses.length === 0) {
-      return awsSecrets;
-    }
-
-    try {
-      const batchGetCommand = new BatchGetSecretValueCommand({
-        SecretIdList: cacheMisses.map((ref) => ref.identifier),
-      });
-
-      const response = await this.client.send(batchGetCommand);
-
-      if (response.$metadata.httpStatusCode !== 200) {
-        console.error("!!!debug", "Failed to fetch secrets", response);
-        return awsSecrets;
-      }
-
-      if (response.SecretValues) {
-        for (const secretResponse of response.SecretValues) {
-          if (!secretResponse.Name || !secretResponse.SecretString) {
-            console.error(
-              "!!!debug",
-              "Invalid secret response",
-              secretResponse
-            );
-            continue;
-          }
-
-          const ref = cacheMisses.find(
-            (r) =>
-              r.identifier === secretResponse.Name ||
-              r.identifier === secretResponse.ARN
-          );
-
-          if (!ref) {
-            continue;
-          }
-
-          const awsSecret: AwsSecretValue = {
-            providerId: this.id,
-            secretReference: ref,
-            fetchedAt: Date.now(),
-            name: secretResponse.Name,
-            value: secretResponse.SecretString,
-            ARN: secretResponse.ARN,
-            versionId: secretResponse.VersionId,
-          };
-
-          const cacheKey = this.getCacheKey(ref);
-          this.cache.set(cacheKey, awsSecret);
-          awsSecrets.push(awsSecret);
-        }
-      }
-    } catch (err) {
-      console.error("!!!debug", "Error fetching secrets in batch", err);
-      return awsSecrets;
-    }
-
-    return awsSecrets;
+    // Not using BatchGetSecretValueCommand as it would require additional permissions
+    return Promise.all(refs.map((ref) => this.getSecret(ref)));
   }
 
   async setSecret(): Promise<void> {
@@ -217,7 +145,7 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
     throw new Error("Method not implemented.");
   }
 
-  async refreshSecrets(): Promise<AwsSecretValue[]> {
+  async refreshSecrets(): Promise<(AwsSecretValue | null)[]> {
     const allSecretRefs = Array.from(this.cache.values()).map(
       (secret) => secret.secretReference
     );
