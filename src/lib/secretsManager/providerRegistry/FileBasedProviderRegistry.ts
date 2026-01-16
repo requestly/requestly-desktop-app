@@ -45,7 +45,7 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   async initialize(): Promise<void> {
     await this.ensureConfigDir();
     await this.ensureConfigFile();
-    this.initProvidersFromManifest();
+    await this.initProvidersFromManifest();
   }
 
   private async initProvidersFromManifest() {
@@ -58,14 +58,20 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   async getAllProviderConfigs(): Promise<SecretProviderConfig[]> {
     const providerManifest = await this.loadManifest();
 
-    console.log("!!!debug", "manifest loaded",providerManifest);
+    console.log("!!!debug", "manifest loaded", providerManifest);
     const configs: SecretProviderConfig[] = [];
 
     for (const entry of providerManifest) {
       const config = await this.encryptedStorage.load<SecretProviderConfig>(
         entry.id
       );
-      configs.push(config);
+
+      if (config) {
+        configs.push(config);
+      } else {
+        // Should we throw error for this case?
+        console.log("!!!debug", "Config not found for entry", entry);
+      }
     }
 
     console.log("!!!debug", "all configs", configs);

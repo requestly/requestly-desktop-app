@@ -9,24 +9,19 @@ export class SecretsManager {
   }
 
   async initialize(): Promise<void> {
-    this.registry.initialize();
+    await this.registry.initialize();
   }
 
   async addProviderConfig(config: SecretProviderConfig) {
     console.log("!!!debug", "addconfig", config);
-    this.registry.setProviderConfig(config);
+    await this.registry.setProviderConfig(config);
   }
 
   async removeProviderConfig(id: string) {
-    this.registry.deleteProviderConfig(id);
+    await this.registry.deleteProviderConfig(id);
   }
 
   async getProviderConfig(id: string): Promise<SecretProviderConfig | null> {
     return this.registry.getProviderConfig(id);
-  }
-
-  async testProviderConnection(id: string): Promise<boolean> {
-    const provider = this.registry.getProvider(id);
-    return provider?.testConnection() ?? false;
   }
 }
