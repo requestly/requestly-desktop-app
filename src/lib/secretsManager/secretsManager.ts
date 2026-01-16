@@ -68,8 +68,6 @@ export class SecretsManager {
     for (const [providerId, refs] of providerMap.entries()) {
       const provider = this.registry.getProvider(providerId);
       if (provider) {
-        console.warn(`Provider with id ${providerId} not found`);
-
         const secretValues = await provider.getSecrets(refs);
         results.push(...secretValues);
       }

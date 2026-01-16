@@ -33,6 +33,8 @@ export abstract class AbstractSecretProvider {
   abstract refreshSecrets(): Promise<SecretValue[]>;
 
   static validateConfig(config: any): boolean {
+    // Base implementation rejects all configs as a fail-safe.
+    // Provider implementations must override with specific validation.
     if (!config) {
       return false;
     }
