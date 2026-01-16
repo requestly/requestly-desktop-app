@@ -24,7 +24,7 @@ import { createOrUpdateAxiosInstance } from "./actions/getProxiedAxios";
 // eslint-disable-next-line import/no-cycle
 import createTrayMenu from "./main";
 import { GLOBAL_CONFIG_FOLDER_PATH } from "../renderer/actions/local-sync/constants";
-import { SecretsManager } from "../lib/secretsManager/secretsManager";
+import { getSecretsManager,SecretsManager } from "../lib/secretsManager/secretsManager";
 import { EncryptedFsStorage } from "../lib/secretsManager/encryptedStorage/encryptedFsStorage";
 import { FileBasedProviderRegistry } from "../lib/secretsManager/providerRegistry/FileBasedProviderRegistry";
 
@@ -276,7 +276,7 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
 
   let secretsManager = null;
 
-  ipcMain.handle("init-secretsManager", () => {
+  ipcMain.handle("init-secretsManager", async () => {
     const encryptedStorage = new EncryptedFsStorage(
       path.join(GLOBAL_CONFIG_FOLDER_PATH, "providers")
     );
@@ -285,19 +285,15 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
       GLOBAL_CONFIG_FOLDER_PATH
     );
 
-    secretsManager = new SecretsManager(registry);
-
-    try {
-      secretsManager.initialize();
-    } catch (err) {
-      console.error("Error initializing Secrets Manager", err);
-    }
+    await SecretsManager.initialize(registry);
+    secretsManager = getSecretsManager();
+    return true;
   });
 
   ipcMain.handle(
     "secretsManager:addProviderConfig",
     async (event, { config }) => {
-      await secretsManager.addProviderConfig(config);
+      await secretsManager.setProviderConfig(config);
     }
   );
 
@@ -332,7 +328,7 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
         providerId,
         ref,
       });
-      const secretValue = await secretsManager.fetchSecret(providerId, ref);
+      const secretValue = await secretsManager.getSecret(providerId, ref);
       console.log("!!!debug", "resolveSecret value", secretValue);
       return secretValue;
     }

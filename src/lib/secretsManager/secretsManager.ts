@@ -1,18 +1,61 @@
+/* eslint-disable no-use-before-define */
 import { SecretProviderConfig, SecretReference, SecretValue } from "./types";
 import { AbstractProviderRegistry } from "./providerRegistry/AbstractProviderRegistry";
 
 export class SecretsManager {
+  private static instance: SecretsManager | null = null;
+
+  private static initPromise: Promise<void> | null = null;
+
   private registry: AbstractProviderRegistry;
 
-  constructor(registry: AbstractProviderRegistry) {
+  private constructor(registry: AbstractProviderRegistry) {
     this.registry = registry;
   }
 
-  async initialize(): Promise<void> {
-    await this.registry.initialize();
+  /**
+   * Initialize the SecretsManager singleton. Must be called once at app startup.
+   * Safe to call multiple times - subsequent calls return the same promise.
+   */
+  static async initialize(registry: AbstractProviderRegistry): Promise<void> {
+    if (this.instance) {
+      // Already initialized, return completed promise
+      return this.initPromise!;
+    }
+
+    if (!this.initPromise) {
+      this.initPromise = (async () => {
+        this.instance = new SecretsManager(registry);
+        await this.instance.registry.initialize();
+      })();
+    }
+
+    return this.initPromise;
   }
 
-  async addProviderConfig(config: SecretProviderConfig) {
+  /**
+   * Get the initialized SecretsManager instance.
+   * Throws if initialize() hasn't been called and awaited.
+   */
+  static getInstance(): SecretsManager {
+    if (!this.instance) {
+      throw new Error(
+        "SecretsManager not initialized. Call and await SecretsManager.initialize() first."
+      );
+    }
+    return this.instance;
+  }
+
+  static isInitialized(): boolean {
+    return this.instance !== null;
+  }
+
+  static reset(): void {
+    this.instance = null;
+    this.initPromise = null;
+  }
+
+  async setProviderConfig(config: SecretProviderConfig) {
     console.log("!!!debug", "addconfig", config);
     await this.registry.setProviderConfig(config);
   }
@@ -37,7 +80,7 @@ export class SecretsManager {
     return isConnected ?? false;
   }
 
-  async fetchSecret(
+  async getSecret(
     providerId: string,
     ref: SecretReference
   ): Promise<SecretValue | null> {
@@ -51,7 +94,7 @@ export class SecretsManager {
     return secretValue;
   }
 
-  async fetchSecrets(
+  async getSecrets(
     secrets: Array<{ providerId: string; ref: SecretReference }>
   ): Promise<SecretValue[]> {
     const providerMap: Map<string, SecretReference[]> = new Map();
@@ -84,4 +127,20 @@ export class SecretsManager {
 
     return provider.refreshSecrets();
   }
+}
+
+/**
+ * Get the initialized SecretsManager instance.
+ * Use this after initialization:
+ *
+ * @example
+ * // At app startup (once):
+ * await SecretsManager.initialize(registry);
+ *
+ * // Everywhere else:
+ * import { getSecretsManager } from "./secretsManager";
+ * await getSecretsManager().fetchSecret(providerId, ref);
+ */
+export function getSecretsManager(): SecretsManager {
+  return SecretsManager.getInstance();
 }
