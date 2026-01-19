@@ -11,6 +11,7 @@ const logger = require("../../utils/logger");
 // State Management
 const { getState, setState } = require("./stateManagement");
 const { setupIPCForwardingToBackground } = require("./setupIPCForwarding");
+const { setupCapnWebRelayToBackground } = require("./setupCapnWebRelay");
 
 const resolveBackgroundPath = (htmlFileName) => {
   if (process.env.NODE_ENV === "development") {
@@ -71,6 +72,9 @@ const startBackgroundProcess = async () => {
 
     // Setup IPC forwarding
     setupIPCForwardingToBackground(backgroundWindow);
+    
+    // Cap'n Web RPC relay (parallel to existing IPC system)
+    setupCapnWebRelayToBackground(backgroundWindow);
 
     // Set state
     global.isBackgroundProcessActive = true;

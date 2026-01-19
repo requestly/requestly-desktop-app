@@ -32,3 +32,10 @@ clearStoredLogs();
 
 // eslint-disable-next-line no-unused-vars, no-new
 new FsManagerBuilderRPCService();
+
+/**
+ * Cap'n Web RPC Setup (parallel to existing IPC system)
+ * This initializes the HelloWorld service for testing Cap'n Web integration
+ */
+import { initCapnWebRpc } from "./capnweb";
+initCapnWebRpc();

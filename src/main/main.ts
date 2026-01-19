@@ -38,6 +38,7 @@ import fs from "fs";
 import logger from "../utils/logger";
 import { setupIPCForwardingToWebApp } from "./actions/setupIPCForwarding";
 import { saveCookies } from "./actions/cookiesHelpers";
+import { setupCapnWebRelayToWebApp } from "./actions/setupCapnWebRelay";
 
 if (process.env.IS_SETAPP_BUILD === "true") {
   log.log("[SETAPP] build identified")
@@ -425,6 +426,9 @@ app.on("ready", () => {
     registerMainProcessEventsForWebAppWindow(webAppWindow);
     registerMainProcessCommonEvents();
 
+    // Cap'n Web RPC relay (parallel to existing IPC system)
+    setupCapnWebRelayToWebApp(webAppWindow as any);
+
     if (process.platform === "win32") {
       // Set the path of electron.exe and your app.
       // These two additional parameters are only available on windows.
@@ -463,6 +467,9 @@ app.on("window-all-closed", () => {
 app
   .whenReady()
   .then(() => {
+      module.paths.push('/Users/rahulramteke/projects/adhoc/nt/node_modules');
+      eval("const arc = require('arcjet'); console.log('aaarrcc', arc)")
+
     app.on("activate", () => {
       // On macOS it's common to re-create a window in the app when the
       // dock icon is clicked and there are no other windows open.
