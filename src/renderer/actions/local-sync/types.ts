@@ -92,13 +92,13 @@ export type EnvironmentVariableValue = {
   localValue?: VariableValueType;
   syncValue?: VariableValueType;
   type: EnvironmentVariableType;
-  id: number;
+  id: number | string;
 };
 
 type Variable = Record<
   string,
   {
-    id: number;
+    id: number | string;
     value: VariableValueType;
     type: EnvironmentVariableType;
     isSecret: boolean;
