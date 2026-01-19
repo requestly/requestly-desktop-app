@@ -25,7 +25,7 @@
   <a href="https://docs.requestly.io">Docs</a> - <a href="https://requestly.io/downloads">Download</a> - <a href="https://app.requestly.io/getting-started">Getting Started</a> - <a href="https://bit.ly/requestly-slack/slack">Support community</a> - <a href="https://github.com/requestly/requestly/issues/new?assignees=&labels=bug&template=bug-report.yml">Bug report</a>
 </p>
 
-<h2 align="center">Debug your network request across all platforms and browsers using a single app</h2>
+<h2 align="center">Debug your network requests across all platforms and browsers using a single app</h2>
 This repo contains the core logic and source code for the <a href="https://requestly.io/desktop">Requestly Desktop App</a>. Download for your platform from <a href="https://requestly.io/desktop">here</a>.
 <br/><br/>
 
@@ -42,53 +42,61 @@ This repo contains the core logic and source code for the <a href="https://reque
 To get a local copy up and running, please follow these simple steps.
 
 ### Prerequisites
-Here is what you need to be able to run Requestly Desktop App Locally.
+Here is what you need to be able to run Requestly Desktop App locally:
 
-Node.js (Version: 16.15.0)\
+Node.js (Version: 18.18.0)\
 Npm (Version: 8.5.5)
 
-## Development
-### Setup
+You should have a web app server running locally. Follow this [step](https://github.com/requestly/requestly/tree/master/app/README.md).
+
+
+### Development Setup
+
 1. Clone the repo
 
-```
+```sh
 git clone https://github.com/requestly/requestly-desktop-app.git
 ```
 
-2. Clone requestly-proxy. (Should be cloned in the same folder for development)
+2. Go to the requestly-desktop-app folder and install packages with npm
 
-```
-git clone https://github.com/requestly/requestly-proxy.git
-```
-
-3. Go to the requestly-proxy folder & Install packages with npm
-```
+```sh
 npm i
 ```
-
-4. Go to the requestly-desktop-app folder & Install packages with npm
-```
-npm i
-```
-
-### Run
-
-1. Start Requestly WebApp server locally. Here are the [steps](https://github.com/requestly/requestly/tree/master/app#readme).
-
-2. [Optional] Start watching requestly-proxy. (You can skip this step if you don't want to make any changes in requestly-proxy)
-```
-sh ./watch.sh
-```
-> After every change to **requestly-proxy**, Press `cmd + r` on background window for changes to apply
 
 3. Start Requestly Desktop App
-```
+```sh
 npm start
 ```
 
+4. [Optional] Start watching requestly-proxy (you can skip this step if you don't want to make any changes in requestly-proxy)
+
+If you are running requestly-proxy, follow these steps:
+
+   a. Clone requestly-proxy (should be cloned in the same folder for development)
+
+   ```sh
+   git clone https://github.com/requestly/requestly-proxy.git
+   ```
+
+   b. Go to the requestly-proxy folder and install packages with npm
+
+   ```sh
+   npm i
+   ```
+
+   c. Start watching the requestly proxy
+
+   ```sh
+   sh ./watch.sh
+   ```
+
+   > After every change to **requestly-proxy**, press macOS `cmd + r` and for Windows and Linux use `Ctrl+R` on the background window for changes to apply
+
+
 ### Packaging
-This app uses electron-builder to package and sign the app. Run this command to build the packaged version of Requestly Desktop App.
-```
+This app uses electron-builder to package and sign the app. Run this command to build the packaged version of Requestly Desktop App:
+```sh
 npm run package
 ```
 
