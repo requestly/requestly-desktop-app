@@ -13,6 +13,25 @@ import {
   writeContentRaw,
 } from "../../../renderer/actions/local-sync/fs-utils";
 
+const sanitizeKey = (key: string): string => {
+  if (!key) {
+    throw new Error("Key cannot be empty");
+  }
+
+  // Remove any path separators and directory traversal sequences
+  const sanitized = key
+    .replace(/\.\./g, "") // Remove ".."
+    .replace(/[/\\]/g, "_") // Replace path separators with underscore
+    .replace(/^\.+/, "") // Remove leading dots
+    .trim();
+
+  if (!sanitized) {
+    throw new Error("Key contains only invalid characters");
+  }
+
+  return sanitized;
+};
+
 export class EncryptedFsStorage extends AbstractEncryptedStorage {
   private readonly baseFolderPath: string;
 
@@ -37,6 +56,7 @@ export class EncryptedFsStorage extends AbstractEncryptedStorage {
     key: string,
     data: T
   ): Promise<void> {
+    const sanitizedKey = sanitizeKey(key);
     const stringifiedData = JSON.stringify(data);
     const encryptedData = safeStorage.encryptString(stringifiedData);
 
@@ -54,7 +74,7 @@ export class EncryptedFsStorage extends AbstractEncryptedStorage {
 
     const fsResource = createFsResource({
       rootPath: this.baseFolderPath,
-      path: appendPath(this.baseFolderPath, key),
+      path: appendPath(this.baseFolderPath, sanitizedKey),
       type: "file",
     });
 
@@ -68,9 +88,10 @@ export class EncryptedFsStorage extends AbstractEncryptedStorage {
   }
 
   async load<T extends Record<string, any>>(key: string): Promise<T | null> {
+    const sanitizedKey = sanitizeKey(key);
     const fsResource = createFsResource({
       rootPath: this.baseFolderPath,
-      path: appendPath(this.baseFolderPath, key),
+      path: appendPath(this.baseFolderPath, sanitizedKey),
       type: "file",
     });
 
@@ -94,15 +115,16 @@ export class EncryptedFsStorage extends AbstractEncryptedStorage {
     const decryptedString = safeStorage.decryptString(encryptedBuffer);
     try {
       return JSON.parse(decryptedString) as T;
-    } catch (error) {
-      return decryptedString as unknown as T;
+    } catch (err) {
+      throw new Error(`Failed to parse decrypted data for key`);
     }
   }
 
   async delete(key: string): Promise<void> {
+    const sanitizedKey = sanitizeKey(key);
     const fsResource = createFsResource({
       rootPath: this.baseFolderPath,
-      path: appendPath(this.baseFolderPath, key),
+      path: appendPath(this.baseFolderPath, sanitizedKey),
       type: "file",
     });
 
