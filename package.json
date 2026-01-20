@@ -1,7 +1,7 @@
 {
   "name": "requestly",
   "productName": "Requestly",
-  "version": "26.1.6",
+  "version": "26.1.6-dev.state-management-refractor.1",
   "main": "src/main/main.ts",
   "private": true,
   "description": "Intercept & Modify HTTP Requests",
@@ -37,8 +37,8 @@
     ]
   },
   "build": {
-    "productName": "Requestly",
-    "appId": "io.requestly.beta",
+    "productName": "Requestly.Beta.State Management Refractor",
+    "appId": "io.requestly.dev.state-management-refractor",
     "electronVersion": "23.0.0",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",
@@ -75,7 +75,6 @@
       "entitlementsInherit": "assets/entitlements.mac.plist",
       "gatekeeperAssess": false,
       "requirements": "assets/requirement.rqset",
-      "identity": "Browserstack Inc (YQ5FZQ855D)",
       "notarize": {
         "teamId": "YQ5FZQ855D"
       },
@@ -103,7 +102,6 @@
       }
     },
     "dmg": {
-      "sign": true,
       "contents": [
         {
           "x": 130,
