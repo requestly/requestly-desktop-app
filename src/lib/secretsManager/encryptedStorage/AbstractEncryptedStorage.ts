@@ -6,7 +6,7 @@ export abstract class AbstractEncryptedStorage {
     data: T
   ): Promise<void>;
 
-  abstract load<T extends Record<string, any>>(key: string): Promise<T>;
+  abstract load<T extends Record<string, any>>(key: string): Promise<T | null>;
 
   abstract delete(key: string): Promise<void>;
 }
