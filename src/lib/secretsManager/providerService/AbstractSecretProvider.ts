@@ -22,7 +22,7 @@ export abstract class AbstractSecretProvider {
 
   abstract readonly id: string;
 
-  protected config: ProviderSpecificConfig;
+  protected abstract config: ProviderSpecificConfig;
 
   protected abstract getCacheKey(ref: SecretReference): string;
 

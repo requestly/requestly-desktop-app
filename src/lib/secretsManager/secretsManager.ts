@@ -15,7 +15,6 @@ export class SecretsManager {
 
   /**
    * Initialize the SecretsManager singleton. Must be called once at app startup.
-   * Safe to call multiple times - subsequent calls return the same promise.
    */
   static async initialize(registry: AbstractProviderRegistry): Promise<void> {
     if (this.instance) {
@@ -41,7 +40,6 @@ export class SecretsManager {
 
   /**
    * Get the initialized SecretsManager instance.
-   * Throws if initialize() hasn't been called and awaited.
    */
   static getInstance(): SecretsManager {
     if (!this.instance) {
@@ -118,6 +116,7 @@ export class SecretsManager {
       const provider = this.registry.getProvider(providerId);
 
       if (!provider) {
+        // TODO: Error to be handled properly
         continue;
       }
 
