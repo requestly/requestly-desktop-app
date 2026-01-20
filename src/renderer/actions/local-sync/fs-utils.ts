@@ -70,34 +70,6 @@ function sanitizePath(rawPath: string) {
   return rawPath;
 }
 
-async function hasWorkspaceConfigInAncestors(
-  dirPath: string
-): Promise<boolean> {
-  let currentDir = sanitizePath(dirPath);
-
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const configPath = appendPath(currentDir, CONFIG_FILE);
-
-    const doesConfigFileExist = await FsService.lstat(configPath)
-      .then((stats) => stats.isFile())
-      .catch(() => false);
-
-    if (doesConfigFileExist) {
-      return true;
-    }
-
-    const parentDir = path.dirname(currentDir);
-    if (parentDir === currentDir) {
-      break;
-    }
-
-    currentDir = parentDir;
-  }
-
-  return false;
-}
-
 export async function getFsResourceStats(
   resource: FsResource
 ): Promise<FileSystemResult<Stats>> {
@@ -112,6 +84,8 @@ export async function getFsResourceStats(
   }
 }
 
+
+
 export async function getIfFolderExists(resource: FolderResource) {
   const statsResult = await getFsResourceStats(resource);
   const doesFolderExist =
@@ -124,6 +98,37 @@ export async function getIfFileExists(resource: FileResource) {
   const doesFileExist =
     statsResult.type === "error" ? false : statsResult.content.isFile();
   return doesFileExist;
+}
+
+async function hasWorkspaceConfigInAncestors(
+  dirPath: string
+): Promise<boolean> {
+  let currentDir = sanitizePath(dirPath);
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const configPath = appendPath(currentDir, CONFIG_FILE);
+
+    const doesConfigFileExist = await getIfFileExists(createFsResource({
+      rootPath: currentDir,
+      path: configPath,
+      type: "file",
+    }));
+
+
+    if (doesConfigFileExist) {
+      return true;
+    }
+
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) {
+      break;
+    }
+
+    currentDir = parentDir;
+  }
+
+  return false;
 }
 
 export async function deleteFsResource(
@@ -611,7 +616,7 @@ export async function createWorkspaceFolder(
         message: "Selected folder is already a local workspace!",
         fileType: FileTypeEnum.UNKNOWN,
         path: sanitizedWorkspacePath,
-        code: ErrorCode.PathIsAlreadyAWorkspace,
+        code: ErrorCode.WorkspacePathAlreadyInUse,
       },
     };
   }
@@ -763,14 +768,14 @@ export async function migrateGlobalConfig(oldConfig: any) {
 
 type WorkspaceValidationResult =
   | {
-      valid: true;
-      ws: Static<typeof GlobalConfig>["workspaces"][number];
-    }
+    valid: true;
+    ws: Static<typeof GlobalConfig>["workspaces"][number];
+  }
   | {
-      valid: false;
-      ws: Static<typeof GlobalConfig>["workspaces"][number];
-      error: { message: string };
-    };
+    valid: false;
+    ws: Static<typeof GlobalConfig>["workspaces"][number];
+    error: { message: string };
+  };
 
 async function validateWorkspace(
   ws: Static<typeof GlobalConfig>["workspaces"][number]
