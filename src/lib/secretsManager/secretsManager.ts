@@ -110,13 +110,18 @@ export class SecretsManager {
 
     for (const [providerId, refs] of providerMap.entries()) {
       const provider = this.registry.getProvider(providerId);
-      if (provider) {
-        const secretValues = await provider.getSecrets(refs);
 
-        results.push(
-          ...secretValues.filter((sv): sv is SecretValue => sv !== null)
-        );
+      if (!provider) {
+        continue;
       }
+
+
+      const secretValues = await provider.getSecrets(refs);
+
+      results.push(
+        ...secretValues.filter((sv): sv is SecretValue => sv !== null)
+      );
+
     }
 
     return results;
