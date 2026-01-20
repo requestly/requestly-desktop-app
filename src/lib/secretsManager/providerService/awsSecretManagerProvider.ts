@@ -14,16 +14,12 @@ import {
   SecretsManagerClient,
 } from "@aws-sdk/client-secrets-manager";
 
-const DEFAULT_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
 export class AWSSecretsManagerProvider extends AbstractSecretProvider {
   readonly type = SecretProviderType.AWS_SECRETS_MANAGER;
 
   readonly id: string;
 
   protected config: AWSSecretsManagerConfig;
-
-  protected cache: Map<string, AwsSecretValue> = new Map();
 
   private client: SecretsManagerClient;
 
@@ -76,10 +72,9 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
     }
 
     const cacheKey = this.getCacheKey(ref);
-    const cachedSecret = this.cache.get(cacheKey);
-    const now = Date.now();
+    const cachedSecret = this.getCachedSecret(cacheKey) as AwsSecretValue | null;
 
-    if (cachedSecret && cachedSecret.fetchedAt + DEFAULT_CACHE_TTL_MS > now) {
+    if (cachedSecret) {
       console.log("!!!debug", "returning from cache", cachedSecret);
       return cachedSecret;
     }
@@ -113,7 +108,7 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
 
     console.log("!!!debug", "returning after fetching", awsSecret);
 
-    this.cache.set(cacheKey, awsSecret);
+    this.setCacheEntry(cacheKey, awsSecret);
 
     return awsSecret;
   }

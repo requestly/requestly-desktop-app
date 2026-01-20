@@ -6,8 +6,17 @@ import {
   SecretValue,
 } from "../types";
 
+const DEFAULT_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const DEFAULT_MAX_CACHE_SIZE = 100;
+
 export abstract class AbstractSecretProvider {
   protected cache: Map<string, SecretValue> = new Map();
+
+  /** Cache TTL in milliseconds. Subclasses can override. */
+  protected cacheTtlMs: number = DEFAULT_CACHE_TTL_MS;
+
+  /** Maximum cache size. Subclasses can override. */
+  protected maxCacheSize: number = DEFAULT_MAX_CACHE_SIZE;
 
   abstract readonly type: SecretProviderType;
 
@@ -33,6 +42,40 @@ export abstract class AbstractSecretProvider {
 
   protected invalidateCache(): void {
     this.cache.clear();
+  }
+
+  protected getCachedSecret(key: string): SecretValue | null {
+    const cached = this.cache.get(key);
+    if (cached && cached.fetchedAt + this.cacheTtlMs > Date.now()) {
+      return cached;
+    }
+    return null;
+  }
+
+  protected setCacheEntry(key: string, value: SecretValue): void {
+    this.evictExpiredEntries();
+
+    while (this.cache.size >= this.maxCacheSize) {
+      const oldestKey = this.cache.keys().next().value;
+      if (oldestKey) {
+        this.cache.delete(oldestKey);
+      }
+    }
+
+    this.cache.set(key, value);
+  }
+
+  protected evictExpiredEntries(): void {
+    const now = Date.now();
+    const keysToDelete: string[] = [];
+
+    this.cache.forEach((value, key) => {
+      if (value.fetchedAt + this.cacheTtlMs <= now) {
+        keysToDelete.push(key);
+      }
+    });
+
+    keysToDelete.forEach((key) => this.cache.delete(key));
   }
 
   abstract refreshSecrets(): Promise<(SecretValue | null)[]>;
