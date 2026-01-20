@@ -9,22 +9,22 @@ import { AbstractEncryptedStorage } from "../encryptedStorage/AbstractEncryptedS
 import { AbstractSecretProvider } from "../providerService/AbstractSecretProvider";
 import { createFsResource } from "../../../renderer/actions/local-sync/common-utils";
 import {
-  createGlobalConfigFolder,
+  createFolder,
   getIfFileExists,
   getIfFolderExists,
-  parseFile,
-  writeToGlobalConfig,
+  parseFileRaw,
+  writeContentRaw,
 } from "../../../renderer/actions/local-sync/fs-utils";
 import {
   CORE_CONFIG_FILE_VERSION,
   GLOBAL_CONFIG_FILE_NAME,
 } from "../../../renderer/actions/local-sync/constants";
-import { GlobalConfigRecordFileType } from "../../../renderer/actions/local-sync/file-types/file-types";
 import { Static } from "@sinclair/typebox";
-import { GlobalConfig } from "../../../renderer/actions/local-sync/schemas";
+import { GlobalConfig } from "renderer/actions/local-sync/schemas";
 
 // TODO:@nafees check version of config.json
 const MANIFEST_FILENAME = GLOBAL_CONFIG_FILE_NAME;
+
 export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   private manifestPath: string;
 
@@ -119,17 +119,15 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
 
   private async ensureConfigDir(): Promise<void> {
     try {
-      const globalConfigFolderResource = createFsResource({
+      const configDirResource = createFsResource({
         rootPath: this.configDir,
         path: this.configDir,
         type: "folder",
       });
-      const globalConfigFolderExists = await getIfFolderExists(
-        globalConfigFolderResource
-      );
+      const configDirExists = await getIfFolderExists(configDirResource);
 
-      if (!globalConfigFolderExists) {
-        await createGlobalConfigFolder();
+      if (!configDirExists) {
+        await createFolder(configDirResource);
       }
     } catch (error) {
       console.error("Failed to create config directory:", error);
@@ -138,23 +136,22 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   }
 
   private async ensureConfigFile(): Promise<void> {
-    const globalConfigFileResource = createFsResource({
+    const configFileResource = createFsResource({
       rootPath: this.configDir,
       path: this.manifestPath,
       type: "file",
     });
 
-    const globalConfigFileExists = await getIfFileExists(
-      globalConfigFileResource
-    );
+    const configFileExists = await getIfFileExists(configFileResource);
 
-    if (!globalConfigFileExists) {
+    if (!configFileExists) {
       const config: Static<typeof GlobalConfig> = {
         version: CORE_CONFIG_FILE_VERSION,
         workspaces: [],
         providers: [],
       };
-      const writeResult = await writeToGlobalConfig(config);
+
+      const writeResult = await writeContentRaw(configFileResource, config);
 
       if (writeResult.type === "error") {
         throw new Error("Failed to create manifest file.");
@@ -163,23 +160,22 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   }
 
   protected async loadManifest(): Promise<ProviderManifest> {
-    const globalConfigFileResource = createFsResource({
+    const configFileResource = createFsResource({
       rootPath: this.configDir,
       path: this.manifestPath,
       type: "file",
     });
 
-    const globalConfigFileExists = await getIfFileExists(
-      globalConfigFileResource
+    const configFileExists = await getIfFileExists(
+      configFileResource
     );
 
-    if (!globalConfigFileExists) {
+    if (!configFileExists) {
       return [];
     }
 
-    const readResult = await parseFile({
-      resource: globalConfigFileResource,
-      fileType: new GlobalConfigRecordFileType(),
+    const readResult = await parseFileRaw({
+      resource: configFileResource,
     });
 
     if (readResult.type === "error") {
@@ -187,35 +183,47 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
     }
 
     console.log("!!!debug", "readResult", readResult);
-    // TODO:@nafees handle versioning and schema in schema.ts
-    return (readResult.content.providers ?? []) as ProviderManifest;
+
+    try {
+      const manifest = JSON.parse(readResult.content) as ProviderManifest;
+      // TODO:@nafees handle versioning and schema in schema.ts
+      return (manifest ?? []) as ProviderManifest;
+    } catch (err) {
+      throw new Error("Failed to parse manifest file: Invalid JSON.");
+    }
   }
 
   protected async saveManifest(
     providerManifest: ProviderManifest
   ): Promise<void> {
-    const globalConfigFileResource = createFsResource({
+    const configFileResource = createFsResource({
       rootPath: this.configDir,
       path: this.manifestPath,
       type: "file",
     });
 
-    const readResult = await parseFile({
-      resource: globalConfigFileResource,
-      fileType: new GlobalConfigRecordFileType(),
+    const readResult = await parseFileRaw({
+      resource: configFileResource,
     });
 
     if (readResult.type === "error") {
       throw new Error("Failed to parse manifest file.");
     }
 
+    const manifest = JSON.parse(readResult.content) as Static<
+      typeof GlobalConfig
+    >;
+
     const updatedConfig: Static<typeof GlobalConfig> = {
-      version: readResult.content.version || CORE_CONFIG_FILE_VERSION,
-      workspaces: readResult.content.workspaces || [],
+      version: manifest.version || CORE_CONFIG_FILE_VERSION,
+      workspaces: manifest.workspaces || [],
       providers: providerManifest,
     };
 
-    const writeResult = await writeToGlobalConfig(updatedConfig);
+    const writeResult = await writeContentRaw(
+      configFileResource,
+      updatedConfig
+    );
 
     if (writeResult.type === "error") {
       throw new Error("Failed to write manifest file.");
