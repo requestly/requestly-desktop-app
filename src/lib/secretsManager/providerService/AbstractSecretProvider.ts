@@ -1,5 +1,10 @@
 /* eslint-disable no-unused-vars */
-import { SecretProviderType, SecretReference, SecretValue } from "../types";
+import {
+  ProviderSpecificConfig,
+  SecretProviderType,
+  SecretReference,
+  SecretValue,
+} from "../types";
 
 export abstract class AbstractSecretProvider {
   protected cache: Map<string, SecretValue> = new Map();
@@ -8,7 +13,7 @@ export abstract class AbstractSecretProvider {
 
   abstract readonly id: string;
 
-  protected config: any;
+  protected config: ProviderSpecificConfig;
 
   protected abstract getCacheKey(ref: SecretReference): string;
 
