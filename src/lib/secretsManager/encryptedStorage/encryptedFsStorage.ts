@@ -7,6 +7,7 @@ import {
 import {
   createFolder,
   deleteFsResource,
+  getIfFileExists,
   getIfFolderExists,
   parseFileRaw,
   writeContentRaw,
@@ -23,6 +24,7 @@ export class EncryptedFsStorage extends AbstractEncryptedStorage {
   async initialize(): Promise<void> {
     if (!safeStorage.isEncryptionAvailable()) {
       // Show trouble shooting steps to user
+      // Create a custom error for this
       throw new Error("Encryption is not available on this system. ");
     }
 
@@ -65,17 +67,24 @@ export class EncryptedFsStorage extends AbstractEncryptedStorage {
     }
   }
 
-  async load<T extends Record<string, any>>(key: string): Promise<T> {
+  async load<T extends Record<string, any>>(key: string): Promise<T | null> {
     const fsResource = createFsResource({
       rootPath: this.baseFolderPath,
       path: appendPath(this.baseFolderPath, key),
       type: "file",
     });
+
+    const fileExists = await getIfFileExists(fsResource);
+    if (!fileExists) {
+      return null;
+    }
+
     const fileContent = await parseFileRaw({
       resource: fsResource,
     });
 
     if (fileContent.type === "error") {
+      // File exists but couldn't be read - this is an actual error
       throw new Error(
         `Failed to load encrypted data for key: ${key}, error: ${fileContent.error.message}`
       );
