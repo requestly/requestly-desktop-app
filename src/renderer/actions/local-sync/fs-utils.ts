@@ -613,7 +613,7 @@ export async function createWorkspaceFolder(
 }
 
 async function getWorkspaceIdFromConfig(
-  workspaceFolderePath: string
+  workspaceFolderPath: string
 ): Promise<string> {
   const globalConfigFileResource = createFsResource({
     rootPath: GLOBAL_CONFIG_FOLDER_PATH,
@@ -630,7 +630,7 @@ async function getWorkspaceIdFromConfig(
   }
   const config = readResult.content;
   const workspace = config.workspaces.find(
-    (ws) => ws.path === workspaceFolderePath
+    (ws) => ws.path === workspaceFolderPath
   );
   if (!workspace) {
     throw new Error("Workspace not found in global config");
@@ -647,18 +647,23 @@ export async function createDefaultWorkspace(): Promise<
     LOCAL_WORKSPACES_DIRECTORY_NAME
   );
   try {
-    const rqDirectoryExists = await FsService.lstat(rqDirectoryPath)
-      .then((stats) => stats.isDirectory())
-      .catch(() => false);
+    const rqDirectoryExists = await getIfFolderExists(createFsResource({
+      rootPath: rqDirectoryPath,
+      path: rqDirectoryPath,
+      type: "folder",
+    }));
+
 
     const workspaceFolderPath = appendPath(
       rqDirectoryPath,
       DEFAULT_WORKSPACE_NAME
     );
 
-    const doesWorkspaceFolderExists = await FsService.lstat(workspaceFolderPath)
-      .then((stats) => stats.isDirectory())
-      .catch(() => false);
+    const doesWorkspaceFolderExists = await getIfFolderExists(createFsResource({
+      rootPath: rqDirectoryPath,
+      path: workspaceFolderPath,
+      type: "folder",
+    }));
 
     if (doesWorkspaceFolderExists) {
       const workspaceId = await getWorkspaceIdFromConfig(workspaceFolderPath);
@@ -719,14 +724,14 @@ export async function migrateGlobalConfig(oldConfig: any) {
 
 type WorkspaceValidationResult =
   | {
-      valid: true;
-      ws: Static<typeof GlobalConfig>["workspaces"][number];
-    }
+    valid: true;
+    ws: Static<typeof GlobalConfig>["workspaces"][number];
+  }
   | {
-      valid: false;
-      ws: Static<typeof GlobalConfig>["workspaces"][number];
-      error: { message: string };
-    };
+    valid: false;
+    ws: Static<typeof GlobalConfig>["workspaces"][number];
+    error: { message: string };
+  };
 
 async function validateWorkspace(
   ws: Static<typeof GlobalConfig>["workspaces"][number]
