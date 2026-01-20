@@ -42,7 +42,7 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
   }
 
   protected getCacheKey(ref: AwsSecretReference): string {
-    return `name=${ref.identifier};version:${ref.version}`;
+    return `name:${ref.identifier};version:${ref.version ?? "latest"}`;
   }
 
   async testConnection(): Promise<boolean> {
