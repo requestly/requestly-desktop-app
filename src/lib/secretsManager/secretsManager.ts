@@ -25,8 +25,14 @@ export class SecretsManager {
 
     if (!this.initPromise) {
       this.initPromise = (async () => {
-        this.instance = new SecretsManager(registry);
-        await this.instance.registry.initialize();
+        try {
+          this.instance = new SecretsManager(registry);
+          await this.instance.registry.initialize();
+        } catch (err) {
+          this.instance = null;
+          this.initPromise = null;
+          throw err;
+        }
       })();
     }
 
@@ -115,13 +121,11 @@ export class SecretsManager {
         continue;
       }
 
-
       const secretValues = await provider.getSecrets(refs);
 
       results.push(
         ...secretValues.filter((sv): sv is SecretValue => sv !== null)
       );
-
     }
 
     return results;
@@ -138,16 +142,13 @@ export class SecretsManager {
 }
 
 /**
- * Get the initialized SecretsManager instance.
- * Use this after initialization:
- *
- * @example
  * // At app startup (once):
  * await SecretsManager.initialize(registry);
  *
  * // Everywhere else:
  * import { getSecretsManager } from "./secretsManager";
- * await getSecretsManager().fetchSecret(providerId, ref);
+ * const secretsManager = getSecretsManager();
+ * await secretsManager.getSecret();
  */
 export function getSecretsManager(): SecretsManager {
   return SecretsManager.getInstance();
