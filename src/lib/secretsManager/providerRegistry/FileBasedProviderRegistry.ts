@@ -43,6 +43,7 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   }
 
   async initialize(): Promise<void> {
+    await this.encryptedStorage.initialize();
     await this.ensureConfigDir();
     await this.ensureConfigFile();
     await this.initProvidersFromManifest();

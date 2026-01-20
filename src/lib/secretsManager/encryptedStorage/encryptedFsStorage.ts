@@ -23,6 +23,7 @@ export class EncryptedFsStorage extends AbstractEncryptedStorage {
   async initialize(): Promise<void> {
     if (!safeStorage.isEncryptionAvailable()) {
       // Show trouble shooting steps to user
+      // Create a custom error for this
       throw new Error("Encryption is not available on this system. ");
     }
 
