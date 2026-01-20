@@ -7,8 +7,8 @@
  * Usage: Import and call initCapnWebRpc() in the background window's entry point.
  */
 
-import { RpcSession } from "capnweb";
-import { BackgroundTransport } from "./BackgroundTransport";
+import { newMessagePortRpcSession, RpcSession } from "capnweb";
+import { BackgroundTransport, IpcBackedMessagePort } from "./BackgroundTransport";
 import { HelloWorldService } from "./HelloWorldService";
 
 // Re-export types for convenience
@@ -35,7 +35,7 @@ export function initCapnWebRpc(): RpcSession<unknown> {
   console.log("[CapnWeb] Initializing RPC session in Background Window...");
 
   // Create the transport (handles communication with Main Process relay)
-  const transport = new BackgroundTransport();
+  // const transport = new BackgroundTransport();
 
   // Create the HelloWorld service that will be exposed to the Web App
   helloWorldService = new HelloWorldService();
@@ -43,7 +43,9 @@ export function initCapnWebRpc(): RpcSession<unknown> {
   // Create the RPC session with our service as the "main" interface
   // The Web App will be able to call methods on this service
   //@ts-ignore
-  session = new RpcSession(transport, helloWorldService);
+  // session = new RpcSession(transport, helloWorldService);
+
+  session = newMessagePortRpcSession(new IpcBackedMessagePort(), helloWorldService);
 
   console.log("[CapnWeb] RPC session initialized successfully!");
   console.log("[CapnWeb] HelloWorldService is now available to the Web App");

@@ -105,3 +105,89 @@ export class BackgroundTransport implements RpcTransport {
     ipcRenderer.removeAllListeners(CHANNELS.RECEIVE);
   }
 }
+
+
+/**
+ * IPC-Backed MessagePort for Background Window
+ * 
+ * This creates a MessagePort-like interface backed by Electron IPC.
+ * Use with newMessagePortRpcSession() to get Cap'n Web's native session
+ * without writing a custom RpcTransport.
+ * 
+ * Usage:
+ *   const port = new IpcBackedMessagePort();
+ *   const session = newMessagePortRpcSession(port, new HelloWorldService());
+ */
+
+export class IpcBackedMessagePort {
+  private messageListeners: Array<(event: { data: any }) => void> = [];
+  private errorListeners: Array<(event: { data: any }) => void> = [];
+  private ipcHandler: (event: Electron.IpcRendererEvent, data: any) => void;
+  private started = false;
+
+  constructor() {
+    // Create handler but don't attach yet (wait for start())
+    this.ipcHandler = (_event, data: string | null) => {
+      console.log("[IpcBackedMessagePort] Received:", typeof data === 'string' ? data.substring(0, 80) + '...' : data);
+      
+      // Create MessageEvent-like object (Cap'n Web only reads .data)
+      const messageEvent = { data };
+      
+      // Notify all message listeners
+      this.messageListeners.forEach(listener => {
+        try {
+          listener(messageEvent);
+        } catch (err) {
+          console.error("[IpcBackedMessagePort] Listener error:", err);
+        }
+      });
+    };
+
+    console.log("[IpcBackedMessagePort] Created (waiting for start())");
+  }
+
+  /**
+   * Start receiving messages.
+   * Called by Cap'n Web's MessagePortTransport in its constructor.
+   */
+  start(): void {
+    if (this.started) return;
+    this.started = true;
+    
+    ipcRenderer.on(CHANNELS.RECEIVE, this.ipcHandler);
+    console.log("[IpcBackedMessagePort] Started listening on", CHANNELS.RECEIVE);
+  }
+
+  /**
+   * Add event listener.
+   * Cap'n Web uses "message" and "messageerror" events.
+   */
+  addEventListener(type: string, callback: (event: { data: any }) => void): void {
+    if (type === "message") {
+      this.messageListeners.push(callback);
+    } else if (type === "messageerror") {
+      this.errorListeners.push(callback);
+    }
+  }
+
+  /**
+   * Send a message to the Web App.
+   * Cap'n Web sends strings, or null as a close signal.
+   */
+  postMessage(message: string | null): void {
+    console.log("[IpcBackedMessagePort] Sending:", typeof message === 'string' ? message.substring(0, 80) + '...' : message);
+    ipcRenderer.send(CHANNELS.SEND, message);
+  }
+
+  /**
+   * Close the port and clean up.
+   * Called by Cap'n Web's MessagePortTransport in abort().
+   */
+  close(): void {
+    console.log("[IpcBackedMessagePort] Closing");
+    ipcRenderer.removeListener(CHANNELS.RECEIVE, this.ipcHandler);
+    this.messageListeners = [];
+    this.errorListeners = [];
+    this.started = false;
+  }
+}
