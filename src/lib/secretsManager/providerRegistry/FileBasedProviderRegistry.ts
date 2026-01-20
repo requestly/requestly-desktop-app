@@ -62,6 +62,8 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
     console.log("!!!debug", "manifest loaded", providerManifest);
     const configs: SecretProviderConfig[] = [];
 
+    const orphanedIndexes: number[] = [];
+
     for (const entry of providerManifest) {
       const config = await this.encryptedStorage.load<SecretProviderConfig>(
         entry.id
@@ -71,8 +73,20 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
         configs.push(config);
       } else {
         // Should we throw error for this case?
+        // TODO: Manifest orphaned entry needs to be cleanup up
+        // Clean up orphaned entry from manifest
+        const orphanedIndex = providerManifest.findIndex((p) => p.id === entry.id);
+        if (orphanedIndex !== -1) {
+          orphanedIndexes.push(orphanedIndex);
+        }
+
         console.log("!!!debug", "Config not found for entry", entry);
       }
+    }
+
+    if (orphanedIndexes.length > 0) {
+      const updatedManifest = providerManifest.filter((_, index) => !orphanedIndexes.includes(index));
+      await this.saveManifest(updatedManifest);
     }
 
     console.log("!!!debug", "all configs", configs);
