@@ -166,9 +166,7 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
       type: "file",
     });
 
-    const configFileExists = await getIfFileExists(
-      configFileResource
-    );
+    const configFileExists = await getIfFileExists(configFileResource);
 
     if (!configFileExists) {
       return [];
@@ -185,9 +183,10 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
     console.log("!!!debug", "readResult", readResult);
 
     try {
-      const manifest = JSON.parse(readResult.content) as ProviderManifest;
+      const config = JSON.parse(readResult.content);
+      const manifest = config.providers as ProviderManifest;
       // TODO:@nafees handle versioning and schema in schema.ts
-      return (manifest ?? []) as ProviderManifest;
+      return manifest ?? [];
     } catch (err) {
       throw new Error("Failed to parse manifest file: Invalid JSON.");
     }
