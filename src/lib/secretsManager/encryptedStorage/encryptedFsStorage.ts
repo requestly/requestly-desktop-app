@@ -116,7 +116,7 @@ export class EncryptedFsStorage extends AbstractEncryptedStorage {
     try {
       return JSON.parse(decryptedString) as T;
     } catch (err) {
-      throw new Error(`Failed to parse decrypted data for key`);
+      throw new Error(`Failed to parse decrypted data for key: ${key}`);
     }
   }
 
@@ -128,9 +128,10 @@ export class EncryptedFsStorage extends AbstractEncryptedStorage {
       type: "file",
     });
 
-    const res = await deleteFsResource(fsResource);
-    if (res.type === "error") {
-      throw new Error(res.error.message);
+    const fsResult = await deleteFsResource(fsResource);
+
+    if (fsResult.type === "error") {
+      throw new Error(`Failed to delete encrypted data for key: ${key}`);
     }
   }
 }
