@@ -694,18 +694,23 @@ export async function createDefaultWorkspace(): Promise<
     LOCAL_WORKSPACES_DIRECTORY_NAME
   );
   try {
-    const rqDirectoryExists = await FsService.lstat(rqDirectoryPath)
-      .then((stats) => stats.isDirectory())
-      .catch(() => false);
+    const rqDirectoryExists = await getIfFolderExists(createFsResource({
+      rootPath: rqDirectoryPath,
+      path: rqDirectoryPath,
+      type: "folder",
+    }));
+
 
     const workspaceFolderPath = appendPath(
       rqDirectoryPath,
       DEFAULT_WORKSPACE_NAME
     );
 
-    const doesWorkspaceFolderExists = await FsService.lstat(workspaceFolderPath)
-      .then((stats) => stats.isDirectory())
-      .catch(() => false);
+    const doesWorkspaceFolderExists = await getIfFolderExists(createFsResource({
+      rootPath: rqDirectoryPath,
+      path: workspaceFolderPath,
+      type: "folder",
+    }));
 
     if (doesWorkspaceFolderExists) {
       const workspaceId = await getWorkspaceIdFromConfig(workspaceFolderPath);
