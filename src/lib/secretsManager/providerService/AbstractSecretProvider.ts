@@ -15,7 +15,7 @@ export abstract class AbstractSecretProvider {
   /** Cache TTL in milliseconds. Subclasses can override. */
   protected cacheTtlMs: number = DEFAULT_CACHE_TTL_MS;
 
-  /** Maximum cache size. Subclasses can override. */
+  /** Maximum cache size (Size of the map). Subclasses can override. */
   protected maxCacheSize: number = DEFAULT_MAX_CACHE_SIZE;
 
   abstract readonly type: SecretProviderType;
@@ -53,13 +53,18 @@ export abstract class AbstractSecretProvider {
   }
 
   protected setCacheEntry(key: string, value: SecretValue): void {
+    if (this.maxCacheSize <= 0) {
+      return;
+    }
+
     this.evictExpiredEntries();
 
     while (this.cache.size >= this.maxCacheSize) {
       const oldestKey = this.cache.keys().next().value;
-      if (oldestKey) {
-        this.cache.delete(oldestKey);
+      if (!oldestKey) {
+        break;
       }
+      this.cache.delete(oldestKey);
     }
 
     this.cache.set(key, value);

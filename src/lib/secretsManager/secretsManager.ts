@@ -148,7 +148,7 @@ export class SecretsManager {
  * // Everywhere else:
  * import { getSecretsManager } from "./secretsManager";
  * const secretsManager = getSecretsManager();
- * await secretsManager.getSecret();
+ * await secretsManager.getSecret(...);
  */
 export function getSecretsManager(): SecretsManager {
   return SecretsManager.getInstance();
