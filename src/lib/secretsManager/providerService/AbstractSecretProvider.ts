@@ -1,4 +1,4 @@
-import { CachedSecret, SecretProviderType, SecretReference } from "../types";
+import { CachedSecret, ProviderSpecificConfig, SecretProviderType, SecretReference } from "../types";
 
 export abstract class AbstractSecretProvider {
   protected cache: Map<string, CachedSecret> = new Map();
@@ -7,7 +7,7 @@ export abstract class AbstractSecretProvider {
 
   abstract readonly id: string;
 
-  protected config: any;
+  protected config: ProviderSpecificConfig;
 
   protected abstract getSecretIdentfier(ref: SecretReference): string;
 
