@@ -24,7 +24,7 @@ import { createOrUpdateAxiosInstance } from "./actions/getProxiedAxios";
 // eslint-disable-next-line import/no-cycle
 import createTrayMenu from "./main";
 import { SecretsManager } from "../lib/secretsManager/secretsManager";
-import { ProviderRegistry } from "../lib/secretsManager/providerRegistry/FileBasedProviderRegistry";
+import { FileBasedProviderRegistry } from "../lib/secretsManager/providerRegistry/FileBasedProviderRegistry";
 import { SecretsManagerEncryptedStorage } from "lib/secretsManager/encryptedStorage/SecretsManagerEncryptedStorage";
 
 const getFileCategory = (fileExtension) => {
@@ -277,7 +277,7 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
 
   ipcMain.handle("init-secretsManager", () => {
     const secretsStore = new SecretsManagerEncryptedStorage("providers");
-    const registry = new ProviderRegistry(secretsStore);
+    const registry = new FileBasedProviderRegistry(secretsStore);
     secretsManager = new SecretsManager(registry);
 
     try {
