@@ -23,10 +23,10 @@ import { createOrUpdateAxiosInstance } from "./actions/getProxiedAxios";
 // and then build these utilites elsewhere
 // eslint-disable-next-line import/no-cycle
 import createTrayMenu from "./main";
-import { GLOBAL_CONFIG_FOLDER_PATH } from "../renderer/actions/local-sync/constants";
-import { getSecretsManager,SecretsManager } from "../lib/secretsManager/secretsManager";
-import { EncryptedFsStorage } from "../lib/secretsManager/encryptedStorage/encryptedFsStorage";
-import { FileBasedProviderRegistry } from "../lib/secretsManager/providerRegistry/FileBasedProviderRegistry";
+import { SecretsManagerEncryptedStorage } from "lib/secretsManager/encryptedStorage/SecretsManagerEncryptedStorage";
+import { FileBasedProviderRegistry } from "lib/secretsManager/providerRegistry/FileBasedProviderRegistry";
+import { SecretsManager } from "@aws-sdk/client-secrets-manager";
+import { getSecretsManager } from "lib/secretsManager/secretsManager";
 
 const getFileCategory = (fileExtension) => {
   switch (fileExtension) {
@@ -277,13 +277,8 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
   let secretsManager = null;
 
   ipcMain.handle("init-secretsManager", async () => {
-    const encryptedStorage = new EncryptedFsStorage(
-      path.join(GLOBAL_CONFIG_FOLDER_PATH, "providers")
-    );
-    const registry = new FileBasedProviderRegistry(
-      encryptedStorage,
-      GLOBAL_CONFIG_FOLDER_PATH
-    );
+    const secretsStorage = new SecretsManagerEncryptedStorage("providers");
+    const registry = new FileBasedProviderRegistry(secretsStorage);
 
     await SecretsManager.initialize(registry);
     secretsManager = getSecretsManager();

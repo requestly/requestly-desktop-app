@@ -3,7 +3,7 @@ import { createProviderInstance } from "../providerService/providerFactory";
 import { AbstractSecretProvider } from "../providerService/AbstractSecretProvider";
 import { AbstractProviderRegistry } from "./AbstractProviderRegistry";
 
-export class ProviderRegistry extends AbstractProviderRegistry {
+export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   async initialize(): Promise<void> {
     await this.initProvidersFromStorage();
   }
