@@ -431,7 +431,7 @@ export async function parseFileRaw(params: {
 /* NOTE: This is the ONLY function that should write to the global config file.
          All global config mutations must go through this writer to avoid
          partial writes & concurrency issues. */
-export async function writeToGlobalConfig(
+async function writeToGlobalConfig(
   config: Static<typeof GlobalConfig>
 ): Promise<FileSystemResult<{ resource: FileResource }>> {
   const originalPath = appendPath(
@@ -528,7 +528,6 @@ export async function addWorkspaceToGlobalConfig(params: {
     const config: Static<typeof GlobalConfig> = {
       version: CORE_CONFIG_FILE_VERSION,
       workspaces: [newWorkspace],
-      providers: [],
     };
     const writeResult = await writeToGlobalConfig(config);
     if (writeResult.type === "error") {
@@ -550,7 +549,6 @@ export async function addWorkspaceToGlobalConfig(params: {
   }
 
   const updatedConfig = {
-    ...readResult.content,
     version: readResult.content.version,
     workspaces: [...readResult.content.workspaces, newWorkspace],
   };
@@ -616,15 +614,6 @@ export async function migrateGlobalConfig(oldConfig: any) {
     return {
       version: CORE_CONFIG_FILE_VERSION,
       workspaces: oldConfig,
-      providers: [],
-    };
-  }
-
-  if (oldConfig.version === 0.1) {
-    return {
-      version: CORE_CONFIG_FILE_VERSION,
-      workspaces: oldConfig.workspaces,
-      providers: [],
     };
   }
 
@@ -742,7 +731,6 @@ export async function getAllWorkspaces(): Promise<
       const updatedConfig: Static<typeof GlobalConfig> = {
         version: effectiveConfig.version || CORE_CONFIG_FILE_VERSION,
         workspaces: valid,
-        providers: effectiveConfig.providers || [],
       };
       const pruneWriteResult = await writeToGlobalConfig(updatedConfig);
       if (pruneWriteResult.type === "error") {

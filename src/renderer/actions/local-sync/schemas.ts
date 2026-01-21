@@ -1,7 +1,6 @@
 /* eslint-disable no-shadow */
 /* eslint-disable no-unused-vars */
 import { Type } from "@sinclair/typebox";
-import { SecretProviderType } from "lib/secretsManager/types";
 
 export const Config = Type.Object({
   version: Type.String(),
@@ -200,13 +199,6 @@ export const GlobalConfig = Type.Object({
       id: Type.String(),
       name: Type.String(),
       path: Type.String(),
-    })
-  ),
-  // TODO:@nafees Should this be optional?
-  providers: Type.Array(
-    Type.Object({
-      id: Type.String(),
-      type: Type.Enum(SecretProviderType),
     })
   ),
 });
