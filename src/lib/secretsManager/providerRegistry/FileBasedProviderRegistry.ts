@@ -11,7 +11,16 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   private async initProvidersFromStorage(): Promise<void> {
     const configs = await this.getAllProviderConfigs();
     configs.forEach((config) => {
-      this.providers.set(config.id, createProviderInstance(config));
+      try {
+        this.providers.set(config.id, createProviderInstance(config));
+      } catch (error) {
+        // TODO error to be propagated
+        console.log(
+          "!!!debug",
+          `Failed to initialize provider for config id: ${config.id}`,
+          error
+        );
+      }
     });
   }
 
@@ -30,8 +39,9 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   }
 
   async setProviderConfig(config: SecretProviderConfig): Promise<void> {
+    const provider = createProviderInstance(config);
     await this.store.set(config.id, config);
-    this.providers.set(config.id, createProviderInstance(config));
+    this.providers.set(config.id, provider);
   }
 
   async deleteProviderConfig(id: string): Promise<void> {
