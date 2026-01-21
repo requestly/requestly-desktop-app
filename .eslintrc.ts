@@ -1,5 +1,5 @@
 module.exports = {
-  extends: ["erb"],
+  extends: ["plugin:@typescript-eslint/recommended"],
   rules: {
     // A temporary hack related to IDE not resolving correct package.json
     "import/no-extraneous-dependencies": "off",
@@ -14,9 +14,9 @@ module.exports = {
     "no-unused-vars": [
       "warn",
       {
-        "argsIgnorePattern": "^_",
-        "varsIgnorePattern": "^_"
-      }
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+      },
     ],
   },
   parserOptions: {
