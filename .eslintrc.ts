@@ -1,17 +1,8 @@
 module.exports = {
-  extends: ["plugin:@typescript-eslint/recommended"],
+  extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
   rules: {
-    // A temporary hack related to IDE not resolving correct package.json
-    "import/no-extraneous-dependencies": "off",
-    "no-console": "off",
-    "import/order": "off",
-    "import/extensions": "off",
-    "import/prefer-default-export": "off",
-    "no-await-in-loop": "off",
     "prettier/prettier": "off",
-    "no-nested-ternary": "off",
-    "no-restricted-syntax": "off",
-    "no-unused-vars": [
+    "@typescript-eslint/no-unused-vars": [
       "warn",
       {
         argsIgnorePattern: "^_",
@@ -19,6 +10,7 @@ module.exports = {
       },
     ],
   },
+  parser: "@typescript-eslint/parser",
   parserOptions: {
     ecmaVersion: 2020,
     sourceType: "module",
@@ -26,6 +18,7 @@ module.exports = {
     tsconfigRootDir: __dirname,
     createDefaultProgram: true,
   },
+  plugins: ["@typescript-eslint"],
   settings: {
     "import/resolver": {
       // See https://github.com/benmosher/eslint-plugin-import/issues/1396#issuecomment-575727774 for line below
