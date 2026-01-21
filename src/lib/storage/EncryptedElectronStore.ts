@@ -3,7 +3,7 @@ import { safeStorage } from "electron";
 
 interface EncryptedStoreSchema {
   version: number;
-  data: Record<string, string>; // { [key]: base64 encrypted value }
+  data: Record<string, any>;
 }
 
 const STORE_VERSION = 1;
@@ -12,18 +12,8 @@ const STORE_VERSION = 1;
  * Generic encrypted key-value storage using electron-store + Electron's safeStorage.
  * - OS-level encryption via safeStorage (Keychain/DPAPI/libsecret)
  *
- * Storage location: <userData>/storage/<storeName>.json
+ * Storage location: <userData>/storage/<storeName>.txt
  *
- * Structure:
- * ```json
- * {
- *   "version": 1,
- *   "data": {
- *     "key1": "<base64-safeStorage-encrypted>",
- *     "key2": "<base64-safeStorage-encrypted>"
- *   }
- * }
- * ```
  */
 export class EncryptedElectronStore {
   private store: Store<EncryptedStoreSchema>;
@@ -38,6 +28,8 @@ export class EncryptedElectronStore {
     const storeOptions: Store.Options<EncryptedStoreSchema> = {
       name: storeName,
       cwd: "storage",
+      watch: true,
+      fileExtension: "txt",
       serialize: (data) => {
         const jsonString = JSON.stringify(data);
         const encrypted = safeStorage.encryptString(jsonString);
@@ -48,6 +40,10 @@ export class EncryptedElectronStore {
         const encryptedBuffer = Buffer.from(data, "base64");
         const decrypted = safeStorage.decryptString(encryptedBuffer);
         return JSON.parse(decrypted) as EncryptedStoreSchema;
+      },
+      schema: {
+        version: { type: "number" },
+        data: { type: "object", additionalProperties: true },
       },
       defaults: {
         version: STORE_VERSION,
@@ -75,28 +71,14 @@ export class EncryptedElectronStore {
     this.store.delete(`data.${key}` as keyof EncryptedStoreSchema);
   }
 
-  /**
-   * Check if a key exists in storage.
-   *
-   * @param key - Storage key
-   * @returns true if key exists, false otherwise
-   */
   has(key: string): boolean {
     return this.store.has(`data.${key}` as keyof EncryptedStoreSchema);
   }
 
-  /**
-   * Get all keys in storage.
-   *
-   * @returns Array of all storage keys
-   */
   keys(): string[] {
     return Object.keys(this.store.get("data"));
   }
 
-  /**
-   * Clear all data from storage.
-   */
   clear(): void {
     this.store.set("data", {});
   }
