@@ -1,7 +1,6 @@
 /* eslint-disable no-shadow */
 /* eslint-disable no-unused-vars */
 import { Type } from "@sinclair/typebox";
-import { SecretProviderType } from "lib/secretsManager/types";
 
 export const Config = Type.Object({
   version: Type.String(),
@@ -181,7 +180,7 @@ export const ApiRecord = Type.Object({
 export const Variables = Type.Record(
   Type.String(),
   Type.Object({
-    id: Type.Number(),
+    id: Type.Union([Type.String(), Type.Number()]),
     value: Type.Union([Type.String(), Type.Number(), Type.Boolean()]),
     type: Type.Enum(EnvironmentVariableType),
     isSecret: Type.Boolean(),
@@ -200,13 +199,6 @@ export const GlobalConfig = Type.Object({
       id: Type.String(),
       name: Type.String(),
       path: Type.String(),
-    })
-  ),
-  // TODO:@nafees Should this be optional?
-  providers: Type.Array(
-    Type.Object({
-      id: Type.String(),
-      type: Type.Enum(SecretProviderType),
     })
   ),
 });
