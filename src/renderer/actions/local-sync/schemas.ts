@@ -180,7 +180,7 @@ export const ApiRecord = Type.Object({
 export const Variables = Type.Record(
   Type.String(),
   Type.Object({
-    id: Type.Number(),
+    id: Type.Union([Type.String(), Type.Number()]),
     value: Type.Union([Type.String(), Type.Number(), Type.Boolean()]),
     type: Type.Enum(EnvironmentVariableType),
     isSecret: Type.Boolean(),
