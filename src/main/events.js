@@ -25,6 +25,7 @@ import { createOrUpdateAxiosInstance } from "./actions/getProxiedAxios";
 import createTrayMenu from "./main";
 import { SecretsManager } from "../lib/secretsManager/secretsManager";
 import { ProviderRegistry } from "../lib/secretsManager/providerRegistry/FileBasedProviderRegistry";
+import { SecretsManagerEncryptedStorage } from "lib/secretsManager/encryptedStorage/SecretsManagerEncryptedStorage";
 
 const getFileCategory = (fileExtension) => {
   switch (fileExtension) {
@@ -275,7 +276,8 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
   let secretsManager = null;
 
   ipcMain.handle("init-secretsManager", () => {
-    const registry = new ProviderRegistry();
+    const secretsStore = new SecretsManagerEncryptedStorage("providers");
+    const registry = new ProviderRegistry(secretsStore);
     secretsManager = new SecretsManager(registry);
 
     try {

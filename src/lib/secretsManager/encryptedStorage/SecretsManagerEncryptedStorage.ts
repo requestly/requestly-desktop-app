@@ -5,9 +5,9 @@ import { SecretProviderConfig } from "../types";
 export class SecretsManagerEncryptedStorage extends AbstractSecretsManagerStorage {
   private encryptedStore: EncryptedElectronStore;
 
-  constructor(storeName: string, schema: any) {
+  constructor(storeName: string) {
     super();
-    this.encryptedStore = new EncryptedElectronStore(storeName, schema);
+    this.encryptedStore = new EncryptedElectronStore(storeName);
   }
 
   async set(key: string, data: SecretProviderConfig): Promise<void> {

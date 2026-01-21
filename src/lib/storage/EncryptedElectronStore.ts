@@ -28,7 +28,7 @@ const STORE_VERSION = 1;
 export class EncryptedElectronStore {
   private store: Store<EncryptedStoreSchema>;
 
-  constructor(storeName: string, schema?: any) {
+  constructor(storeName: string) {
     if (!safeStorage.isEncryptionAvailable()) {
       throw new Error(
         "Encryption is not available on this system. Please ensure your operating system's secure storage is properly configured."
@@ -54,10 +54,6 @@ export class EncryptedElectronStore {
         data: {},
       },
     };
-
-    if (schema) {
-      storeOptions.schema = schema;
-    }
 
     this.store = new Store<EncryptedStoreSchema>(storeOptions);
   }
