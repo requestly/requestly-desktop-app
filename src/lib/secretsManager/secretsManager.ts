@@ -1,8 +1,8 @@
-/* eslint-disable no-use-before-define */
 import { SecretProviderConfig, SecretReference, SecretValue } from "./types";
 import { AbstractProviderRegistry } from "./providerRegistry/AbstractProviderRegistry";
 
 export class SecretsManager {
+  // eslint-disable-next-line no-use-before-define
   private static instance: SecretsManager | null = null;
 
   private static initPromise: Promise<void> | null = null;

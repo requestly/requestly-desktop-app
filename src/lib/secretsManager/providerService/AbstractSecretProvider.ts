@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import {
   ProviderSpecificConfig,
   SecretProviderType,
@@ -24,13 +23,15 @@ export abstract class AbstractSecretProvider {
 
   protected abstract config: ProviderSpecificConfig;
 
-  protected abstract getCacheKey(ref: SecretReference): string;
+  protected abstract getCacheKey(_ref: SecretReference): string;
 
   abstract testConnection(): Promise<boolean>;
 
-  abstract getSecret(ref: SecretReference): Promise<SecretValue | null>;
+  abstract getSecret(_ref: SecretReference): Promise<SecretValue | null>;
 
-  abstract getSecrets(refs: SecretReference[]): Promise<(SecretValue | null)[]>;
+  abstract getSecrets(
+    _refs: SecretReference[]
+  ): Promise<(SecretValue | null)[]>;
 
   abstract setSecret(): Promise<void>;
 

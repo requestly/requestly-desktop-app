@@ -1,5 +1,3 @@
-/* eslint-disable no-continue */
-/* eslint-disable class-methods-use-this */
 import {
   AwsSecretReference,
   AWSSecretsManagerConfig,
