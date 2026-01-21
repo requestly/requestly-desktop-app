@@ -11,6 +11,7 @@ module.exports = {
     "prettier/prettier": "off",
     "no-nested-ternary": "off",
     "no-restricted-syntax": "off",
+    "no-continue": "off",
     "no-unused-vars": [
       "warn",
       {

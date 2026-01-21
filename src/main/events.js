@@ -23,10 +23,12 @@ import { createOrUpdateAxiosInstance } from "./actions/getProxiedAxios";
 // and then build these utilites elsewhere
 // eslint-disable-next-line import/no-cycle
 import createTrayMenu from "./main";
-import { SecretsManagerEncryptedStorage } from "lib/secretsManager/encryptedStorage/SecretsManagerEncryptedStorage";
-import { FileBasedProviderRegistry } from "lib/secretsManager/providerRegistry/FileBasedProviderRegistry";
-import { SecretsManager } from "@aws-sdk/client-secrets-manager";
-import { getSecretsManager } from "lib/secretsManager/secretsManager";
+import { SecretsManagerEncryptedStorage } from "../lib/secretsManager/encryptedStorage/SecretsManagerEncryptedStorage";
+import { FileBasedProviderRegistry } from "../lib/secretsManager/providerRegistry/FileBasedProviderRegistry";
+import {
+  getSecretsManager,
+  SecretsManager,
+} from "../lib/secretsManager/secretsManager";
 
 const getFileCategory = (fileExtension) => {
   switch (fileExtension) {
