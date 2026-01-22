@@ -503,6 +503,33 @@ async function writeToGlobalConfig(
   };
 }
 
+async function getWorkspaceIdFromConfig(
+  workspaceFolderPath: string | null
+): Promise<string | null> {
+  const globalConfigFileResource = createFsResource({
+    rootPath: GLOBAL_CONFIG_FOLDER_PATH,
+    path: appendPath(GLOBAL_CONFIG_FOLDER_PATH, GLOBAL_CONFIG_FILE_NAME),
+    type: "file",
+  });
+  const readResult = await parseFile({
+    resource: globalConfigFileResource,
+    fileType: new GlobalConfigRecordFileType(),
+  });
+
+  if (readResult.type === "error") {
+    throw new Error("Failed to read global config file");
+  }
+  const config = readResult.content;
+  const workspace = config.workspaces.find(
+    (ws) => ws.path === workspaceFolderPath
+  );
+  if (!workspace) {
+    return null;
+  }
+  return workspace.id;
+}
+
+
 export async function createGlobalConfigFolder(): Promise<
   FileSystemResult<{ resource: FolderResource }>
 > {
@@ -525,6 +552,7 @@ export async function createGlobalConfigFolder(): Promise<
     );
   }
 }
+
 
 export async function addWorkspaceToGlobalConfig(params: {
   name: string;
@@ -565,6 +593,8 @@ export async function addWorkspaceToGlobalConfig(params: {
       version: CORE_CONFIG_FILE_VERSION,
       workspaces: [newWorkspace],
     };
+
+
     const writeResult = await writeToGlobalConfig(config);
     if (writeResult.type === "error") {
       return writeResult;
@@ -573,6 +603,19 @@ export async function addWorkspaceToGlobalConfig(params: {
       type: "success",
       content: newWorkspace,
     };
+  }
+
+  const workspaceId = await getWorkspaceIdFromConfig(workspacePath);
+
+  if (workspaceId) {
+    return {
+      type: "success",
+      content: {
+        name,
+        id: workspaceId,
+        path: workspacePath,
+      }
+    }
   }
 
   const readResult = await parseFile({
@@ -598,6 +641,24 @@ export async function addWorkspaceToGlobalConfig(params: {
     type: "success",
     content: newWorkspace,
   };
+}
+
+async function getWorkspacePathFromSelectedPath(
+  selectedPath: string
+): Promise<string | null> {
+  let currentPath = selectedPath;
+  while (currentPath !== "/") {
+    const workspacePathExists = await FsService.lstat(
+      appendPath(currentPath, CONFIG_FILE)
+    )
+      .then((stats) => stats.isFile())
+      .catch(() => false);
+    if (workspacePathExists) {
+      return currentPath;
+    }
+    currentPath = path.dirname(currentPath);
+  }
+  return null;
 }
 
 export async function createWorkspaceFolder(
@@ -659,31 +720,6 @@ export async function createWorkspaceFolder(
   });
 }
 
-async function getWorkspaceIdFromConfig(
-  workspaceFolderPath: string | null
-): Promise<string | null> {
-  const globalConfigFileResource = createFsResource({
-    rootPath: GLOBAL_CONFIG_FOLDER_PATH,
-    path: appendPath(GLOBAL_CONFIG_FOLDER_PATH, GLOBAL_CONFIG_FILE_NAME),
-    type: "file",
-  });
-  const readResult = await parseFile({
-    resource: globalConfigFileResource,
-    fileType: new GlobalConfigRecordFileType(),
-  });
-
-  if (readResult.type === "error") {
-    throw new Error("Failed to read global config file");
-  }
-  const config = readResult.content;
-  const workspace = config.workspaces.find(
-    (ws) => ws.path === workspaceFolderPath
-  );
-  if (!workspace) {
-    return null;
-  }
-  return workspace.id;
-}
 
 export async function createDefaultWorkspace(): Promise<
   FileSystemResult<{ name: string; id: string; path: string }>
@@ -728,8 +764,12 @@ export async function createDefaultWorkspace(): Promise<
           },
         };
       }
-      // TBD: Action to be decided here if folder is present but not in global config
+      return addWorkspaceToGlobalConfig({
+        name: DEFAULT_WORKSPACE_NAME,
+        path: workspaceFolderPath,
+      });
     }
+
     if (!rqDirectoryExists) {
       const rqDirectoryCreationResult = await createFolder(
         createFsResource({
@@ -757,6 +797,72 @@ export async function createDefaultWorkspace(): Promise<
       rqDirectoryPath,
       FileTypeEnum.UNKNOWN
     );
+  }
+}
+
+export async function openExistingLocalWorkspace(
+  selectedPath: string
+): Promise<FileSystemResult<{ name: string; id: string; path: string }>> {
+  try {
+    const workspaceRootPath = await getWorkspacePathFromSelectedPath(
+      selectedPath
+    );
+    if (!workspaceRootPath) {
+      return {
+        type: "error",
+        error: {
+          message: "The selected folder is not a valid workspace folder",
+          path: selectedPath,
+          fileType: FileTypeEnum.UNKNOWN,
+          code: ErrorCode.NotFound,
+        },
+      };
+    }
+
+    const workspaceFolderResource = createFsResource({
+      rootPath: workspaceRootPath,
+      path: workspaceRootPath,
+      type: "folder",
+    });
+
+    const workspaceId = await getWorkspaceIdFromConfig(workspaceRootPath);
+    if (workspaceId) {
+      return {
+        type: "error",
+        error: {
+          message: "Workspace already exists",
+          path: workspaceRootPath,
+          fileType: FileTypeEnum.UNKNOWN,
+          code: ErrorCode.EntityAlreadyExists,
+          metadata: {
+            workspaceId,
+            name: getNameOfResource(workspaceFolderResource),
+          },
+        },
+      };
+    }
+
+    const result = await addWorkspaceToGlobalConfig({
+      name: getNameOfResource(workspaceFolderResource),
+      path: workspaceRootPath,
+    });
+    if (result.type === "error") {
+      return createFileSystemError(
+        result.error,
+        workspaceRootPath,
+        FileTypeEnum.UNKNOWN
+      );
+    }
+    return {
+      type: "success",
+      content: {
+        name: getNameOfResource(workspaceFolderResource),
+        id: result.content.id,
+        path: workspaceRootPath,
+      },
+    };
+  } catch (err: any) {
+    return createFileSystemError(err, selectedPath, FileTypeEnum.UNKNOWN);
   }
 }
 
