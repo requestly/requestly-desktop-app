@@ -23,12 +23,15 @@ import { createOrUpdateAxiosInstance } from "./actions/getProxiedAxios";
 // and then build these utilites elsewhere
 // eslint-disable-next-line import/no-cycle
 import createTrayMenu from "./main";
-import { SecretsManagerEncryptedStorage } from "../lib/secretsManager/encryptedStorage/SecretsManagerEncryptedStorage";
-import { FileBasedProviderRegistry } from "../lib/secretsManager/providerRegistry/FileBasedProviderRegistry";
 import {
-  getSecretsManager,
-  SecretsManager,
-} from "../lib/secretsManager/secretsManager";
+  getSecretProviderConfig,
+  getSecretValue,
+  initSecretsManager,
+  refreshSecrets,
+  removeSecretProviderConfig,
+  setSecretProviderConfig,
+  testSecretProviderConnection,
+} from "../lib/secretsManager";
 
 const getFileCategory = (fileExtension) => {
   switch (fileExtension) {
@@ -276,60 +279,45 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
     webAppWindow?.send("helper-server-hit");
   });
 
-  let secretsManager = null;
-
-  ipcMain.handle("init-secretsManager", async () => {
-    const secretsStorage = new SecretsManagerEncryptedStorage("providers");
-    const registry = new FileBasedProviderRegistry(secretsStorage);
-
-    await SecretsManager.initialize(registry);
-    secretsManager = getSecretsManager();
-    return true;
+  ipcMain.handle("secretsManager:init", () => {
+    return initSecretsManager();
   });
 
   ipcMain.handle(
-    "secretsManager:addProviderConfig",
-    async (event, { config }) => {
-      await secretsManager.setProviderConfig(config);
+    "secretsManager:setSecretProviderConfig",
+    (event, { config }) => {
+      return setSecretProviderConfig(config);
     }
   );
 
-  ipcMain.handle("secretsManager:getProviderConfig", async (event, { id }) => {
-    const providerConfig = await secretsManager.getProviderConfig(id);
-    console.log("!!!debug", "getConfig", providerConfig);
-    return providerConfig;
+  ipcMain.handle("secretsManager:getSecretProviderConfig", (event, { id }) => {
+    return getSecretProviderConfig(id);
   });
 
   ipcMain.handle(
-    "secretsManager:removeProviderConfig",
-    async (event, { id }) => {
-      await secretsManager.removeProviderConfig(id);
+    "secretsManager:removeSecretProviderConfig",
+    (event, { id }) => {
+      return removeSecretProviderConfig(id);
     }
   );
 
   ipcMain.handle(
-    "secretsManager:testConnection",
-    async (event, { providerId }) => {
-      const providerConnection = await secretsManager.testProviderConnection(
-        providerId
-      );
-
-      return providerConnection;
+    "secretsManager:testSecretProviderConnection",
+    (event, { id }) => {
+      return testSecretProviderConnection(id);
     }
   );
 
   ipcMain.handle(
-    "secretsManager:resolveSecret",
-    async (event, { providerId, ref }) => {
-      console.log("!!!debug", "resolve", {
-        providerId,
-        ref,
-      });
-      const secretValue = await secretsManager.getSecret(providerId, ref);
-      console.log("!!!debug", "resolveSecret value", secretValue);
-      return secretValue;
+    "secretsManager:getSecretValue",
+    (event, { providerId, secretReference }) => {
+      return getSecretValue(providerId, secretReference);
     }
   );
+
+  ipcMain.handle("secretsManager:refreshSecrets", (event, { providerId }) => {
+    return refreshSecrets(providerId);
+  });
 };
 
 export const registerMainProcessCommonEvents = () => {

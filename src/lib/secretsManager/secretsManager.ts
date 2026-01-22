@@ -2,7 +2,6 @@ import { SecretProviderConfig, SecretReference, SecretValue } from "./types";
 import { AbstractProviderRegistry } from "./providerRegistry/AbstractProviderRegistry";
 
 export class SecretsManager {
-  // eslint-disable-next-line no-use-before-define
   private static instance: SecretsManager | null = null;
 
   private static initPromise: Promise<void> | null = null;
@@ -138,17 +137,4 @@ export class SecretsManager {
 
     return provider.refreshSecrets();
   }
-}
-
-/**
- * // At app startup (once):
- * await SecretsManager.initialize(registry);
- *
- * // Everywhere else:
- * import { getSecretsManager } from "./secretsManager";
- * const secretsManager = getSecretsManager();
- * await secretsManager.getSecret(...);
- */
-export function getSecretsManager(): SecretsManager {
-  return SecretsManager.getInstance();
 }
