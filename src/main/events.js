@@ -27,6 +27,7 @@ import {
   getSecretProviderConfig,
   getSecretValue,
   initSecretsManager,
+  listSecretProviders,
   refreshSecrets,
   removeSecretProviderConfig,
   setSecretProviderConfig,
@@ -317,6 +318,10 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
 
   ipcMain.handle("secretsManager:refreshSecrets", (event, { providerId }) => {
     return refreshSecrets(providerId);
+  });
+
+  ipcMain.handle("secretsManager:listSecretProviders", () => {
+    return listSecretProviders();
   });
 };
 

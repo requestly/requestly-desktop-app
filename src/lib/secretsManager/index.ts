@@ -47,3 +47,9 @@ export const refreshSecrets = async (
 ): Promise<(SecretValue | null)[]> => {
   return secretsManager.refreshSecrets(providerId);
 };
+
+export const listSecretProviders = async (): Promise<
+  Omit<SecretProviderConfig, "config">[]
+> => {
+  return secretsManager.listProviders();
+};
