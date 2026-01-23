@@ -76,22 +76,24 @@ const makeApiClientRequest = async ({ apiRequest }) => {
     const requestStartTime = performance.now();
     const axios = getProxiedAxios(apiRequest.includeCredentials);
 
-    const requestContentType = (() => {
+    const hasJsonContentType = (() => {
       const contentTypeHeader = Object.keys(headers).find(
         (key) => key.toLowerCase() === "content-type"
       );
-      return contentTypeHeader
-        ? headers[contentTypeHeader]
-        : apiRequest.contentType;
+
+      if (contentTypeHeader) {
+        return headers[contentTypeHeader]
+          ?.toLowerCase()
+          ?.includes("application/json");
+      }
+
+      return apiRequest.contentType === "application/json";
     })();
 
     let transformRequest;
 
     // Body would always be a string here but to double check
-    if (
-      requestContentType.includes("application/json") &&
-      typeof body === "string"
-    ) {
+    if (hasJsonContentType && typeof body === "string") {
       try {
         JSON.parse(body);
         // Valid JSON → let axios handle it (default behavior of transformRequest)
