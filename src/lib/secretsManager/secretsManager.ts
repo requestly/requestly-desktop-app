@@ -138,8 +138,8 @@ export class SecretsManager {
     return provider.refreshSecrets();
   }
 
-  async listProviders(): Promise<Omit<SecretProviderConfig, "config">[]> {
+  async listProviders(): Promise<SecretProviderConfig[]> {
     const configs = await this.registry.getAllProviderConfigs();
-    return configs.map(({ config: _, ...rest }) => rest);
+    return configs;
   }
 }

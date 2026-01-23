@@ -3,7 +3,13 @@ import { FileBasedProviderRegistry } from "./providerRegistry/FileBasedProviderR
 import { SecretsManager } from "./secretsManager";
 import { SecretProviderConfig, SecretReference, SecretValue } from "./types";
 
-const secretsManager = SecretsManager.getInstance();
+const getSecretsManager = (): SecretsManager => {
+  if (!SecretsManager.isInitialized()) {
+    return null as any;
+  }
+  return SecretsManager.getInstance();
+};
+
 const PROVIDERS_DIRECTORY = "providers";
 
 export const initSecretsManager = async () => {
@@ -13,43 +19,44 @@ export const initSecretsManager = async () => {
   const registry = new FileBasedProviderRegistry(secretsStorage);
 
   await SecretsManager.initialize(registry);
+  console.log("!!!debug", "secretsManager initialized");
 };
 
 export const setSecretProviderConfig = async (config: SecretProviderConfig) => {
-  return secretsManager.setProviderConfig(config);
+  return getSecretsManager().setProviderConfig(config);
 };
 
 export const removeSecretProviderConfig = async (providerId: string) => {
-  return secretsManager.removeProviderConfig(providerId);
+  return getSecretsManager().removeProviderConfig(providerId);
 };
 
 export const getSecretProviderConfig = async (
   providerId: string
 ): Promise<SecretProviderConfig | null> => {
-  return secretsManager.getProviderConfig(providerId);
+  return getSecretsManager().getProviderConfig(providerId);
 };
 
 export const testSecretProviderConnection = async (
   providerId: string
 ): Promise<boolean> => {
-  return secretsManager.testProviderConnection(providerId);
+  return getSecretsManager().testProviderConnection(providerId);
 };
 
 export const getSecretValue = async (
   providerId: string,
   ref: SecretReference
 ): Promise<SecretValue | null> => {
-  return secretsManager.getSecret(providerId, ref);
+  return getSecretsManager().getSecret(providerId, ref);
 };
 
 export const refreshSecrets = async (
   providerId: string
 ): Promise<(SecretValue | null)[]> => {
-  return secretsManager.refreshSecrets(providerId);
+  return getSecretsManager().refreshSecrets(providerId);
 };
 
 export const listSecretProviders = async (): Promise<
-  Omit<SecretProviderConfig, "config">[]
+  SecretProviderConfig[]
 > => {
-  return secretsManager.listProviders();
+  return getSecretsManager().listProviders();
 };
