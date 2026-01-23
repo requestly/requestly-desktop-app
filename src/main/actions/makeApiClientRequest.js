@@ -38,21 +38,28 @@ const makeApiClientRequest = async ({ apiRequest }) => {
       const formData = new AdvancedFormData();
       apiRequest.body.forEach(({ key, value }) => {
         if (Array.isArray(value)) {
-          const files = value.map((entry) =>  {
-            const stream = entry?.path ? fs.createReadStream(entry.path) : null;
-            if(stream) {
-              return {
-                stream,
-                fileName: entry.name || entry.path.split("/").pop(),
-              };
-            }
-            return null;
-          }).filter(Boolean)
-          files.forEach(({stream, fileName}) => {
+          const files = value
+            .map((entry) => {
+              const stream = entry?.path
+                ? fs.createReadStream(entry.path)
+                : null;
+              if (stream) {
+                return {
+                  stream,
+                  fileName: entry.name || entry.path.split("/").pop(),
+                };
+              }
+              return null;
+            })
+            .filter(Boolean);
+          files.forEach(({ stream, fileName }) => {
             try {
               formData.append(key, stream, fileName);
             } catch (error) {
-              console.error(`Error appending file to formData for key ${key}:`, error);
+              console.error(
+                `Error appending file to formData for key ${key}:`,
+                error
+              );
             }
           });
         } else {
@@ -61,18 +68,37 @@ const makeApiClientRequest = async ({ apiRequest }) => {
       });
       body = formData;
       headers = {
-        'content-type': `${formData.getHeaders()}`,
+        "content-type": `${formData.getHeaders()}`,
         ...headers,
-      }
+      };
     }
 
     const requestStartTime = performance.now();
     const axios = getProxiedAxios(apiRequest.includeCredentials);
+
+    let transformRequest;
+
+    // Body would always be a string here but to double check
+    if (
+      apiRequest.contentType === "application/json" &&
+      typeof body === "string"
+    ) {
+      try {
+        JSON.parse(body);
+        // Valid JSON → let axios handle it (default behavior of transformRequest)
+      } catch {
+        // Invalid JSON → bypass axios to send raw
+        // otherwise axios will double stringify the body to make it a valid JSON string
+        transformRequest = [(data) => data];
+      }
+    }
+
     const response = await axios({
       url,
       method,
       headers,
       data: body,
+      transformRequest,
       responseType: "arraybuffer",
       withCredentials: false,
       validateStatus: () => {
