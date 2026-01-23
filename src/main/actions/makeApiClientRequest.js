@@ -88,7 +88,10 @@ const makeApiClientRequest = async ({ apiRequest }) => {
     let transformRequest;
 
     // Body would always be a string here but to double check
-    if (requestContentType === "application/json" && typeof body === "string") {
+    if (
+      requestContentType.includes("application/json") &&
+      typeof body === "string"
+    ) {
       try {
         JSON.parse(body);
         // Valid JSON → let axios handle it (default behavior of transformRequest)
