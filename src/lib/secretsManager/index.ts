@@ -1,5 +1,6 @@
 import { SecretsManagerEncryptedStorage } from "./encryptedStorage/SecretsManagerEncryptedStorage";
 import { FileBasedProviderRegistry } from "./providerRegistry/FileBasedProviderRegistry";
+import { ProviderChangeCallback } from "./providerRegistry/AbstractProviderRegistry";
 import { SecretsManager } from "./secretsManager";
 import { SecretProviderConfig, SecretReference, SecretValue } from "./types";
 
@@ -20,6 +21,12 @@ export const initSecretsManager = async () => {
 
   await SecretsManager.initialize(registry);
   console.log("!!!debug", "secretsManager initialized");
+};
+
+export const subscribeToProvidersChange = (
+  callback: ProviderChangeCallback
+): (() => void) => {
+  return getSecretsManager().onProvidersChange(callback);
 };
 
 export const setSecretProviderConfig = async (config: SecretProviderConfig) => {

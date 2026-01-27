@@ -1,5 +1,8 @@
 import { SecretProviderConfig, SecretReference, SecretValue } from "./types";
-import { AbstractProviderRegistry } from "./providerRegistry/AbstractProviderRegistry";
+import {
+  AbstractProviderRegistry,
+  ProviderChangeCallback,
+} from "./providerRegistry/AbstractProviderRegistry";
 
 export class SecretsManager {
   private static instance: SecretsManager | null = null;
@@ -146,5 +149,9 @@ export class SecretsManager {
     );
 
     return configMetadata;
+  }
+
+  onProvidersChange(callback: ProviderChangeCallback): () => void {
+    return this.registry.onProvidersChange(callback);
   }
 }

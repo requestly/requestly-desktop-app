@@ -32,6 +32,7 @@ import {
   refreshSecrets,
   removeSecretProviderConfig,
   setSecretProviderConfig,
+  subscribeToProvidersChange,
   testSecretProviderConnection,
 } from "../lib/secretsManager";
 
@@ -285,6 +286,15 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
     return initSecretsManager();
   });
 
+  ipcMain.handle("secretsManager:subscribeToProvidersChange", () => {
+    subscribeToProvidersChange((providers) => {
+      webAppWindow?.webContents.send(
+        "secretsManager:providersChanged",
+        providers
+      );
+    });
+  });
+
   ipcMain.handle(
     "secretsManager:setSecretProviderConfig",
     (event, { config }) => {
@@ -292,9 +302,12 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
     }
   );
 
-  ipcMain.handle("secretsManager:getSecretProviderConfig", (event, { providerId }) => {
-    return getSecretProviderConfig(providerId);
-  });
+  ipcMain.handle(
+    "secretsManager:getSecretProviderConfig",
+    (event, { providerId }) => {
+      return getSecretProviderConfig(providerId);
+    }
+  );
 
   ipcMain.handle(
     "secretsManager:removeSecretProviderConfig",

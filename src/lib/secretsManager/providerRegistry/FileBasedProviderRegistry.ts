@@ -1,11 +1,19 @@
 import { SecretProviderConfig } from "../types";
 import { createProviderInstance } from "../providerService/providerFactory";
 import { AbstractSecretProvider } from "../providerService/AbstractSecretProvider";
-import { AbstractProviderRegistry } from "./AbstractProviderRegistry";
+import {
+  AbstractProviderRegistry,
+  ProviderChangeCallback,
+} from "./AbstractProviderRegistry";
 
 export class FileBasedProviderRegistry extends AbstractProviderRegistry {
+  private changeCallbacks: Set<ProviderChangeCallback> = new Set();
+
+  private unsubscribeFromStorage: (() => void) | null = null;
+
   async initialize(): Promise<void> {
     await this.initProvidersFromStorage();
+    this.setupStorageListener();
   }
 
   private async initProvidersFromStorage(): Promise<void> {
@@ -21,6 +29,53 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
           error
         );
       }
+    });
+  }
+
+  private setupStorageListener(): void {
+    this.unsubscribeFromStorage = this.store.onChange((data) => {
+      this.syncProvidersFromStorageData(data);
+      this.notifyChangeCallbacks(data);
+    });
+  }
+
+  private syncProvidersFromStorageData(
+    data: Record<string, SecretProviderConfig>
+  ): void {
+    const newConfigIds = new Set(Object.keys(data));
+    const existingProviderIds = new Set(this.providers.keys());
+
+    // Remove providers that no longer exist in storage
+    for (const existingId of existingProviderIds) {
+      if (!newConfigIds.has(existingId)) {
+        this.providers.delete(existingId);
+      }
+    }
+
+    // Add or update providers from storage
+    for (const [id, config] of Object.entries(data)) {
+      try {
+        // Always recreate provider instance to ensure config is up-to-date
+        this.providers.set(id, createProviderInstance(config));
+      } catch (error) {
+        console.log(
+          "!!!debug",
+          `Failed to sync provider for config id: ${id}`,
+          error
+        );
+      }
+    }
+  }
+
+  private notifyChangeCallbacks(
+    data: Record<string, SecretProviderConfig>
+  ): void {
+    this.changeCallbacks.forEach((callback) => {
+      const configsMetadata = Object.values(data).map((config) => {
+        const { config: _, ...metadata } = config;
+        return metadata;
+      });
+      callback(configsMetadata);
     });
   }
 
@@ -51,5 +106,25 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
 
   getProvider(providerId: string): AbstractSecretProvider | null {
     return this.providers.get(providerId) ?? null;
+  }
+
+  onProvidersChange(callback: ProviderChangeCallback): () => void {
+    this.changeCallbacks.add(callback);
+
+    return () => {
+      this.changeCallbacks.delete(callback);
+    };
+  }
+
+  /**
+   * Cleanup method to unsubscribe from storage changes.
+   * Should be called when the registry is being destroyed.
+   */
+  destroy(): void {
+    if (this.unsubscribeFromStorage) {
+      this.unsubscribeFromStorage();
+      this.unsubscribeFromStorage = null;
+    }
+    this.changeCallbacks.clear();
   }
 }
