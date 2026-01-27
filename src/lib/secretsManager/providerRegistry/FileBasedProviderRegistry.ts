@@ -1,11 +1,19 @@
 import { SecretProviderConfig } from "../types";
 import { createProviderInstance } from "../providerService/providerFactory";
 import { AbstractSecretProvider } from "../providerService/AbstractSecretProvider";
-import { AbstractProviderRegistry } from "./AbstractProviderRegistry";
+import {
+  AbstractProviderRegistry,
+  ProviderChangeCallback,
+} from "./AbstractProviderRegistry";
 
 export class FileBasedProviderRegistry extends AbstractProviderRegistry {
+  private changeCallbacks: Set<ProviderChangeCallback> = new Set();
+
+  private unsubscribeFromStorage: (() => void) | null = null;
+
   async initialize(): Promise<void> {
     await this.initProvidersFromStorage();
+    this.setupStorageListener();
   }
 
   private async initProvidersFromStorage(): Promise<void> {
@@ -51,5 +59,59 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
 
   getProvider(providerId: string): AbstractSecretProvider | null {
     return this.providers.get(providerId) ?? null;
+  }
+
+  onProvidersChange(callback: ProviderChangeCallback): () => void {
+    this.changeCallbacks.add(callback);
+
+    return () => {
+      this.changeCallbacks.delete(callback);
+    };
+  }
+
+  private setupStorageListener(): void {
+    this.unsubscribeFromStorage = this.store.onStorageChange((data) => {
+      this.syncProvidersFromStorageData(data);
+      this.notifyChangeCallbacks(data);
+    });
+  }
+
+  private syncProvidersFromStorageData(
+    data: Record<string, SecretProviderConfig>
+  ): void {
+    const newConfigIds = new Set(Object.keys(data));
+    const existingProviderIds = new Set(this.providers.keys());
+
+    // Remove providers that no longer exist
+    for (const existingId of existingProviderIds) {
+      if (!newConfigIds.has(existingId)) {
+        this.providers.delete(existingId);
+      }
+    }
+
+    for (const [id, config] of Object.entries(data)) {
+      try {
+        // recreate provider instance
+        this.providers.set(id, createProviderInstance(config));
+      } catch (error) {
+        console.log(
+          "!!!debug",
+          `Failed to sync provider for config id: ${id}`,
+          error
+        );
+      }
+    }
+  }
+
+  private notifyChangeCallbacks(
+    data: Record<string, SecretProviderConfig>
+  ): void {
+    this.changeCallbacks.forEach((callback) => {
+      const configsMetadata = Object.values(data).map((config) => {
+        const { config: _, ...metadata } = config;
+        return metadata;
+      });
+      callback(configsMetadata);
+    });
   }
 }

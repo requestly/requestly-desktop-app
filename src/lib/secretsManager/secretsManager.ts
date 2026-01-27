@@ -1,8 +1,10 @@
 import { SecretProviderConfig, SecretReference, SecretValue } from "./types";
-import { AbstractProviderRegistry } from "./providerRegistry/AbstractProviderRegistry";
+import {
+  AbstractProviderRegistry,
+  ProviderChangeCallback,
+} from "./providerRegistry/AbstractProviderRegistry";
 
 export class SecretsManager {
-  // eslint-disable-next-line no-use-before-define
   private static instance: SecretsManager | null = null;
 
   private static initPromise: Promise<void> | null = null;
@@ -137,6 +139,20 @@ export class SecretsManager {
     }
 
     return provider.refreshSecrets();
+  }
+
+  async listProviders(): Promise<Omit<SecretProviderConfig, "config">[]> {
+    const configs = await this.registry.getAllProviderConfigs();
+
+    const configMetadata: Omit<SecretProviderConfig, "config">[] = configs.map(
+      ({ config: _, ...rest }) => rest
+    );
+
+    return configMetadata;
+  }
+
+  onProvidersChange(callback: ProviderChangeCallback): () => void {
+    return this.registry.onProvidersChange(callback);
   }
 }
 

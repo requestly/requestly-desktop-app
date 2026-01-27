@@ -89,7 +89,7 @@ export class EncryptedElectronStore {
    * @param callback - Function to call when data changes
    * @returns Unsubscribe function
    */
-  onChange(callback: (_data: Record<string, string>) => void): () => void {
+  onChange<T>(callback: (_data: Record<string, T>) => void): () => void {
     return this.store.onDidChange("data", (newValue) => {
       if (newValue) {
         callback(newValue);
