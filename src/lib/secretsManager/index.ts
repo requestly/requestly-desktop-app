@@ -49,6 +49,12 @@ export const getSecretValue = async (
   return getSecretsManager().getSecret(providerId, ref);
 };
 
+export const getSecretValues = async (
+  secrets: Array<{ providerId: string; ref: SecretReference }>
+): Promise<(SecretValue | null)[]> => {
+  return getSecretsManager().getSecrets(secrets);
+};
+
 export const refreshSecrets = async (
   providerId: string
 ): Promise<(SecretValue | null)[]> => {

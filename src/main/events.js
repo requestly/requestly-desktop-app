@@ -26,6 +26,7 @@ import createTrayMenu from "./main";
 import {
   getSecretProviderConfig,
   getSecretValue,
+  getSecretValues,
   initSecretsManager,
   listSecretProviders,
   refreshSecrets,
@@ -315,6 +316,10 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
       return getSecretValue(providerId, secretReference);
     }
   );
+
+  ipcMain.handle("secretsManager:getSecretValues", (event, { secrets }) => {
+    return getSecretValues(secrets);
+  });
 
   ipcMain.handle("secretsManager:refreshSecrets", (event, { providerId }) => {
     return refreshSecrets(providerId);
