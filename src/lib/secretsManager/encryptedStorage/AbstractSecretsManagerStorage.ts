@@ -13,5 +13,5 @@ export abstract class AbstractSecretsManagerStorage {
 
   abstract delete(_key: string): Promise<void>;
 
-  abstract onChange(_callback: StorageChangeCallback): () => void;
+  abstract onStorageChange(callback: StorageChangeCallback): () => void;
 }

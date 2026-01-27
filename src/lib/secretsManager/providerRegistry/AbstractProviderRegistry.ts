@@ -27,5 +27,5 @@ export abstract class AbstractProviderRegistry {
 
   abstract getProvider(_providerId: string): AbstractSecretProvider | null;
 
-  abstract onProvidersChange(_callback: ProviderChangeCallback): () => void;
+  abstract onProvidersChange(callback: ProviderChangeCallback): () => void;
 }

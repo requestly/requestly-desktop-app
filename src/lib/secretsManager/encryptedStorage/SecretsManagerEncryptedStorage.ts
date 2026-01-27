@@ -31,9 +31,7 @@ export class SecretsManagerEncryptedStorage extends AbstractSecretsManagerStorag
     return this.encryptedStore.delete(key);
   }
 
-  onChange(callback: StorageChangeCallback): () => void {
-    return this.encryptedStore.onChange<SecretProviderConfig>((data) => {
-      callback(data);
-    });
+  onStorageChange(callback: StorageChangeCallback): () => void {
+    return this.encryptedStore.onChange<SecretProviderConfig>(callback);
   }
 }
