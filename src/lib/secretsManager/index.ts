@@ -62,7 +62,7 @@ export const refreshSecrets = async (
 };
 
 export const listSecretProviders = async (): Promise<
-  SecretProviderConfig[]
+  Omit<SecretProviderConfig, "config">[]
 > => {
   return getSecretsManager().listProviders();
 };
