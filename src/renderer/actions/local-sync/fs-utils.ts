@@ -131,6 +131,15 @@ async function hasWorkspaceConfigInAncestors(
   return false;
 }
 
+export async function checkIsWorkspacePathAvailable(workspacePath: string): Promise<boolean> {
+  const sanitizedWorkspacePath = sanitizePath(workspacePath);
+  const hasWorkspaceConfig = await hasWorkspaceConfigInAncestors(
+    sanitizedWorkspacePath
+  );
+
+  return !hasWorkspaceConfig;
+}
+
 export async function deleteFsResource(
   resource: FsResource
 ): Promise<FileSystemResult<{ resource: FsResource }>> {
@@ -666,11 +675,11 @@ export async function createWorkspaceFolder(
   workspacePath: string
 ): Promise<FileSystemResult<{ name: string; id: string; path: string }>> {
   const sanitizedWorkspacePath = sanitizePath(workspacePath);
-  const isPathAlreadyAWorkspace = await hasWorkspaceConfigInAncestors(
+  const isPathAvailable = await checkIsWorkspacePathAvailable(
     sanitizedWorkspacePath
   );
 
-  if (isPathAlreadyAWorkspace) {
+  if (!isPathAvailable) {
     return {
       type: "error",
       error: {
