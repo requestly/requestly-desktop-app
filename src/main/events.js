@@ -292,21 +292,21 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
     }
   );
 
-  ipcMain.handle("secretsManager:getSecretProviderConfig", (event, { id }) => {
-    return getSecretProviderConfig(id);
+  ipcMain.handle("secretsManager:getSecretProviderConfig", (event, { providerId }) => {
+    return getSecretProviderConfig(providerId);
   });
 
   ipcMain.handle(
     "secretsManager:removeSecretProviderConfig",
-    (event, { id }) => {
-      return removeSecretProviderConfig(id);
+    (event, { providerId }) => {
+      return removeSecretProviderConfig(providerId);
     }
   );
 
   ipcMain.handle(
-    "secretsManager:testSecretProviderConnection",
-    (event, { id }) => {
-      return testSecretProviderConnection(id);
+    "secretsManager:testProviderConnection",
+    (event, { providerId }) => {
+      return testSecretProviderConnection(providerId);
     }
   );
 
