@@ -81,13 +81,9 @@ const makeApiClientRequest = async ({ apiRequest }) => {
         (key) => key.toLowerCase() === "content-type"
       );
 
-      if (contentTypeHeader) {
-        return headers[contentTypeHeader]
-          ?.toLowerCase()
-          ?.includes("application/json");
-      }
-
-      return apiRequest.contentType === "application/json";
+      return headers[contentTypeHeader]
+        ?.toLowerCase()
+        ?.includes("application/json");
     })();
 
     let transformRequest;
