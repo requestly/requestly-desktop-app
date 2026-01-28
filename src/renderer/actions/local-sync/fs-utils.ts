@@ -111,8 +111,8 @@ export async function deleteFsResource(
       }
       await FsService.unlink(resource.path);
       fileIndex.remove({
-        type: "path",
-        path: resource.path,
+        type: 'path',
+        path: resource.path
       });
     } else {
       const exists = await getIfFolderExists(resource);
@@ -126,8 +126,8 @@ export async function deleteFsResource(
       }
       await FsService.rmdir(resource.path, { recursive: true });
       fileIndex.remove({
-        type: "path",
-        path: resource.path,
+        type: 'path',
+        path: resource.path
       });
     }
     return {
@@ -170,6 +170,8 @@ export async function createFolder(
       } else {
         fileIndex.getId(resource.path);
       }
+
+
     } else if (errorIfExist) {
       return createFileSystemError(
         { message: "Folder already exists!" },
@@ -194,23 +196,21 @@ export async function rename<T extends FsResource>(
 ): Promise<FileSystemResult<T>> {
   try {
     const alreadyExists = await (async () => {
-      if (newResource.type === "folder") {
+      if (newResource.type === 'folder') {
         return getIfFolderExists(newResource);
       }
       return getIfFileExists(newResource);
     })();
-    const isSamePath =
-      getNormalizedPath(oldResource.path).toLowerCase() ===
-      getNormalizedPath(newResource.path).toLowerCase();
+    const isSamePath = getNormalizedPath(oldResource.path).toLowerCase() === getNormalizedPath(newResource.path).toLowerCase();
     if (!isSamePath && alreadyExists) {
       return {
-        type: "error",
+        type: 'error',
         error: {
-          message: "Entity already exists!",
+          message: 'Entity already exists!',
           fileType: FileTypeEnum.UNKNOWN,
           path: newResource.path,
           code: ErrorCode.EntityAlreadyExists,
-        },
+        }
       };
     }
     await FsService.rename(oldResource.path, newResource.path);
@@ -259,20 +259,19 @@ export async function writeContent(
   }
 ): Promise<FileSystemResult<{ resource: FileResource }>> {
   try {
-    const { writeWithElevatedAccess = false, performExistenceCheck = false } =
-      options || {};
+    const { writeWithElevatedAccess = false, performExistenceCheck = false } = options || {};
 
     if (performExistenceCheck) {
       const alreadyExists = await getIfFileExists(resource);
       if (alreadyExists) {
         return {
-          type: "error",
+          type: 'error',
           error: {
-            message: "Entity already exists!",
+            message: 'Entity already exists!',
             fileType: fileType.type,
             path: resource.path,
             code: ErrorCode.EntityAlreadyExists,
-          },
+          }
         };
       }
     }
@@ -622,14 +621,14 @@ export async function migrateGlobalConfig(oldConfig: any) {
 
 type WorkspaceValidationResult =
   | {
-      valid: true;
-      ws: Static<typeof GlobalConfig>["workspaces"][number];
-    }
+    valid: true;
+    ws: Static<typeof GlobalConfig>["workspaces"][number];
+  }
   | {
-      valid: false;
-      ws: Static<typeof GlobalConfig>["workspaces"][number];
-      error: { message: string };
-    };
+    valid: false;
+    ws: Static<typeof GlobalConfig>["workspaces"][number];
+    error: { message: string };
+  };
 
 async function validateWorkspace(
   ws: Static<typeof GlobalConfig>["workspaces"][number]
