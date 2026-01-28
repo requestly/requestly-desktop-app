@@ -2,7 +2,8 @@ import { SecretsManagerEncryptedStorage } from "./encryptedStorage/SecretsManage
 import { FileBasedProviderRegistry } from "./providerRegistry/FileBasedProviderRegistry";
 import { ProviderChangeCallback } from "./providerRegistry/AbstractProviderRegistry";
 import { SecretsManager } from "./secretsManager";
-import { SecretProviderConfig, SecretReference, SecretValue } from "./types";
+import { SecretProviderConfig, SecretReference } from "./types";
+import { SecretsResultPromise } from "./errors";
 
 const getSecretsManager = (): SecretsManager => {
   if (!SecretsManager.isInitialized()) {
@@ -37,38 +38,32 @@ export const removeSecretProviderConfig = async (providerId: string) => {
   return getSecretsManager().removeProviderConfig(providerId);
 };
 
-export const getSecretProviderConfig = async (
-  providerId: string
-): Promise<SecretProviderConfig | null> => {
+export const getSecretProviderConfig = async (providerId: string) => {
   return getSecretsManager().getProviderConfig(providerId);
 };
 
-export const testSecretProviderConnection = async (
-  providerId: string
-): Promise<boolean> => {
+export const testSecretProviderConnection = async (providerId: string) => {
   return getSecretsManager().testProviderConnection(providerId);
 };
 
 export const getSecretValue = async (
   providerId: string,
   ref: SecretReference
-): Promise<SecretValue | null> => {
+) => {
   return getSecretsManager().getSecret(providerId, ref);
 };
 
 export const getSecretValues = async (
   secrets: Array<{ providerId: string; ref: SecretReference }>
-): Promise<(SecretValue | null)[]> => {
+) => {
   return getSecretsManager().getSecrets(secrets);
 };
 
-export const refreshSecrets = async (
-  providerId: string
-): Promise<(SecretValue | null)[]> => {
+export const refreshSecrets = async (providerId: string) => {
   return getSecretsManager().refreshSecrets(providerId);
 };
 
-export const listSecretProviders = async (): Promise<
+export const listSecretProviders = async (): SecretsResultPromise<
   Omit<SecretProviderConfig, "config">[]
 > => {
   return getSecretsManager().listProviders();

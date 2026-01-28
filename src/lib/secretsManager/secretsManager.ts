@@ -3,6 +3,11 @@ import {
   AbstractProviderRegistry,
   ProviderChangeCallback,
 } from "./providerRegistry/AbstractProviderRegistry";
+import {
+  SecretsResultPromise,
+  createSecretsError,
+  SecretsErrorCode,
+} from "./errors";
 
 export class SecretsManager {
   private static instance: SecretsManager | null = null;
@@ -61,48 +66,112 @@ export class SecretsManager {
     this.initPromise = null;
   }
 
-  async setProviderConfig(config: SecretProviderConfig) {
-    console.log("!!!debug", "addconfig", config);
-    await this.registry.setProviderConfig(config);
-  }
-
-  async removeProviderConfig(id: string) {
-    await this.registry.deleteProviderConfig(id);
-  }
-
-  async getProviderConfig(id: string): Promise<SecretProviderConfig | null> {
-    return this.registry.getProviderConfig(id);
-  }
-
-  async testProviderConnection(id: string): Promise<boolean> {
-    const provider = this.registry.getProvider(id);
-
-    if (!provider) {
-      throw new Error(`Provider with id ${id} not found`);
+  async setProviderConfig(
+    config: SecretProviderConfig
+  ): SecretsResultPromise<void> {
+    try {
+      await this.registry.setProviderConfig(config);
+      return { type: "success" };
+    } catch (error) {
+      return createSecretsError(
+        SecretsErrorCode.STORAGE_WRITE_FAILED,
+        error instanceof Error ? error.message : String(error),
+        {
+          providerId: config.id,
+          cause: error as Error,
+        }
+      );
     }
+  }
 
-    const isConnected = await provider.testConnection();
+  async removeProviderConfig(id: string): SecretsResultPromise<void> {
+    try {
+      await this.registry.deleteProviderConfig(id);
+      return { type: "success" };
+    } catch (error) {
+      return createSecretsError(
+        SecretsErrorCode.STORAGE_WRITE_FAILED,
+        error instanceof Error ? error.message : String(error),
+        {
+          providerId: id,
+          cause: error as Error,
+        }
+      );
+    }
+  }
 
-    return isConnected ?? false;
+  async getProviderConfig(
+    id: string
+  ): SecretsResultPromise<SecretProviderConfig | null> {
+    try {
+      const config = await this.registry.getProviderConfig(id);
+      return { type: "success", data: config };
+    } catch (error) {
+      return createSecretsError(
+        SecretsErrorCode.STORAGE_READ_FAILED,
+        error instanceof Error ? error.message : String(error),
+        {
+          providerId: id,
+          cause: error as Error,
+        }
+      );
+    }
+  }
+
+  async testProviderConnection(id: string): SecretsResultPromise<boolean> {
+    try {
+      const provider = this.registry.getProvider(id);
+
+      if (!provider) {
+        return createSecretsError(
+          SecretsErrorCode.PROVIDER_NOT_FOUND,
+          `Provider with id ${id} not found`,
+          { providerId: id }
+        );
+      }
+
+      const isConnected = await provider.testConnection();
+      return { type: "success", data: isConnected ?? false };
+    } catch (error) {
+      return createSecretsError(
+        SecretsErrorCode.AUTH_FAILED,
+        error instanceof Error
+          ? error.message
+          : `Failed to test connection for provider ${id}`,
+        { providerId: id, cause: error as Error }
+      );
+    }
   }
 
   async getSecret(
     providerId: string,
     ref: SecretReference
-  ): Promise<SecretValue | null> {
-    const provider = this.registry.getProvider(providerId);
-    if (!provider) {
-      throw new Error(`Provider with id ${providerId} not found`);
+  ): SecretsResultPromise<SecretValue | null> {
+    try {
+      const provider = this.registry.getProvider(providerId);
+      if (!provider) {
+        return createSecretsError(
+          SecretsErrorCode.PROVIDER_NOT_FOUND,
+          `Provider with id ${providerId} not found`,
+          { providerId }
+        );
+      }
+      const secretValue = await provider.getSecret(ref);
+      return { type: "success", data: secretValue };
+    } catch (error) {
+      return createSecretsError(
+        SecretsErrorCode.SECRET_FETCH_FAILED,
+        error instanceof Error
+          ? error.message
+          : `Failed to fetch secret from provider ${providerId}`,
+        { providerId, secretRef: ref, cause: error as Error }
+      );
     }
-
-    const secretValue = await provider.getSecret(ref);
-
-    return secretValue;
   }
 
   async getSecrets(
     secrets: Array<{ providerId: string; ref: SecretReference }>
-  ): Promise<SecretValue[]> {
+  ): SecretsResultPromise<SecretValue[]> {
     const providerMap: Map<string, SecretReference[]> = new Map();
 
     for (const s of secrets) {
@@ -113,42 +182,74 @@ export class SecretsManager {
     }
 
     const results: SecretValue[] = [];
+    const errors: string[] = [];
 
     for (const [providerId, refs] of providerMap.entries()) {
-      const provider = this.registry.getProvider(providerId);
-
-      if (!provider) {
-        // TODO: Error to be handled properly
-        continue;
+      try {
+        const provider = this.registry.getProvider(providerId);
+        if (!provider) {
+          errors.push(`Provider ${providerId} not found`);
+          continue;
+        }
+        const secretValues = await provider.getSecrets(refs);
+        results.push(
+          ...secretValues.filter((sv): sv is SecretValue => sv !== null)
+        );
+      } catch (error) {
+        errors.push(`Provider ${providerId}: ${(error as Error).message}`);
       }
+    }
 
-      const secretValues = await provider.getSecrets(refs);
-
-      results.push(
-        ...secretValues.filter((sv): sv is SecretValue => sv !== null)
+    if (errors.length > 0 && results.length === 0) {
+      return createSecretsError(
+        SecretsErrorCode.SECRET_FETCH_FAILED,
+        `Failed to fetch secrets: ${errors.join(", ")}`
       );
     }
 
-    return results;
+    return { type: "success", data: results };
   }
 
-  async refreshSecrets(providerId: string): Promise<(SecretValue | null)[]> {
-    const provider = this.registry.getProvider(providerId);
-    if (!provider) {
-      throw new Error(`Provider with id ${providerId} not found`);
+  async refreshSecrets(
+    providerId: string
+  ): SecretsResultPromise<(SecretValue | null)[]> {
+    try {
+      const provider = this.registry.getProvider(providerId);
+      if (!provider) {
+        return createSecretsError(
+          SecretsErrorCode.PROVIDER_NOT_FOUND,
+          `Provider with id ${providerId} not found`,
+          { providerId }
+        );
+      }
+      const secrets = await provider.refreshSecrets();
+      return { type: "success", data: secrets };
+    } catch (error) {
+      return createSecretsError(
+        SecretsErrorCode.SECRET_FETCH_FAILED,
+        error instanceof Error
+          ? error.message
+          : `Failed to refresh secrets for provider ${providerId}`,
+        { providerId, cause: error as Error }
+      );
     }
-
-    return provider.refreshSecrets();
   }
 
-  async listProviders(): Promise<Omit<SecretProviderConfig, "config">[]> {
-    const configs = await this.registry.getAllProviderConfigs();
-
-    const configMetadata: Omit<SecretProviderConfig, "config">[] = configs.map(
-      ({ config: _, ...rest }) => rest
-    );
-
-    return configMetadata;
+  async listProviders(): SecretsResultPromise<
+    Omit<SecretProviderConfig, "config">[]
+  > {
+    try {
+      const configs = await this.registry.getAllProviderConfigs();
+      const configMetadata: Omit<SecretProviderConfig, "config">[] =
+        configs.map(({ config: _, ...rest }) => rest);
+      return { type: "success", data: configMetadata };
+    } catch (error) {
+      return createSecretsError(
+        SecretsErrorCode.STORAGE_READ_FAILED,
+        error instanceof Error ? error.message : "Failed to list providers",
+        { cause: error as Error }
+      );
+    }
   }
 
   onProvidersChange(callback: ProviderChangeCallback): () => void {

@@ -90,16 +90,8 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
     }
 
     for (const [id, config] of Object.entries(data)) {
-      try {
-        // recreate provider instance
-        this.providers.set(id, createProviderInstance(config));
-      } catch (error) {
-        console.log(
-          "!!!debug",
-          `Failed to sync provider for config id: ${id}`,
-          error
-        );
-      }
+      // recreate provider instance
+      this.providers.set(id, createProviderInstance(config));
     }
   }
 
