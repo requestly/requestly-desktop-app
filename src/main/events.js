@@ -23,6 +23,9 @@ import { createOrUpdateAxiosInstance } from "./actions/getProxiedAxios";
 // and then build these utilites elsewhere
 // eslint-disable-next-line import/no-cycle
 import createTrayMenu from "./main";
+import { SecretsManager } from "../lib/secretsManager/secretsManager";
+import { FileBasedProviderRegistry } from "../lib/secretsManager/providerRegistry/FileBasedProviderRegistry";
+import { SecretsManagerEncryptedStorage } from "lib/secretsManager/encryptedStorage/SecretsManagerEncryptedStorage";
 
 const getFileCategory = (fileExtension) => {
   switch (fileExtension) {
@@ -268,6 +271,33 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
 
   ipcMain.handle("helper-server-hit", () => {
     webAppWindow?.send("helper-server-hit");
+  });
+
+  let secretsManager = null;
+
+  ipcMain.handle("init-secretsManager", () => {
+    const secretsStore = new SecretsManagerEncryptedStorage("providers");
+    const registry = new FileBasedProviderRegistry(secretsStore);
+    secretsManager = new SecretsManager(registry);
+
+    try {
+      secretsManager.initialize();
+    } catch (err) {
+      console.error("Error initializing Secrets Manager", err);
+    }
+  });
+
+  ipcMain.handle("secretsManager:addProviderConfig", async (event, config) => {
+    await secretsManager.addProviderConfig(config);
+  });
+
+  ipcMain.handle("secretsManager:getProviderConfig", async (event, id) => {
+    const providerConfig = await secretsManager.getProviderConfig(id);
+    console.log("!!!debug", "getConfig", providerConfig);
+  });
+
+  ipcMain.handle("secretsManager:removeProviderConfig", async (event, id) => {
+    await secretsManager.removeProviderConfig(id);
   });
 };
 
