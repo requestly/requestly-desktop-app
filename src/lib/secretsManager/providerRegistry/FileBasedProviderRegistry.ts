@@ -9,8 +9,6 @@ import {
 export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   private changeCallbacks: Set<ProviderChangeCallback> = new Set();
 
-  private unsubscribeFromStorage: (() => void) | null = null;
-
   async initialize(): Promise<void> {
     await this.initProvidersFromStorage();
     this.setupStorageListener();
@@ -70,7 +68,7 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   }
 
   private setupStorageListener(): void {
-    this.unsubscribeFromStorage = this.store.onStorageChange((data) => {
+    this.store.onStorageChange((data) => {
       this.syncProvidersFromStorageData(data);
       this.notifyChangeCallbacks(data);
     });
