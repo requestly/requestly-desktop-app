@@ -526,7 +526,7 @@ async function getWorkspaceIdFromConfig(
   });
 
   if (readResult.type === "error") {
-    throw new Error("Failed to read global config file");
+    return null;
   }
   const config = readResult.content;
   const workspace = config.workspaces.find(
@@ -656,7 +656,8 @@ async function getWorkspacePathFromSelectedPath(
   selectedPath: string
 ): Promise<string | null> {
   let currentPath = selectedPath;
-  while (currentPath !== "/") {
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
     const workspacePathExists = await FsService.lstat(
       appendPath(currentPath, CONFIG_FILE)
     )
@@ -665,7 +666,11 @@ async function getWorkspacePathFromSelectedPath(
     if (workspacePathExists) {
       return currentPath;
     }
-    currentPath = path.dirname(currentPath);
+    const parentPath = path.dirname(currentPath);
+    if (parentPath === currentPath) {
+      break;
+    }
+    currentPath = parentPath;
   }
   return null;
 }
@@ -773,6 +778,30 @@ export async function createDefaultWorkspace(): Promise<
           },
         };
       }
+
+      const configExists = await getIfFileExists(
+        createFsResource({
+          rootPath: workspaceFolderPath,
+          path: appendPath(workspaceFolderPath, CONFIG_FILE),
+          type: "file",
+        })
+      );
+
+      if (!configExists) {
+        const configWriteResult = await writeContentRaw(
+          createFsResource({
+            rootPath: workspaceFolderPath,
+            path: appendPath(workspaceFolderPath, CONFIG_FILE),
+            type: "file",
+          }),
+          { version: WORKSPACE_CONFIG_FILE_VERSION },
+          { writeWithElevatedAccess: true }
+        );
+        if (configWriteResult.type === "error") {
+          return configWriteResult;
+        }
+      }
+
       return addWorkspaceToGlobalConfig({
         name: DEFAULT_WORKSPACE_NAME,
         path: workspaceFolderPath,
