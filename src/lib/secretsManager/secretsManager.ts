@@ -184,6 +184,8 @@ export class SecretsManager {
     const results: SecretValue[] = [];
     const errors: string[] = [];
 
+    // TODO: Consider parallelizing these calls per provider
+    // Handle partial failures appropriately
     for (const [providerId, refs] of providerMap.entries()) {
       try {
         const provider = this.registry.getProvider(providerId);
