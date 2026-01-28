@@ -2,6 +2,10 @@ import { SecretProviderConfig } from "../types";
 import { AbstractSecretsManagerStorage } from "../encryptedStorage/AbstractSecretsManagerStorage";
 import { AbstractSecretProvider } from "../providerService/AbstractSecretProvider";
 
+export type ProviderChangeCallback = (
+  configs: Omit<SecretProviderConfig, "config">[]
+) => void;
+
 export abstract class AbstractProviderRegistry {
   protected store: AbstractSecretsManagerStorage;
 
@@ -22,4 +26,6 @@ export abstract class AbstractProviderRegistry {
   abstract deleteProviderConfig(_id: string): Promise<void>;
 
   abstract getProvider(_providerId: string): AbstractSecretProvider | null;
+
+  abstract onProvidersChange(callback: ProviderChangeCallback): () => void;
 }
