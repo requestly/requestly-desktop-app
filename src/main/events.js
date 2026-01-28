@@ -2,7 +2,7 @@ import path from "path";
 import { unescape } from "querystring";
 import fs from "fs";
 import os from "os";
-import { app, dialog, ipcMain } from "electron";
+import { app, dialog, ipcMain, shell } from "electron";
 /** ACTIONS */
 import startBackgroundProcess from "./actions/startBackgroundProcess";
 import { getState, setState } from "./actions/stateManagement";
@@ -298,6 +298,11 @@ export const registerMainProcessCommonEvents = () => {
     };
     const folderDialogPromise = await dialog.showOpenDialog(dialogOptions);
     return folderDialogPromise;
+  });
+
+  ipcMain.handle("open-path-in-file-explorer", async (event, payload = {}) => {
+    const { resourcePath } = payload;
+    shell.openPath(resourcePath);
   });
 
   ipcMain.handle(
