@@ -1,3 +1,5 @@
+import { GetSecretValueCommandOutput } from "@aws-sdk/client-secrets-manager";
+
 export enum SecretProviderType {
   AWS_SECRETS_MANAGER = "aws",
 }
@@ -22,19 +24,23 @@ export interface SecretProviderConfig {
 
 export type AwsSecretReference = {
   type: SecretProviderType.AWS_SECRETS_MANAGER;
-  nameOrArn: string;
+  identifier: string; // ARN or Name
   version?: string;
 };
 
 export type SecretReference = AwsSecretReference; // | VaultSecretReference; // | OtherProviderSecretReference;
 
-export interface CachedSecret {
-  id: string; // Unique identifier
-  identifier: string; // Secret identifier (name, ARN, or path)
-  value: string; // The actual secret value
+interface BaseSecretValue {
   providerId: string;
-  providerType: SecretProviderType;
+  secretReference: SecretReference;
   fetchedAt: number;
-  expiresAt: number;
-  version?: string;
 }
+
+export interface AwsSecretValue extends BaseSecretValue {
+  name: GetSecretValueCommandOutput["Name"];
+  value: GetSecretValueCommandOutput["SecretString"];
+  ARN: GetSecretValueCommandOutput["ARN"];
+  versionId: GetSecretValueCommandOutput["VersionId"];
+}
+
+export type SecretValue = AwsSecretValue; // | VaultSecretValue; // | OtherProviderSecretValue;
