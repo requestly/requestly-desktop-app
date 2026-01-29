@@ -44,24 +44,16 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
       return false;
     }
 
-    try {
-      const listSecretsCommand = new ListSecretsCommand({ MaxResults: 1 });
-      const res = await this.client.send(listSecretsCommand);
-      console.log("!!!debug", "aws result", res);
 
-      if (res.$metadata.httpStatusCode !== 200) {
-        return false;
-      }
+    const listSecretsCommand = new ListSecretsCommand({ MaxResults: 1 });
+    const res = await this.client.send(listSecretsCommand);
+    console.log("!!!debug", "aws result", res);
 
-      return true;
-    } catch (err) {
-      console.error(
-        "!!!debug",
-        "aws secrets manager test connection error",
-        err
-      );
+    if (res.$metadata.httpStatusCode !== 200) {
       return false;
     }
+
+    return true;
   }
 
   async getSecret(ref: AwsSecretReference): Promise<AwsSecretValue | null> {

@@ -34,7 +34,7 @@ export const initSecretsManager = async (): SecretsResultPromise<void> => {
     if ((error as Error).name === "SafeStorageEncryptionNotAvailable") {
       return createSecretsError(
         SecretsErrorCode.SAFE_STORAGE_ENCRYPTION_NOT_AVAILABLE,
-        "Safe storage encryption is not available.",
+        "Safe storage encryption is not available.", // UI to show OS specific message here
         {
           cause: error as Error,
         }
