@@ -70,7 +70,9 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
     }
 
     const cacheKey = this.getCacheKey(ref);
-    const cachedSecret = this.getCachedSecret(cacheKey) as AwsSecretValue | null;
+    const cachedSecret = this.getCachedSecret(
+      cacheKey
+    ) as AwsSecretValue | null;
 
     if (cachedSecret) {
       console.log("!!!debug", "returning from cache", cachedSecret);
@@ -85,13 +87,7 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
     const secretResponse = await this.client.send(getSecretCommand);
 
     if (secretResponse.$metadata.httpStatusCode !== 200) {
-      console.error("!!!debug", "Failed to fetch secret", secretResponse);
-      return null;
-    }
-
-    if (!secretResponse.SecretString) {
-      console.error("!!!debug", "SecretString is empty", secretResponse);
-      return null;
+      throw new Error("Failed to fetch secret from AWS Secrets Manager.");
     }
 
     const awsSecret: AwsSecretValue = {
@@ -103,8 +99,6 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
       ARN: secretResponse.ARN,
       versionId: secretResponse.VersionId,
     };
-
-    console.log("!!!debug", "returning after fetching", awsSecret);
 
     this.setCacheEntry(cacheKey, awsSecret);
 

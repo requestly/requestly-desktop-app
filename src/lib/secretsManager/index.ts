@@ -3,7 +3,11 @@ import { FileBasedProviderRegistry } from "./providerRegistry/FileBasedProviderR
 import { ProviderChangeCallback } from "./providerRegistry/AbstractProviderRegistry";
 import { SecretsManager } from "./secretsManager";
 import { SecretProviderConfig, SecretReference, SecretValue } from "./types";
-import { SecretsResultPromise } from "./errors";
+import {
+  createSecretsError,
+  SecretsErrorCode,
+  SecretsResultPromise,
+} from "./errors";
 
 const getSecretsManager = (): SecretsManager => {
   if (!SecretsManager.isInitialized()) {
@@ -14,14 +18,37 @@ const getSecretsManager = (): SecretsManager => {
 
 const PROVIDERS_DIRECTORY = "providers";
 
-export const initSecretsManager = async () => {
-  const secretsStorage = new SecretsManagerEncryptedStorage(
-    PROVIDERS_DIRECTORY
-  );
-  const registry = new FileBasedProviderRegistry(secretsStorage);
+export const initSecretsManager = async (): SecretsResultPromise<void> => {
+  try {
+    const secretsStorage = new SecretsManagerEncryptedStorage(
+      PROVIDERS_DIRECTORY
+    );
+    const registry = new FileBasedProviderRegistry(secretsStorage);
 
-  await SecretsManager.initialize(registry);
-  console.log("!!!debug", "secretsManager initialized");
+    await SecretsManager.initialize(registry);
+
+    return {
+      type: "success",
+    };
+  } catch (error) {
+    if ((error as Error).name === "SafeStorageEncryptionNotAvailable") {
+      return createSecretsError(
+        SecretsErrorCode.SAFE_STORAGE_ENCRYPTION_NOT_AVAILABLE,
+        "Safe storage encryption is not available.",
+        {
+          cause: error as Error,
+        }
+      );
+    }
+
+    return createSecretsError(
+      SecretsErrorCode.UNKNOWN,
+      "Failed to initialize SecretsManager.",
+      {
+        cause: error as Error,
+      }
+    );
+  }
 };
 
 export const subscribeToProvidersChange = (

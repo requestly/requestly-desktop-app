@@ -163,7 +163,7 @@ export class SecretsManager {
         SecretsErrorCode.SECRET_FETCH_FAILED,
         error instanceof Error
           ? error.message
-          : `Failed to fetch secret from provider ${providerId}`,
+          : `Failed to fetch secret from provider`,
         { providerId, secretRef: ref, cause: error as Error }
       );
     }
@@ -182,31 +182,32 @@ export class SecretsManager {
     }
 
     const results: SecretValue[] = [];
-    const errors: string[] = [];
 
-    // TODO: Consider parallelizing these calls per provider
     // Handle partial failures appropriately
     for (const [providerId, refs] of providerMap.entries()) {
       try {
         const provider = this.registry.getProvider(providerId);
         if (!provider) {
-          errors.push(`Provider ${providerId} not found`);
-          continue;
+          return createSecretsError(
+            SecretsErrorCode.PROVIDER_NOT_FOUND,
+            `Provider with id ${providerId} not found`,
+            { providerId }
+          );
         }
+
         const secretValues = await provider.getSecrets(refs);
         results.push(
           ...secretValues.filter((sv): sv is SecretValue => sv !== null)
         );
       } catch (error) {
-        errors.push(`Provider ${providerId}: ${(error as Error).message}`);
+        return createSecretsError(
+          SecretsErrorCode.SECRET_FETCH_FAILED,
+          error instanceof Error
+            ? error.message
+            : `Failed to fetch secrets from provider ${providerId}`,
+          { providerId, cause: error as Error }
+        );
       }
-    }
-
-    if (errors.length > 0 && results.length === 0) {
-      return createSecretsError(
-        SecretsErrorCode.SECRET_FETCH_FAILED,
-        `Failed to fetch secrets: ${errors.join(", ")}`
-      );
     }
 
     return { type: "success", data: results };
@@ -217,6 +218,7 @@ export class SecretsManager {
   ): SecretsResultPromise<(SecretValue | null)[]> {
     try {
       const provider = this.registry.getProvider(providerId);
+
       if (!provider) {
         return createSecretsError(
           SecretsErrorCode.PROVIDER_NOT_FOUND,
@@ -224,7 +226,9 @@ export class SecretsManager {
           { providerId }
         );
       }
+
       const secrets = await provider.refreshSecrets();
+
       return { type: "success", data: secrets };
     } catch (error) {
       return createSecretsError(
