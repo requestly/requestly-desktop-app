@@ -10,6 +10,7 @@ import {
 } from "./errors";
 
 export class SecretsManager {
+  // eslint-disable-next-line no-use-before-define
   private static instance: SecretsManager | null = null;
 
   private static initPromise: Promise<void> | null = null;
