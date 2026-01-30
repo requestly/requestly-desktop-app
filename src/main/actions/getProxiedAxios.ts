@@ -104,7 +104,7 @@ function createAxiosInstance(
       const url = new URL(requestUrl);
       const { hostname, port: urlPort, protocol } = url;
 
-      if (hostname === "localhost") { 
+      if (hostname === "localhost" || hostname === LOCAL_IPV6 || hostname === LOCAL_IPV4) { 
         // convert string port to integer
         const port = urlPort ? parseInt(urlPort, 10) : protocol === "https:" ? 443 : 80;
 
