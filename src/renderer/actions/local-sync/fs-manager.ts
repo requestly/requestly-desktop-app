@@ -79,6 +79,23 @@ import { isEmpty } from "lodash";
 import { HandleError } from "./decorators/handle-error.decorator";
 import { FsIgnoreManager } from "./fsIgnore-manager";
 import { fileIndex } from "./file-index";
+
+// Serialize updates per (workspace,id) to avoid concurrent renames/writes
+// that can produce ENOENT when multiple updateEnvironment calls race.
+const updateLocks = new Map<string, Promise<unknown>>();
+async function withUpdateLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const prev = updateLocks.get(key) ?? Promise.resolve();
+  const next = prev
+    .catch(() => {})
+    .then(fn)
+    .finally(() => {
+      if (updateLocks.get(key) === next) {
+        updateLocks.delete(key);
+      }
+    });
+  updateLocks.set(key, next);
+  return next as Promise<T>;
+}
 export class ResourceNotFound extends Error {
   constructor(message: string) {
     super(message);
@@ -1356,50 +1373,49 @@ export class FsManager {
       | { name: string }
       | { variables: Record<string, EnvironmentVariableValue> }
   ): Promise<FileSystemResult<Environment>> {
-    const fileType = new EnvironmentRecordFileType();
-    removeUndefinedFromRoot(patch);
-    let fileResourceResult = await this.getFileResourceWithNameVerification({
-      id,
-      name: (patch as any).name,
+    const lockKey = `${this.rootPath}::env::${id}`;
+    return withUpdateLock(lockKey, async () => {
+      const fileType = new EnvironmentRecordFileType();
+      removeUndefinedFromRoot(patch);
+      let fileResourceResult = await this.getFileResourceWithNameVerification({
+        id,
+        name: (patch as any).name,
+      });
+
+      if (fileResourceResult.type === "error") {
+        return fileResourceResult;
+      }
+
+      const fileResource = fileResourceResult.content;
+
+      const parsedRecordResult = await parseFile({
+        resource: fileResource,
+        fileType,
+      });
+
+      if (parsedRecordResult.type === "error") {
+        return parsedRecordResult;
+      }
+      const { content } = parsedRecordResult;
+
+      const updatedRecord: Static<typeof EnvironmentRecord> = {
+        ...content,
+      };
+
+      if ("variables" in patch) {
+        updatedRecord.variables = parseToEnvironmentEntity(patch.variables);
+      }
+      if ("name" in patch) {
+        updatedRecord.name = patch.name;
+      }
+
+      const writeResult = await writeContent(fileResource, updatedRecord, fileType);
+      if (writeResult.type === "error") {
+        return writeResult;
+      }
+
+      return parseFileToEnv(fileResource);
     });
-
-    if (fileResourceResult.type === "error") {
-      return fileResourceResult;
-    }
-
-    const fileResource = fileResourceResult.content;
-
-    const parsedRecordResult = await parseFile({
-      resource: fileResource,
-      fileType,
-    });
-
-    if (parsedRecordResult.type === "error") {
-      return parsedRecordResult;
-    }
-    const { content } = parsedRecordResult;
-
-    const updatedRecord: Static<typeof EnvironmentRecord> = {
-      ...content,
-    };
-
-    if ("variables" in patch) {
-      updatedRecord.variables = parseToEnvironmentEntity(patch.variables);
-    }
-    if ("name" in patch) {
-      updatedRecord.name = patch.name;
-    }
-
-    const writeResult = await writeContent(
-      fileResource,
-      updatedRecord,
-      fileType
-    );
-    if (writeResult.type === "error") {
-      return writeResult;
-    }
-
-    return parseFileToEnv(fileResource);
   }
 
   @HandleError
