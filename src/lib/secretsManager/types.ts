@@ -1,46 +1,54 @@
-import { GetSecretValueCommandOutput } from "@aws-sdk/client-secrets-manager";
+import { SecretProviderType } from "./baseTypes";
+import type {
+  AWSSecretsManagerCredentials,
+  AWSSecretProviderConfig,
+  AwsSecretReference,
+  AwsSecretValue,
+} from "./providerService/awsSecretManagerProvider";
 
-export enum SecretProviderType {
-  AWS_SECRETS_MANAGER = "aws",
-}
+export {
+  SecretProviderType,
+  ProviderConfig,
+  SecretReference as BaseSecretReference,
+} from "./baseTypes";
 
-export interface AWSSecretsManagerConfig {
-  accessKeyId: string;
-  secretAccessKey: string;
-  region: string;
-  sessionToken?: string;
-}
+export type ProviderCredentials = AWSSecretsManagerCredentials;
+// | HashicorpVaultCredentials;
 
-export type ProviderSpecificConfig = AWSSecretsManagerConfig; // | HashicorpVaultConfig | OtherProviderConfig;
+export type SecretProviderConfig = AWSSecretProviderConfig;
+// | HashicorpVaultProviderConfig;
 
-export interface SecretProviderConfig {
-  id: string;
-  type: SecretProviderType;
-  name: string;
-  createdAt: number;
-  updatedAt: number;
-  config: ProviderSpecificConfig;
-}
+export type SecretProviderMetadata = Omit<SecretProviderConfig, "credentials">;
 
-export type AwsSecretReference = {
-  type: SecretProviderType.AWS_SECRETS_MANAGER;
-  identifier: string; // ARN or Name
-  version?: string;
+export type SecretReference = AwsSecretReference; // | VaultSecretReference;
+
+export type SecretValue = AwsSecretValue; // | VaultSecretValue;
+
+export type {
+  AWSSecretsManagerCredentials,
+  AWSSecretProviderConfig,
+  AwsSecretReference,
+  AwsSecretValue,
 };
 
-export type SecretReference = AwsSecretReference; // | VaultSecretReference; // | OtherProviderSecretReference;
-
-interface BaseSecretValue {
-  providerId: string;
-  secretReference: SecretReference;
-  fetchedAt: number;
+/**
+ * Type map for compile-time type lookup.
+ * Enables AbstractSecretProvider to infer correct types automatically.
+ */
+export interface ProviderTypeMap {
+  [SecretProviderType.AWS_SECRETS_MANAGER]: {
+    credentials: AWSSecretsManagerCredentials;
+    providerConfig: AWSSecretProviderConfig;
+    reference: AwsSecretReference;
+    value: AwsSecretValue;
+  };
 }
 
-export interface AwsSecretValue extends BaseSecretValue {
-  name: GetSecretValueCommandOutput["Name"];
-  value: GetSecretValueCommandOutput["SecretString"];
-  ARN: GetSecretValueCommandOutput["ARN"];
-  versionId: GetSecretValueCommandOutput["VersionId"];
-}
-
-export type SecretValue = AwsSecretValue; // | VaultSecretValue; // | OtherProviderSecretValue;
+export type CredentialsForProvider<T extends SecretProviderType> =
+  ProviderTypeMap[T]["credentials"];
+export type ProviderConfigForProvider<T extends SecretProviderType> =
+  ProviderTypeMap[T]["providerConfig"];
+export type ReferenceForProvider<T extends SecretProviderType> =
+  ProviderTypeMap[T]["reference"];
+export type ValueForProvider<T extends SecretProviderType> =
+  ProviderTypeMap[T]["value"];
