@@ -20,9 +20,11 @@ export class EncryptedElectronStore {
 
   constructor(storeName: string) {
     if (!safeStorage.isEncryptionAvailable()) {
-      throw new Error(
+      const error = new Error(
         "Encryption is not available on this system. Please ensure your operating system's secure storage is properly configured."
       );
+      error.name = "SafeStorageEncryptionNotAvailable";
+      throw error;
     }
 
     const storeOptions: Store.Options<EncryptedStoreSchema> = {
