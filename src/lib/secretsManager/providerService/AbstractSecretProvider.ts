@@ -10,12 +10,14 @@ const DEFAULT_MAX_CACHE_SIZE = 100;
 
 /**
  * Generic abstract base class for secret providers.
- * 
+ *
  * @template T - The provider type
  */
 export abstract class AbstractSecretProvider<T extends SecretProviderType> {
   protected cache: Map<string, ValueForProvider<T>> = new Map();
+
   protected cacheTtlMs: number = DEFAULT_CACHE_TTL_MS;
+
   protected maxCacheSize: number = DEFAULT_MAX_CACHE_SIZE;
 
   abstract readonly type: T;

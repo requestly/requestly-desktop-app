@@ -6,27 +6,40 @@ import type {
   AwsSecretValue,
 } from "./providerService/awsSecretManagerProvider";
 
+import type {
+  HashicorpVaultCredentials,
+  HashicorpVaultProviderConfig,
+  VaultSecretReference,
+  VaultSecretValue,
+} from "./providerService/hashicorpVaultProvider";
+
 export {
   SecretProviderType,
   ProviderConfig,
   SecretReference as BaseSecretReference,
 } from "./baseTypes";
 
-export type ProviderCredentials = AWSSecretsManagerCredentials;
-// | HashicorpVaultCredentials;
+export type ProviderCredentials =
+  | AWSSecretsManagerCredentials
+  | HashicorpVaultCredentials;
 
-export type SecretProviderConfig = AWSSecretProviderConfig;
-// | HashicorpVaultProviderConfig;
+export type SecretProviderConfig =
+  | AWSSecretProviderConfig
+  | HashicorpVaultProviderConfig;
 
-export type SecretReference = AwsSecretReference; // | VaultSecretReference;
+export type SecretReference = AwsSecretReference | VaultSecretReference;
 
-export type SecretValue = AwsSecretValue; // | VaultSecretValue;
+export type SecretValue = AwsSecretValue | VaultSecretValue;
 
 export type {
   AWSSecretsManagerCredentials,
   AWSSecretProviderConfig,
   AwsSecretReference,
   AwsSecretValue,
+  HashicorpVaultCredentials,
+  HashicorpVaultProviderConfig,
+  VaultSecretReference,
+  VaultSecretValue,
 };
 
 /**
@@ -39,6 +52,12 @@ export interface ProviderTypeMap {
     providerConfig: AWSSecretProviderConfig;
     reference: AwsSecretReference;
     value: AwsSecretValue;
+  };
+  [SecretProviderType.HASHICORP_VAULT]: {
+    credentials: HashicorpVaultCredentials;
+    providerConfig: HashicorpVaultProviderConfig;
+    reference: VaultSecretReference;
+    value: VaultSecretValue;
   };
 }
 
