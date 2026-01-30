@@ -30,7 +30,9 @@ export abstract class AbstractSecretProvider<T extends SecretProviderType> {
 
   abstract testConnection(): Promise<boolean>;
 
-  abstract getSecret(_ref: ReferenceForProvider<T>): Promise<ValueForProvider<T> | null>;
+  abstract getSecret(
+    _ref: ReferenceForProvider<T>
+  ): Promise<ValueForProvider<T> | null>;
 
   abstract getSecrets(
     _refs: ReferenceForProvider<T>[]
@@ -42,12 +44,27 @@ export abstract class AbstractSecretProvider<T extends SecretProviderType> {
   ): Promise<void>;
 
   abstract setSecrets(
-    _entries: Array<{ ref: ReferenceForProvider<T>; value: string | Record<string, any> }>
+    _entries: Array<{
+      ref: ReferenceForProvider<T>;
+      value: string | Record<string, any>;
+    }>
   ): Promise<void>;
 
   abstract removeSecret(_ref: ReferenceForProvider<T>): Promise<void>;
 
   abstract removeSecrets(_refs: ReferenceForProvider<T>[]): Promise<void>;
+
+  abstract refreshSecrets(): Promise<(ValueForProvider<T> | null)[]>;
+
+  static validateConfig(config: any): boolean {
+    // Base implementation rejects all configs as a fail-safe.
+    // Provider implementations must override with specific validation.
+    if (!config) {
+      return false;
+    }
+
+    return false;
+  }
 
   protected invalidateCache(): void {
     this.cache.clear();
@@ -90,17 +107,5 @@ export abstract class AbstractSecretProvider<T extends SecretProviderType> {
     });
 
     keysToDelete.forEach((key) => this.cache.delete(key));
-  }
-
-  abstract refreshSecrets(): Promise<(ValueForProvider<T> | null)[]>;
-
-  static validateConfig(config: any): boolean {
-    // Base implementation rejects all configs as a fail-safe.
-    // Provider implementations must override with specific validation.
-    if (!config) {
-      return false;
-    }
-
-    return false;
   }
 }
