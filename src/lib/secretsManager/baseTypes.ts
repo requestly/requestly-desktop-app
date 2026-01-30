@@ -1,5 +1,6 @@
 export enum SecretProviderType {
   AWS_SECRETS_MANAGER = "aws",
+  HASHICORP_VAULT = "hashicorp_vault",
 }
 
 /**
