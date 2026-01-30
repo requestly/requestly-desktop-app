@@ -655,7 +655,8 @@ export async function addWorkspaceToGlobalConfig(params: {
 async function getWorkspacePathFromSelectedPath(
   selectedPath: string
 ): Promise<string | null> {
-  let currentPath = selectedPath;
+  // Normalize path: trim trailing separators (Windows may pass path with trailing \)
+  let currentPath = selectedPath.replace(/[/\\]+$/, "");
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const workspacePathExists = await FsService.lstat(
