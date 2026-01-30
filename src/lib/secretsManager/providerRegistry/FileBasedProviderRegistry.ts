@@ -1,4 +1,4 @@
-import { SecretProviderConfig } from "../types";
+import { SecretProviderConfig, SecretProviderType } from "../types";
 import { createProviderInstance } from "../providerService/providerFactory";
 import { AbstractSecretProvider } from "../providerService/AbstractSecretProvider";
 import {
@@ -55,7 +55,7 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
     this.providers.delete(id);
   }
 
-  getProvider(providerId: string): AbstractSecretProvider | null {
+  getProvider(providerId: string): AbstractSecretProvider<SecretProviderType> | null {
     return this.providers.get(providerId) ?? null;
   }
 
