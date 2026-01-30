@@ -1,30 +1,53 @@
-import {
-  AwsSecretReference,
-  AWSSecretsManagerConfig,
-  AwsSecretValue,
-  SecretProviderConfig,
-  SecretProviderType,
-} from "../types";
+import { SecretProviderType, ProviderConfig, SecretReference } from "../baseTypes";
 import { AbstractSecretProvider } from "./AbstractSecretProvider";
 import {
   GetSecretValueCommand,
+  GetSecretValueCommandOutput,
   ListSecretsCommand,
   SecretsManagerClient,
 } from "@aws-sdk/client-secrets-manager";
 
-export class AWSSecretsManagerProvider extends AbstractSecretProvider {
-  readonly type = SecretProviderType.AWS_SECRETS_MANAGER;
+export interface AWSSecretsManagerCredentials {
+  accessKeyId: string;
+  secretAccessKey: string;
+  region: string;
+  sessionToken?: string;
+}
+
+export type AWSSecretProviderConfig = ProviderConfig<
+  SecretProviderType.AWS_SECRETS_MANAGER,
+  AWSSecretsManagerCredentials
+>;
+
+export interface AwsSecretReference extends SecretReference<SecretProviderType.AWS_SECRETS_MANAGER> {
+  identifier: string;
+  version?: string;
+}
+
+export interface AwsSecretValue {
+  type: SecretProviderType.AWS_SECRETS_MANAGER;
+  providerId: string;
+  secretReference: AwsSecretReference;
+  fetchedAt: number;
+  name: GetSecretValueCommandOutput["Name"];
+  value: GetSecretValueCommandOutput["SecretString"];
+  ARN: GetSecretValueCommandOutput["ARN"];
+  versionId: GetSecretValueCommandOutput["VersionId"];
+}
+
+export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProviderType.AWS_SECRETS_MANAGER> {
+  readonly type = SecretProviderType.AWS_SECRETS_MANAGER as const;
 
   readonly id: string;
 
-  protected config: AWSSecretsManagerConfig;
+  protected config: AWSSecretsManagerCredentials;
 
   private client: SecretsManagerClient;
 
-  constructor(providerConfig: SecretProviderConfig) {
+  constructor(providerConfig: AWSSecretProviderConfig) {
     super();
     this.id = providerConfig.id;
-    this.config = providerConfig.config as AWSSecretsManagerConfig;
+    this.config = providerConfig.credentials;
     this.client = new SecretsManagerClient({
       region: this.config.region,
       credentials: {
@@ -95,6 +118,7 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
     }
 
     const awsSecret: AwsSecretValue = {
+      type: SecretProviderType.AWS_SECRETS_MANAGER,
       providerId: this.id,
       secretReference: ref,
       fetchedAt: Date.now(),
@@ -122,19 +146,24 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
     return Promise.all(refs.map((ref) => this.getSecret(ref)));
   }
 
-  async setSecret(): Promise<void> {
+  async setSecret(
+    _ref: AwsSecretReference,
+    _value: string | Record<string, any>
+  ): Promise<void> {
     throw new Error("Method not implemented.");
   }
 
-  async setSecrets(): Promise<void> {
+  async setSecrets(
+    _entries: Array<{ ref: AwsSecretReference; value: string | Record<string, any> }>
+  ): Promise<void> {
     throw new Error("Method not implemented.");
   }
 
-  async removeSecret(): Promise<void> {
+  async removeSecret(_ref: AwsSecretReference): Promise<void> {
     throw new Error("Method not implemented.");
   }
 
-  async removeSecrets(): Promise<void> {
+  async removeSecrets(_refs: AwsSecretReference[]): Promise<void> {
     throw new Error("Method not implemented.");
   }
 
@@ -148,7 +177,7 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider {
     return this.getSecrets(allSecretRefs);
   }
 
-  static validateConfig(config: AWSSecretsManagerConfig): boolean {
+  static validateConfig(config: AWSSecretsManagerCredentials): boolean {
     return Boolean(
       config.accessKeyId && config.secretAccessKey && config.region
     );
