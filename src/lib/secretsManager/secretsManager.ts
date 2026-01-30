@@ -1,4 +1,4 @@
-import { SecretProviderConfig, SecretReference, SecretValue } from "./types";
+import { SecretProviderConfig, SecretProviderMetadata, SecretReference, SecretValue } from "./types";
 import {
   AbstractProviderRegistry,
   ProviderChangeCallback,
@@ -243,12 +243,12 @@ export class SecretsManager {
   }
 
   async listProviders(): SecretsResultPromise<
-    Omit<SecretProviderConfig, "config">[]
+    SecretProviderMetadata[]
   > {
     try {
       const configs = await this.registry.getAllProviderConfigs();
-      const configMetadata: Omit<SecretProviderConfig, "config">[] =
-        configs.map(({ config: _, ...rest }) => rest);
+      const configMetadata: SecretProviderMetadata[] =
+        configs.map(({ credentials: _, ...rest }) => rest);
       return { type: "success", data: configMetadata };
     } catch (error) {
       return createSecretsError(

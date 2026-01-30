@@ -18,6 +18,8 @@ export type ProviderCredentials = AWSSecretsManagerCredentials;
 export type SecretProviderConfig = AWSSecretProviderConfig;
 // | HashicorpVaultProviderConfig;
 
+export type SecretProviderMetadata = Omit<SecretProviderConfig, "credentials">;
+
 export type SecretReference = AwsSecretReference; // | VaultSecretReference;
 
 export type SecretValue = AwsSecretValue; // | VaultSecretValue;

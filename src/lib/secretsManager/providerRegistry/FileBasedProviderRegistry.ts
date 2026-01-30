@@ -41,7 +41,9 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
     this.providers.delete(id);
   }
 
-  getProvider(providerId: string): AbstractSecretProvider<SecretProviderType> | null {
+  getProvider(
+    providerId: string
+  ): AbstractSecretProvider<SecretProviderType> | null {
     return this.providers.get(providerId) ?? null;
   }
 
@@ -84,7 +86,7 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   ): void {
     this.changeCallbacks.forEach((callback) => {
       const configsMetadata = Object.values(data).map((config) => {
-        const { config: _, ...metadata } = config;
+        const { credentials: _, ...metadata } = config;
         return metadata;
       });
       callback(configsMetadata);

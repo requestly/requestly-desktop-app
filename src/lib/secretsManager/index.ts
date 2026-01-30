@@ -2,7 +2,12 @@ import { SecretsManagerEncryptedStorage } from "./encryptedStorage/SecretsManage
 import { FileBasedProviderRegistry } from "./providerRegistry/FileBasedProviderRegistry";
 import { ProviderChangeCallback } from "./providerRegistry/AbstractProviderRegistry";
 import { SecretsManager } from "./secretsManager";
-import { SecretProviderConfig, SecretReference, SecretValue } from "./types";
+import {
+  SecretProviderConfig,
+  SecretProviderMetadata,
+  SecretReference,
+  SecretValue,
+} from "./types";
 import {
   createSecretsError,
   SecretsErrorCode,
@@ -101,7 +106,7 @@ export const refreshSecrets = async (
 };
 
 export const listSecretProviders = async (): SecretsResultPromise<
-  Omit<SecretProviderConfig, "config">[]
+  SecretProviderMetadata[]
 > => {
   return getSecretsManager().listProviders();
 };

@@ -1,9 +1,13 @@
-import { SecretProviderConfig, SecretProviderType } from "../types";
+import {
+  SecretProviderConfig,
+  SecretProviderMetadata,
+  SecretProviderType,
+} from "../types";
 import { AbstractSecretsManagerStorage } from "../encryptedStorage/AbstractSecretsManagerStorage";
 import { AbstractSecretProvider } from "../providerService/AbstractSecretProvider";
 
 export type ProviderChangeCallback = (
-  configs: Omit<SecretProviderConfig, "config">[]
+  configs: SecretProviderMetadata[]
 ) => void;
 
 export abstract class AbstractProviderRegistry {
