@@ -15,3 +15,5 @@ export const GIT_IGNORE_FILE = ".gitignore";
 
 export const GLOBAL_CONFIG_FOLDER_PATH = `${homedir()}/.config/requestly`;
 export const GLOBAL_CONFIG_FILE_NAME = "config.json";
+export const DEFAULT_WORKSPACE_NAME = "Default workspace";
+export const LOCAL_WORKSPACES_DIRECTORY_NAME = "Requestly";

@@ -1,5 +1,6 @@
 import { Static, TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
+import path from "node:path";
 import {
   ContentParseResult,
   ErrorCode,
@@ -168,13 +169,11 @@ export function mapSuccessfulFsResult<
 }
 
 export function getNameOfResource(fsResource: FsResource) {
-  const parts = fsResource.path.split("/");
-  if (fsResource.type === "folder") {
-    const endPart = parts[parts.length - 2];
-    return endPart;
-  }
-  const endPart = parts[parts.length - 1];
-  return endPart;
+  // Trim trailing path separators (both / and \) so path.basename works on all platforms.
+  // On Windows, paths use \ so splitting by "/" would return the full path as one part.
+  const trimmedPath = fsResource.path.replace(/[/\\]+$/, "");
+  const name = path.basename(trimmedPath);
+  return name || trimmedPath;
 }
 
 export function removeUndefinedFromRoot(
