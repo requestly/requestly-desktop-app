@@ -1,6 +1,6 @@
 /**
  * Usage Examples for Type-Safe Secrets Manager
- * 
+ *
  * This file demonstrates how TypeScript automatically infers types
  * throughout the secrets manager system.
  */
@@ -12,9 +12,9 @@ import {
   AwsSecretReference,
   VaultSecretReference,
 } from "./types";
-import { createProviderInstance, createTypedProviderInstance } from "./providerService/providerFactory";
+import { createProviderInstance } from "./providerService/providerFactory";
 import { AWSSecretsManagerProvider } from "./providerService/awsSecretManagerProvider";
-import { HashicorpVaultProvider } from "./providerService/hashicorpVaultProvider";
+// import { HashicorpVaultProvider } from "./providerService/hashicorpVaultProvider";
 
 // ============================================================================
 // Example 1: Creating Provider Configurations (Type-Safe)
@@ -72,7 +72,7 @@ async function example2() {
   // Strongly-typed factory - returns specific provider type
   const typedAwsProvider = createTypedProviderInstance(awsConfig);
   // typedAwsProvider is AbstractSecretProvider<SecretProviderType.AWS_SECRETS_MANAGER>
-  
+
   const typedVaultProvider = createTypedProviderInstance(vaultConfig);
   // typedVaultProvider is AbstractSecretProvider<SecretProviderType.HASHICORP_VAULT>
 }
@@ -243,10 +243,10 @@ async function example6() {
       type: SecretProviderType.AWS_SECRETS_MANAGER,
       identifier: "my-secret",
     };
-    
+
     const secret = await awsProvider.getSecret(ref);
     // TypeScript knows: secret is AwsSecretValue | null
-    
+
     if (secret) {
       console.log(secret.ARN); // ✅ Type-safe access to AWS-specific fields
     }
@@ -259,10 +259,10 @@ async function example6() {
 
 async function example7() {
   const registry: any = null; // FileBasedProviderRegistry instance
-  
+
   // Get a provider and use type guards
   const provider = registry.getProvider("some-provider-id");
-  
+
   if (provider) {
     // Runtime check with type narrowing
     if (provider.type === SecretProviderType.AWS_SECRETS_MANAGER) {
@@ -282,7 +282,7 @@ async function example7() {
 
 /**
  * To add a new provider (e.g., Azure Key Vault):
- * 
+ *
  * 1. Add the provider type to the enum in types.ts:
  *    ```
  *    export enum SecretProviderType {
@@ -291,7 +291,7 @@ async function example7() {
  *      AZURE_KEY_VAULT = "azure", // ← Add this
  *    }
  *    ```
- * 
+ *
  * 2. Add the config interface in types.ts:
  *    ```
  *    export interface AzureKeyVaultConfig {
@@ -301,34 +301,34 @@ async function example7() {
  *      clientSecret: string;
  *    }
  *    ```
- * 
+ *
  * 3. Add to the discriminated unions in types.ts:
  *    ```
  *    export type AzureKeyVaultProviderConfig = ProviderConfig<
  *      SecretProviderType.AZURE_KEY_VAULT,
  *      AzureKeyVaultConfig
  *    >;
- *    
- *    export type SecretProviderConfig = 
- *      | AWSSecretProviderConfig 
+ *
+ *    export type SecretProviderConfig =
+ *      | AWSSecretProviderConfig
  *      | HashicorpVaultProviderConfig
  *      | AzureKeyVaultProviderConfig; // ← Add this
  *    ```
- * 
+ *
  * 4. Add reference and value types in types.ts:
  *    ```
  *    export interface AzureSecretReference extends BaseSecretReference<...> {
  *      name: string;
  *      version?: string;
  *    }
- *    
+ *
  *    export interface AzureSecretValue extends BaseSecretValue<...> {
  *      value: string;
  *      id: string;
  *      // ... other Azure-specific fields
  *    }
  *    ```
- * 
+ *
  * 5. Add to the type map in types.ts:
  *    ```
  *    export interface ProviderTypeMap {
@@ -342,7 +342,7 @@ async function example7() {
  *      };
  *    }
  *    ```
- * 
+ *
  * 6. Create the provider class (azureKeyVaultProvider.ts):
  *    ```
  *    export class AzureKeyVaultProvider extends AbstractSecretProvider<
@@ -352,13 +352,13 @@ async function example7() {
  *      // ... implement abstract methods
  *    }
  *    ```
- * 
+ *
  * 7. Add to the factory in providerFactory.ts:
  *    ```
  *    case SecretProviderType.AZURE_KEY_VAULT:
  *      return new AzureKeyVaultProvider(config as AzureKeyVaultProviderConfig);
  *    ```
- * 
+ *
  * That's it! TypeScript will now enforce type safety for your new provider
  * throughout the entire system.
  */
