@@ -529,8 +529,13 @@ async function getWorkspaceIdFromConfig(
     return null;
   }
   const config = readResult.content;
+  /**
+   * NOTE: We need to normalize the path to ensure that the path is the same as the path in the config for comparison.
+   * This is because the path may be passed in with different delimiters on different platforms.
+   * For example, on Windows the path is passed with backslashes, while on Unix the path is passed with forward slashes, comparing them directly will fail.
+   */
   const workspace = config.workspaces.find(
-    (ws) => ws.path === workspaceFolderPath
+    (ws) => ws.path.replace(/[/\\]/g, '/') === workspaceFolderPath?.replace(/[/\\]/g, '/')
   );
   if (!workspace) {
     return null;
