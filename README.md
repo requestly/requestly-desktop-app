@@ -44,8 +44,8 @@ To get a local copy up and running, please follow these simple steps.
 ### Prerequisites
 Here is what you need to be able to run Requestly Desktop App Locally.
 
-Node.js (Version: 16.15.0)\
-Npm (Version: 8.5.5)
+Node.js (Version: 20.20.0)\
+Npm (Version: 10.8.2)
 
 ## Development
 ### Setup
@@ -94,11 +94,11 @@ npm run package
 
 ## Contributing
 
-Read our [contributing guide](https://github.com/requestly/requestly/blob/master/CONTRIBUTING.md) to learn about how to propose bugfixes and improvements, and how the development process works. 
+Read our [contributing guide](https://github.com/requestly/requestly/blob/master/CONTRIBUTING.md) to learn about how to propose bugfixes and improvements, and how the development process works.
 
 ## Links
 
-- 🏠 Website: [https://www.requestly.io](https://www.requestly.io) 
+- 🏠 Website: [https://www.requestly.io](https://www.requestly.io)
 - 📖 Documentation: [https://docs.requestly.io](https://docs.requestly.io)
 - 🖥️ Download Desktop App: [https://requestly.io/desktop/](https://requestly.io/desktop/)
 
