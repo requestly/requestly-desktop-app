@@ -1,94 +1,97 @@
-const {
-    defineConfig,
-    globalIgnores,
-} = require("eslint/config");
+const { defineConfig, globalIgnores } = require("eslint/config");
 
 const globals = require("globals");
 const tsParser = require("@typescript-eslint/parser");
 const typescriptEslint = require("@typescript-eslint/eslint-plugin");
 const js = require("@eslint/js");
 
-const {
-    FlatCompat,
-} = require("@eslint/eslintrc");
+const { FlatCompat } = require("@eslint/eslintrc");
 
 const compat = new FlatCompat({
-    baseDirectory: __dirname,
-    recommendedConfig: js.configs.recommended,
-    allConfig: js.configs.all
+  baseDirectory: __dirname,
+  recommendedConfig: js.configs.recommended,
+  allConfig: js.configs.all,
 });
 
-module.exports = defineConfig([{
+module.exports = defineConfig([
+  {
     languageOptions: {
-        globals: {
-            ...globals.browser,
-            ...globals.node,
-        },
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
 
-        ecmaVersion: 2022,
-        sourceType: "module",
-        parserOptions: {},
+      ecmaVersion: 2022,
+      sourceType: "module",
+      parserOptions: {},
     },
 
     extends: compat.extends("eslint:recommended"),
 
-    rules: {
-        "prettier/prettier": "off",
-    },
+    rules: {},
 
     settings: {
-        "import/resolver": {
-            node: {
-                extensions: [".js", ".jsx", ".ts", ".tsx"],
-                moduleDirectory: ["node_modules", "./src/"],
-            },
-
-            webpack: {
-                config: require.resolve("./.erb/configs/webpack.config.eslint.ts"),
-            },
-
-            typescript: {},
+      "import/resolver": {
+        node: {
+          extensions: [".js", ".jsx", ".ts", ".tsx"],
+          moduleDirectory: ["node_modules", "./src/"],
         },
 
-        "import/parsers": {
-            "@typescript-eslint/parser": [".ts", ".tsx"],
+        webpack: {
+          config: require.resolve("./.erb/configs/webpack.config.eslint.ts"),
         },
+
+        typescript: {},
+      },
+
+      "import/parsers": {
+        "@typescript-eslint/parser": [".ts", ".tsx"],
+      },
     },
-}, {
+  },
+  {
     files: ["**/*.ts", "**/*.tsx"],
-    extends: compat.extends("eslint:recommended", "plugin:@typescript-eslint/recommended"),
+    extends: compat.extends(
+      "eslint:recommended",
+      "plugin:@typescript-eslint/recommended"
+    ),
 
     languageOptions: {
-        parser: tsParser,
-        ecmaVersion: 2020,
-        sourceType: "module",
+      parser: tsParser,
+      ecmaVersion: 2020,
+      sourceType: "module",
 
-        parserOptions: {
-            project: "./tsconfig.json",
-            tsconfigRootDir: __dirname,
-            createDefaultProgram: true,
-        },
+      parserOptions: {
+        project: "./tsconfig.json",
+        tsconfigRootDir: __dirname,
+        createDefaultProgram: true,
+      },
     },
 
     plugins: {
-        "@typescript-eslint": typescriptEslint,
+      "@typescript-eslint": typescriptEslint,
     },
 
     rules: {
-        "@typescript-eslint/no-unused-vars": ["warn", {
-            argsIgnorePattern: "^_",
-            varsIgnorePattern: "^_",
-        }],
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+        },
+      ],
     },
-}, {
+  },
+  {
     files: ["**/*.js", "**/*.jsx"],
 
     languageOptions: {
-        ecmaVersion: 2022,
-        sourceType: "module",
-        parserOptions: {},
+      ecmaVersion: 2022,
+      sourceType: "module",
+      parserOptions: {},
     },
-}, globalIgnores([
+  },
+  globalIgnores([
     "**/logs",
     "**/*.log",
     "**/pids",
@@ -106,4 +109,5 @@ module.exports = defineConfig([{
     "**/*.css.d.ts",
     "**/*.sass.d.ts",
     "**/*.scss.d.ts",
-])]);
+  ]),
+]);
