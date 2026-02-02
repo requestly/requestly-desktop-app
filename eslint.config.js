@@ -79,7 +79,6 @@ module.exports = defineConfig([{
             argsIgnorePattern: "^_",
             varsIgnorePattern: "^_",
         }],
-        "@typescript-eslint/no-explicit-any": "off",
     },
 }, {
     files: ["**/*.js", "**/*.jsx"],
