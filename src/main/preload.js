@@ -39,8 +39,6 @@ if (process.env.NODE_ENV === "development") {
   // Services - IPC
   RQ.DESKTOP.SERVICES.IPC = IPC;
 
-  module.paths.push('/Users/rahulramteke/projects/adhoc/nt/node_modules');
-  eval("const arc = require('arcjet'); console.log('aaarrcc', arc)")
   // Expose to frontend
   contextBridge.exposeInMainWorld("RQ", RQ);
   // contextBridge.exposeInMainWorld("rqEval", (s) => {eval(s)});
