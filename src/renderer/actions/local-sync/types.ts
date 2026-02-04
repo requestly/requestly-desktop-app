@@ -25,6 +25,7 @@ export enum ErrorCode {
   NotPermitted = "not_permitted",
   MigrationFailed = "migration_failed",
   EntityAlreadyExists = "entity_already_exists",
+  WorkspacePathAlreadyInUse = "workspace_path_already_in_use",
   NotFound = "not_found",
   UNKNOWN = "unknown",
 }
@@ -36,6 +37,7 @@ export type FileSystemError = {
     path: string;
     fileType: FileTypeEnum;
     code: ErrorCode;
+    metadata?: Record<string, any>;
   };
 };
 
@@ -50,9 +52,9 @@ export type ContentParseError = { message: string };
 export type ContentParseResult<T> =
   | ContentfulSuccess<T>
   | {
-      type: "error";
-      error: ContentParseError;
-    };
+    type: "error";
+    error: ContentParseError;
+  };
 
 export type FolderResource = {
   type: "folder";
