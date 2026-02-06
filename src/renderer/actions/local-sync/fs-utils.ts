@@ -1286,6 +1286,7 @@ export function parseFileResultToApi(
     id: getIdFromPath(file.path),
     data: {
       name: record.name,
+      rank: record.rank,
       request: record.request,
     },
   };
