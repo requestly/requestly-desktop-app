@@ -1,7 +1,7 @@
 import logger from "./logger";
 
 const isMain = process.type === "browser";
-const processType = isMain ? "main" : "renderer";
+const processType = isMain ? "main" : "background-process";
 
 const { init } = isMain
   ? require("@sentry/electron/main")
@@ -22,7 +22,10 @@ try {
     // Enable debug mode in development
     debug: process.env.NODE_ENV === "development",
     // Sample rate for performance monitoring
-    tracesSampleRate: 0.1 /* confirm with web app */,
+    tracesSampleRate: 1.0,
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
+
     // Capture unhandled promise rejections
     integrations: (integrations) => {
       return integrations;
