@@ -1,9 +1,33 @@
+// Initialize Sentry for background renderer (must be first)
+import "../utils/sentryInit";
+import * as Sentry from "@sentry/electron/renderer";
 
 const initGlobalNamespace = () => {
   global.rq = global.rq || {};
 };
 
 initGlobalNamespace();
+
+// Global error handlers for background renderer
+process.on("uncaughtException", (error) => {
+  console.error("[Background Renderer] Uncaught Exception:", error);
+  Sentry.captureException(error);
+});
+
+process.on("unhandledRejection", (reason, _promise) => {
+  console.error("[Background Renderer] Unhandled Rejection:", reason);
+  Sentry.captureException(reason);
+});
+
+window.addEventListener("error", (event) => {
+  console.error("[Background Renderer] Window Error:", event.error);
+  Sentry.captureException(event.error);
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  console.error("[Background Renderer] Unhandled Promise Rejection:", event.reason);
+  Sentry.captureException(event.reason);
+});
 
 // ACTIONS
 import initEventHandlers from "./actions/initEventHandlers";
@@ -18,7 +42,7 @@ import { clearStoredLogs } from "./lib/proxy-interface/loggerService";
 // initPrimaryStorageCache();
 initRulesCache();
 initGroupsCache();
-/** IPC  **/
+/* IPC */
 initEventHandlers();
 initAppManager();
 /* stored logs */
