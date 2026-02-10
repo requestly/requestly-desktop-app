@@ -60,9 +60,6 @@ if (process.env.IS_SETAPP_BUILD === "true") {
   log.log("[SETAPP] integration complete")
 }
 
-
-Sentry.captureException(new Error('Test error from main process'));
-
 // Init remote so that it could be consumed in renderer
 const remote = require("@electron/remote/main");
 remote.initialize();
