@@ -1,5 +1,3 @@
-/* eslint-disable no-shadow */
-/* eslint-disable no-unused-vars */
 import { Type } from "@sinclair/typebox";
 
 export const Config = Type.Object({
