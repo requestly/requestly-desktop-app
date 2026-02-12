@@ -17,7 +17,7 @@ export function HandleError(
         return possiblePromiseResult.catch((e) => {
           captureException(e, {
             tags:{
-              "class":"decorator"
+              "class": "decorator" // can remove tag if required
             }
           });
           return {

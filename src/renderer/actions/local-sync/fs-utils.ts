@@ -216,7 +216,6 @@ export async function createFolder(
         fileIndex.getId(resource.path);
       }
     } else if (errorIfExist) {
-      // error created inside if 
       return createFileSystemError(
         { message: "Folder already exists!" },
         resource.path,
@@ -324,7 +323,6 @@ export async function writeContent(
     }
 
     const parsedContentResult = parseRaw(content, fileType.validator);
-    // no error object is coming here
     if (parsedContentResult.type === "error") {
       return createFileSystemError(
         { message: parsedContentResult.error.message },
@@ -448,7 +446,6 @@ export async function parseFile<
     const content = (await FsService.readFile(resource.path)).toString();
     const parsedContentResult = fileType.parse(content);
     if (parsedContentResult.type === "error") {
-      // no error object is there
       return createFileSystemError(
         { message: parsedContentResult.error.message },
         resource.path,
