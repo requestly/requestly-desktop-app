@@ -148,12 +148,12 @@
       "provider": "github",
       "releaseType": "release",
       "owner": "requestly",
-      "repo": "requestly-desktop-app"
+      "repo": "requestly-desktop-beta"
     }
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/requestly/requestly-desktop-app.git"
+    "url": "git+https://github.com/requestly/requestly-desktop-beta.git"
   },
   "author": {
     "name": "BrowserStack Inc.",
