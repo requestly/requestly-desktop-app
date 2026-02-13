@@ -111,12 +111,21 @@ function collectVerboseErrors(errors: Iterable<ValueError>): string[] {
 
 /**
  * Collects all validation errors and their messages.
- * Returns the first error object and an array of all error messages from all variants.
+ * Returns the first error as heading and remaining errors as additional context.
  */
-function formatValidationErrors(validator: TSchema, content: any): {error: any, errorMessages: string[]} {
+function formatValidationErrors(validator: TSchema, content: any): {
+  error: any;
+  heading: string;
+  additionalErrors: string[];
+} {
   const allErrors = [...Value.Errors(validator, content)];
   const errorMessages = collectVerboseErrors(allErrors);
-  return { error: allErrors[0], errorMessages };
+  
+  return {
+    error: allErrors[0],
+    heading: errorMessages[0] || "Validation error",
+    additionalErrors: errorMessages.slice(1),
+  };
 }
 
 export function parseRaw<T extends TSchema>(
@@ -134,8 +143,9 @@ export function parseRaw<T extends TSchema>(
       content: parsedContent,
     } as ContentParseResult<Static<T>>; // Casting because TS was not able to infer from fn result type
   } catch {
-    const {error, errorMessages} = formatValidationErrors(validator, content);
-    captureException(errorMessages);
+    const { error, heading, additionalErrors } = formatValidationErrors(validator, content);   
+    captureException(heading, { extra: { additionalErrors } });
+    
     return {
       type: "error",
       error: {
