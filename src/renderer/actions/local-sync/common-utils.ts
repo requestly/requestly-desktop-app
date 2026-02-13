@@ -9,6 +9,7 @@ import {
   FsResource,
 } from "./types";
 import { fileIndex } from "./file-index";
+import { captureException } from "@sentry/browser";
 
 export class FsResourceCreationError extends Error {
   path: string;
@@ -221,6 +222,12 @@ export function createFileSystemError(
     : isNotFoundError(error)
     ? ErrorCode.NotFound
     : ErrorCode.UNKNOWN;
+
+  captureException(error, {
+    tags: {
+      fileType
+    }
+  });
   return {
     type: "error",
     error: {
