@@ -1,6 +1,5 @@
 // Initialize Sentry for background renderer (must be first)
 import "../utils/sentryInit";
-import * as Sentry from "@sentry/electron/renderer";
 import logger from "../utils/logger";
 
 const initGlobalNamespace = () => {
@@ -37,7 +36,6 @@ import { initAppManager } from "./actions/apps";
 import "./types";
 import { FsManagerBuilderRPCService } from "./actions/local-sync/fs-manager-builder.rpc-service";
 import { clearStoredLogs } from "./lib/proxy-interface/loggerService";
-import logger from "utils/logger";
 
 // initPrimaryStorageCache();
 initRulesCache();
