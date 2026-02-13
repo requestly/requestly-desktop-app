@@ -787,10 +787,11 @@ export class FsManager {
       id: collectionId || getIdFromPath(this.rootPath),
       type: "folder",
     });
+    const sanitizedName = sanitizeFsResourceName(content.name);
 
     const newName = getNewNameIfQuickCreate({
-      name: sanitizeFsResourceName(content.name),
-      baseName: "Untitled request",
+      name: sanitizedName,
+      baseName: sanitizedName,
       parentPath: getNormalizedPath(parentFolderResource.path),
     });
 
@@ -1302,16 +1303,10 @@ export class FsManager {
       return folderCreationResult;
     }
 
-    let newName = getNewNameIfQuickCreate({
-      name: sanitizeFsResourceName(environmentName),
-      baseName: "New Environment",
-      parentPath: getNormalizedPath(environmentFolderPath),
-    });
-
-    // re-used to handle name conflicts by appending a number when an environment with the same name already exists during import
-    newName = getNewNameIfQuickCreate({
-      name: sanitizeFsResourceName(environmentName),
-      baseName: sanitizeFsResourceName(environmentName),
+    const sanitizedEnvName = sanitizeFsResourceName(environmentName);
+    const newName = getNewNameIfQuickCreate({
+      name: sanitizedEnvName,
+      baseName: sanitizedEnvName,
       parentPath: getNormalizedPath(environmentFolderPath),
     });
 
@@ -1487,16 +1482,16 @@ export class FsManager {
       throw new Error(`Could not find path for id ${collection.collectionId}`);
     }
 
-    //Figure out an alternate name only for the root collection being imported
-    if (!collection.collectionId.length) {
-      const newName = getNewNameIfQuickCreate({
-        name: sanitizeFsResourceName(collection.name),
-        baseName: collection.name,
-        parentPath: getNormalizedPath(parentPath),
-      });
+    const sanitizedName = sanitizeFsResourceName(collection.name);
 
-      collection.name = newName;
-    }
+    // Handle name conflicts for imported/duplicated collections (root and nested)
+    const newName = getNewNameIfQuickCreate({
+      name: sanitizedName,
+      baseName: sanitizedName,
+      parentPath: getNormalizedPath(parentPath),
+    });
+
+    collection.name = newName;
 
     const path = appendPath(
       parentPath,
