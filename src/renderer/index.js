@@ -1,6 +1,7 @@
 // Initialize Sentry for background renderer (must be first)
 import "../utils/sentryInit";
 import * as Sentry from "@sentry/electron/renderer";
+import logger from "../utils/logger";
 
 const initGlobalNamespace = () => {
   global.rq = global.rq || {};
@@ -10,23 +11,21 @@ initGlobalNamespace();
 
 // Global error handlers for background renderer
 process.on("uncaughtException", (error) => {
-  console.error("[Background Renderer] Uncaught Exception:", error);
-  Sentry.captureException(error);
+  logger.error("[Background Renderer] Uncaught Exception:", error);
 });
 
 process.on("unhandledRejection", (reason, _promise) => {
-  console.error("[Background Renderer] Unhandled Rejection:", reason);
-  Sentry.captureException(reason);
+  logger.error("[Background Renderer] Unhandled Rejection:", reason);
 });
 
 window.addEventListener("error", (event) => {
-  console.error("[Background Renderer] Window Error:", event.error);
-  Sentry.captureException(event.error);
+  if(event.error){
+    logger.error("[Background Renderer] Window Error:", event.error);
+  }
 });
 
 window.addEventListener("unhandledrejection", (event) => {
-  console.error("[Background Renderer] Unhandled Promise Rejection:", event.reason);
-  Sentry.captureException(event.reason);
+  logger.error("[Background Renderer] Unhandled Promise Rejection:", event.reason);
 });
 
 // ACTIONS
@@ -38,6 +37,7 @@ import { initAppManager } from "./actions/apps";
 import "./types";
 import { FsManagerBuilderRPCService } from "./actions/local-sync/fs-manager-builder.rpc-service";
 import { clearStoredLogs } from "./lib/proxy-interface/loggerService";
+import logger from "utils/logger";
 
 // initPrimaryStorageCache();
 initRulesCache();

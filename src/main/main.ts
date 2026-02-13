@@ -45,12 +45,10 @@ import { saveCookies } from "./actions/cookiesHelpers";
 // Global error handlers for main process
 process.on("uncaughtException", (error) => {
   logger.error("[Main Process] Uncaught Exception:", error);
-  Sentry.captureException(error);
 });
 
 process.on("unhandledRejection", (reason, _promise) => {
   logger.error("[Main Process] Unhandled Rejection:", reason);
-  Sentry.captureException(reason);
 });
 
 if (process.env.IS_SETAPP_BUILD === "true") {
