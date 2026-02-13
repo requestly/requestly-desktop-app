@@ -86,19 +86,17 @@ export function createFsResource<T extends FsResource["type"]>(params: {
 /**
  * Collects all error messages from TypeBox validation errors
  */
-function collectVerboseErrors(errors: Iterable<ValueError>): string[] {
+function collectVerboseErrors(TypeboxError: Iterable<ValueError>): string[] {
   const messages: string[] = [];
 
-  for (const error of errors) {
-    // Add the main error message
-    messages.push(error.message);
+  for (const nestedError of TypeboxError) {
+    messages.push(nestedError.message);
+    if (nestedError.errors && nestedError.errors.length > 0) {
 
-    // If there are nested errors (union variants or other nested structures), collect them recursively
-    if (error.errors && error.errors.length > 0) {
-      error.errors.forEach((subIterator) => {
+      nestedError.errors.forEach((subIterator) => {
         const subErrors = Array.from(subIterator);
+
         if (subErrors.length > 0) {
-          // Recursively collect all error messages from nested errors
           const nestedMessages = collectVerboseErrors(subErrors);
           messages.push(...nestedMessages);
         }
@@ -119,12 +117,12 @@ function formatValidationErrors(validator: TSchema, content: any): {
   additionalErrors: string[];
 } {
   const allErrors = [...Value.Errors(validator, content)];
-  const errorMessages = collectVerboseErrors(allErrors);
+  const nestedErrorMessages = collectVerboseErrors(allErrors);
   
   return {
     error: allErrors[0],
-    heading: errorMessages[0] || "Validation error",
-    additionalErrors: errorMessages.slice(1),
+    heading: nestedErrorMessages[0] || "Validation error",
+    additionalErrors: nestedErrorMessages.slice(1),
   };
 }
 
