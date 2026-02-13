@@ -12,6 +12,7 @@ import {
 
 const LOCAL_IPV4 = "127.0.0.1";
 const LOCAL_IPV6 = "::1";
+const LOCAL_UNSPECIFIED = "0.0.0.0";
 
 const checkConnection = (host: string, port: number): Promise<boolean> => {
   return new Promise((resolve) => {
@@ -104,14 +105,28 @@ function createAxiosInstance(
       const url = new URL(requestUrl);
       const { hostname, port: urlPort, protocol } = url;
 
-      if (hostname === "localhost" || hostname === LOCAL_IPV6 || hostname === LOCAL_IPV4) { 
-        // convert string port to integer
+      const isLocalhost = hostname === "localhost"
+        || hostname === LOCAL_IPV4
+        || hostname === `[${LOCAL_IPV6}]`
+        || hostname === LOCAL_UNSPECIFIED;
+
+      if (isLocalhost) {
         const port = urlPort ? parseInt(urlPort, 10) : protocol === "https:" ? 443 : 80;
 
         const lookup = await createLocalhostLookup(port);
-
         requestConfig.httpAgent = new http.Agent({ lookup });
         requestConfig.httpsAgent = new https.Agent({ lookup });
+
+        // Node.js skips DNS lookup for raw IP literals, so the custom lookup
+        // above has no effect. Rewrite the URL to the concrete working IP.
+        if (hostname !== "localhost") {
+          const ipv6Works = await checkConnection(LOCAL_IPV6, port).catch(() => false);
+          const targetIp = ipv6Works ? `[${LOCAL_IPV6}]` : LOCAL_IPV4;
+
+          if (hostname !== targetIp) {
+            requestConfig.url = requestUrl.replace(hostname, targetIp);
+          }
+        }
       }
 
       return requestConfig;
