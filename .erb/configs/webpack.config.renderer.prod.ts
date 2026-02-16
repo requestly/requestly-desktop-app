@@ -180,7 +180,8 @@ export default merge(baseConfig, {
 
       sourcemaps: {
         filesToDeleteAfterUpload: ["**/*.js.map"]
-      }
+      },
+      debug: true
     }),
   ],
 });
