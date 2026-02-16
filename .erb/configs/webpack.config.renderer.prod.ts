@@ -14,19 +14,16 @@ import baseConfig from "./webpack.config.base";
 import webpackPaths from "./webpack.paths";
 import checkNodeEnv from "../scripts/check-node-env";
 import deleteSourceMaps from "../scripts/delete-source-maps";
+import { sentryWebpackPlugin } from "@sentry/webpack-plugin";
+
+// Load environment variables from .env file
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
 checkNodeEnv("production");
 deleteSourceMaps();
 
-const devtoolsConfig =
-  process.env.DEBUG_PROD === "true"
-    ? {
-        devtool: "source-map",
-      }
-    : {};
-
 export default merge(baseConfig, {
-  ...devtoolsConfig,
+  devtool: 'source-map',
 
   mode: "production",
 
@@ -174,6 +171,17 @@ export default merge(baseConfig, {
       },
       isBrowser: false,
       isDevelopment: process.env.NODE_ENV !== "production",
+    }),
+
+    sentryWebpackPlugin({
+      org: "requestly",
+      project: "desktop-app",
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+
+      sourcemaps: {
+        filesToDeleteAfterUpload: ["**/*.js.map"]
+      },
+      debug: true
     }),
   ],
 });

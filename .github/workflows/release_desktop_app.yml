@@ -46,6 +46,8 @@ jobs:
 
       - name: Build/release Electron app
         uses: samuelmeuli/action-electron-builder@v1.6.0
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         with:
           # GitHub token, automatically provided to the action
           # (No need to define this secret in the repo settings)

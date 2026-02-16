@@ -11,6 +11,9 @@
  */
 import "core-js/stable";
 import "regenerator-runtime/runtime";
+// Initialize Sentry for main process
+import "../utils/sentryInit";
+import * as Sentry from "@sentry/electron/main";
 import path from "path";
 import {
   app,
@@ -39,13 +42,21 @@ import logger from "../utils/logger";
 import { setupIPCForwardingToWebApp } from "./actions/setupIPCForwarding";
 import { saveCookies } from "./actions/cookiesHelpers";
 
+// Global error handlers for main process
+process.on("uncaughtException", (error) => {
+  logger.error("[Main Process] Uncaught Exception:", error);
+});
+
+process.on("unhandledRejection", (reason, _promise) => {
+  logger.error("[Main Process] Unhandled Rejection:", reason);
+});
+
 if (process.env.IS_SETAPP_BUILD === "true") {
   log.log("[SETAPP] build identified")
   const setappFramework = require("@setapp/framework-wrapper");
   setappFramework.SetappManager.shared.reportUsageEvent(setappFramework.SETAPP_USAGE_EVENT.USER_INTERACTION);
   log.log("[SETAPP] integration complete")
 }
-
 
 // Init remote so that it could be consumed in renderer
 const remote = require("@electron/remote/main");

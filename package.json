@@ -215,6 +215,7 @@
     "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "^9.39.2",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.1",
+    "@sentry/webpack-plugin": "^4.9.0",
     "@teamsupercell/typings-for-css-modules-loader": "^2.5.1",
     "@testing-library/jest-dom": "^5.14.1",
     "@types/enzyme": "^3.10.9",

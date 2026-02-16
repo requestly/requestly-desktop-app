@@ -1,9 +1,31 @@
+// Initialize Sentry for background renderer (must be first)
+import "../utils/sentryInit";
+import logger from "../utils/logger";
 
 const initGlobalNamespace = () => {
   global.rq = global.rq || {};
 };
 
 initGlobalNamespace();
+
+// Global error handlers for background renderer
+process.on("uncaughtException", (error) => {
+  logger.error("[Background Renderer] Uncaught Exception:", error);
+});
+
+process.on("unhandledRejection", (reason, _promise) => {
+  logger.error("[Background Renderer] Unhandled Rejection:", reason);
+});
+
+window.addEventListener("error", (event) => {
+  if(event.error){
+    logger.error("[Background Renderer] Window Error:", event.error);
+  }
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  logger.error("[Background Renderer] Unhandled Promise Rejection:", event.reason);
+});
 
 // ACTIONS
 import initEventHandlers from "./actions/initEventHandlers";
@@ -18,7 +40,7 @@ import { clearStoredLogs } from "./lib/proxy-interface/loggerService";
 // initPrimaryStorageCache();
 initRulesCache();
 initGroupsCache();
-/** IPC  **/
+/* IPC */
 initEventHandlers();
 initAppManager();
 /* stored logs */
