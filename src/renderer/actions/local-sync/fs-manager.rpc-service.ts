@@ -23,9 +23,21 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
   }
 
   async init(): Promise<void> {
+    // [PERF] Start timing for fsManager.init()
+    const fsMgrInitStart = Date.now();
+    console.log(`[PERF] [Desktop] FsManagerRPCService.init() starting for: ${this.rootPath}`);
+    
     try {
+      console.log("[PERF] [Desktop] Calling fsManager.init()...");
       await this.fsManager.init();
+      
+      const fsMgrInitEnd = Date.now();
+      const fsMgrInitDuration = fsMgrInitEnd - fsMgrInitStart;
+      console.log(`[PERF] [Desktop] fsManager.init() completed in ${fsMgrInitDuration}ms`);
     } catch (error) {
+      const fsMgrInitEnd = Date.now();
+      const fsMgrInitDuration = fsMgrInitEnd - fsMgrInitStart;
+      console.error(`[PERF] [Desktop] fsManager.init() failed after ${fsMgrInitDuration}ms:`, error);
       // console.log("FsManagerRPCService init", error);
       throw new Error(
         `Failed to initialize FsManager for ${this.rootPath}: ${
@@ -34,6 +46,10 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
       );
     }
 
+    // [PERF] Start timing for method exposures
+    const exposeStart = Date.now();
+    console.log("[PERF] [Desktop] Exposing RPC methods...");
+    
     this.exposeMethodOverIPC(
       "getAllRecords",
       this.fsManager.getAllRecords.bind(this.fsManager)
@@ -151,7 +167,27 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
       this.fsManager.createCollectionFromCompleteRecord.bind(this.fsManager)
     );
 
-    // hack
+    const exposeEnd = Date.now();
+    const exposeDuration = exposeEnd - exposeStart;
+    console.log(`[PERF] [Desktop] RPC methods exposed in ${exposeDuration}ms`);
+
+    // hack - arbitrary wait
+    console.log("[PERF] [Desktop] Calling waitForInit() (800ms wait)...");
+    const waitStart = Date.now();
     await waitForInit();
+    const waitEnd = Date.now();
+    console.log(`[PERF] [Desktop] waitForInit() completed in ${waitEnd - waitStart}ms`);
+    
+    // [PERF] Total time
+    const totalEnd = Date.now();
+    const totalDuration = totalEnd - fsMgrInitStart;
+    console.log(`[PERF] [Desktop] FsManagerRPCService.init() TOTAL completed in ${totalDuration}ms`);
+    
+    if (totalDuration > 10000) {
+      console.warn(`[PERF] [Desktop] ⚠️ WARNING: FsManagerRPCService.init() took ${totalDuration}ms (>10s)`);
+    }
+    if (totalDuration > 30000) {
+      console.error(`[PERF] [Desktop] ❌ ERROR: FsManagerRPCService.init() took ${totalDuration}ms (>30s). MUTEX TIMEOUT LIKELY!`);
+    }
   }
 }

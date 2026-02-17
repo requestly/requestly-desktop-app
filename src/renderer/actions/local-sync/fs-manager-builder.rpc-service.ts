@@ -34,16 +34,49 @@ export class FsManagerBuilderRPCService extends RPCServiceOverIPC {
   }
 
   async build(rootPath: string) {
+    // [PERF] Desktop: build() started
+    const buildStartTime = Date.now();
+    console.log(`[PERF] [Desktop] FsManagerBuilder.build() started at ${new Date(buildStartTime).toLocaleTimeString()}`);
+    console.log(`[PERF] [Desktop] rootPath: ${rootPath}`);
+    
     if (this.exposedWorkspacePaths.has(rootPath)) {
-      console.log("not building again");
+      console.log("[PERF] [Desktop] Workspace already exposed, skipping rebuild");
       return;
     }
-    const manager = new FsManagerRPCService(
-      rootPath,
-      this.exposedWorkspacePaths
-    );
-    await manager.init();
-    this.exposedWorkspacePaths.set(rootPath, manager);
+    
+    try {
+      const manager = new FsManagerRPCService(
+        rootPath,
+        this.exposedWorkspacePaths
+      );
+      
+      console.log("[PERF] [Desktop] Calling manager.init()...");
+      const initStartTime = Date.now();
+      
+      await manager.init();
+      
+      const initEndTime = Date.now();
+      const initDuration = initEndTime - initStartTime;
+      console.log(`[PERF] [Desktop] manager.init() completed in ${initDuration}ms at ${new Date(initEndTime).toLocaleTimeString()}`);
+      
+      this.exposedWorkspacePaths.set(rootPath, manager);
+      
+      const buildEndTime = Date.now();
+      const buildDuration = buildEndTime - buildStartTime;
+      console.log(`[PERF] [Desktop] FsManagerBuilder.build() completed in ${buildDuration}ms`);
+      
+      if (buildDuration > 10000) {
+        console.warn(`[PERF] [Desktop] ⚠️ WARNING: build() took ${buildDuration}ms (>10s). Workspace may be large.`);
+      }
+      if (buildDuration > 30000) {
+        console.error(`[PERF] [Desktop] ❌ ERROR: build() took ${buildDuration}ms (>30s). MUTEX TIMEOUT LIKELY!`);
+      }
+    } catch (error) {
+      const buildEndTime = Date.now();
+      const buildDuration = buildEndTime - buildStartTime;
+      console.error(`[PERF] [Desktop] ❌ ERROR: build() failed after ${buildDuration}ms:`, error);
+      throw error;
+    }
   }
 
   async reload(rootPath: string) {

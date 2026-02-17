@@ -30,38 +30,52 @@ export class RPCServiceOverIPC {
   ) {
     const channelName = `${this.RPC_CHANNEL_PREFIX}${exposedMethodName}`;
     // console.log("DBG-1: exposing channel", channelName, Date.now());
-    ipcRenderer.on(channelName, async (_event, args) => {
-      // console.log(
-      //   "DBG-1: received event on channel",
-      //   channelName,
-      //   _event,
-      //   args,
-      //   Date.now()
-      // );
-      try {
-        const result = await method(...args);
+    ipcRenderer.on(channelName, async (_event, incomingData) => {
+      // Extract payload and replyChannel (sent by setupIPCForwarding)
+      const { payload: args, replyChannel } = incomingData || {};
+      const actualArgs = args || incomingData; // Fallback for old format
+      const actualReplyChannel = replyChannel || `reply-${channelName}`; // Fallback for old format
 
-        // console.log(
-        //   "DBG-2: result in method",
-        //   result,
-        //   channelName,
-        //   _event,
-        //   args,
-        //   exposedMethodName,
-        //   Date.now()
-        // );
-        ipcRenderer.send(`reply-${channelName}`, {
+      const callId = `${channelName}-${Date.now()}`;
+      const startTime = performance.now();
+      console.log(`[IPC-HANDLER] Received call: ${callId}`, actualArgs);
+
+      try {
+        const result = await method(
+          ...(Array.isArray(actualArgs) ? actualArgs : [actualArgs])
+        );
+        const methodTime = performance.now() - startTime;
+
+        console.log(
+          `[IPC-HANDLER] Method completed in ${methodTime.toFixed(
+            2
+          )}ms, sending reply: ${callId} to ${actualReplyChannel}`
+        );
+        const sendStart = performance.now();
+
+        ipcRenderer.send(actualReplyChannel, {
           success: true,
           data: result,
         });
+
+        const sendTime = performance.now() - sendStart;
+        const totalTime = performance.now() - startTime;
+        console.log(
+          `[IPC-HANDLER] Reply sent in ${sendTime.toFixed(
+            2
+          )}ms, total: ${totalTime.toFixed(2)}ms: ${callId}`
+        );
       } catch (error: any) {
-        // console.log(
-        //   `DBG-2: reply-${channelName} error in method`,
-        //   error,
-        //   Date.now()
-        // );
+        const errorTime = performance.now() - startTime;
+        console.error(
+          `[IPC-HANDLER] Method error after ${errorTime.toFixed(
+            2
+          )}ms: ${callId}`,
+          error
+        );
+
         captureException(error);
-        ipcRenderer.send(`reply-${channelName}`, {
+        ipcRenderer.send(actualReplyChannel, {
           success: false,
           data: error.message,
         });
