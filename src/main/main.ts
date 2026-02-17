@@ -68,6 +68,8 @@ let loadingScreenWindow: BrowserWindow | null = null;
 
 let tray: Tray | null = null;
 
+let customWebAppURL: string | null = null;
+
 const RESOURCES_PATH = app.isPackaged
   ? path.join(process.resourcesPath, "assets")
   : path.join(__dirname, "../../assets");
@@ -199,6 +201,16 @@ export default function createTrayMenu(ip?: string, port?: number) {
   tray.setContextMenu(trayMenu);
 }
 
+const getWebAppURL = (): string => {
+  if (customWebAppURL) {
+    return customWebAppURL;
+  }
+  return "http://localhost:3000";
+  // return isDevelopment
+  //   ? "http://localhost:3000"
+  //   : "https://app.requestly.io";
+};
+
 let closingAccepted = false;
 const createWindow = async () => {
   if (isDevelopment) {
@@ -244,9 +256,7 @@ const createWindow = async () => {
   remote.enable(webAppWindow.webContents);
 
   // TODO @sahil: Prod and Local Urls should be supplied by @requestly/requestly-core-npm package.
-  const DESKTOP_APP_URL = isDevelopment
-    ? "http://localhost:3000"
-    : "https://app.requestly.io";
+  const DESKTOP_APP_URL = getWebAppURL();
   webAppWindow.loadURL(DESKTOP_APP_URL, {
     extraHeaders: "pragma: no-cache\n",
   });
@@ -490,6 +500,38 @@ ipcMain.handle("quit-app", (_event) => {
   closingAccepted = true;
   webAppWindow?.close();
 });
+
+export const recreateWebAppWindow = async (newURL: string) => {
+  try {
+    logger.info("Changing web app URL to: " + newURL);
+    
+    if (!webAppWindow || webAppWindow.isDestroyed()) {
+      logger.error("webAppWindow is not available");
+      throw new Error("Window is not available");
+    }
+    
+    // Set the custom URL for this session
+    customWebAppURL = newURL;
+    
+    // Load the new URL - this will create a fresh renderer process
+    await webAppWindow.loadURL(newURL, {
+      extraHeaders: "pragma: no-cache\n",
+    });
+    
+    logger.info("New URL loaded successfully");
+    
+    // Show the window if it's hidden
+    if (!webAppWindow.isVisible()) {
+      webAppWindow.show();
+    }
+    
+    webAppWindow.focus();
+    
+  } catch (error) {
+    logger.error("Error changing web app URL: " + error);
+    throw error;
+  }
+};
 
 app.on("before-quit", () => {
   // cleanup when quitting has been finalised
