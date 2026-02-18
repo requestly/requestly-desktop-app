@@ -1,32 +1,55 @@
 import { ipcMain } from "electron";
 
-// Track background readiness state and buffer calls until ready
+// --- Background readiness protocol ---
+// Buffer IPC calls until the background process signals it's ready.
+// This eliminates the ~30s Electron IPC queue delay that caused mutex timeouts.
 let isBackgroundReady = false;
 const pendingCalls = [];
+const BACKGROUND_READY_TIMEOUT_MS = 30_000;
+const PER_CALL_TIMEOUT_MS = 60_000;
 
 export const setupIPCForwardingToBackground = (backgroundWindow) => {
-  // Listen for readiness signal from background process
+  // Safety net: if background never signals ready, reject all buffered calls
+  // rather than hanging forever (e.g., background crashes during init)
+  const readyTimeoutId = setTimeout(() => {
+    if (!isBackgroundReady) {
+      while (pendingCalls.length > 0) {
+        const { resolve } = pendingCalls.shift();
+        resolve({
+          success: false,
+          data: "Background process failed to initialize in time",
+        });
+      }
+    }
+  }, BACKGROUND_READY_TIMEOUT_MS);
+
   ipcMain.once("background-process-ready", () => {
-    console.log(
-      `[IPC-MAIN] Background process is ready, flushing ${pendingCalls.length} buffered calls`
-    );
+    clearTimeout(readyTimeoutId);
     isBackgroundReady = true;
 
-    // Flush all buffered calls
+    // Flush all buffered calls in order
     while (pendingCalls.length > 0) {
-      const { eventName, actualPayload, replyChannel, callId, resolve } =
-        pendingCalls.shift();
-      console.log(
-        `[IPC-MAIN] Flushing buffered call: ${eventName} (${callId})`
-      );
-      forwardToBackground(
-        backgroundWindow,
+      const {
         eventName,
         actualPayload,
         replyChannel,
         callId,
-        resolve
-      );
+        resolve,
+        startTime,
+      } = pendingCalls.shift();
+      try {
+        forwardToBackground(
+          backgroundWindow,
+          eventName,
+          actualPayload,
+          replyChannel,
+          callId,
+          resolve,
+          startTime
+        );
+      } catch (err) {
+        resolve({ success: false, data: `Flush error: ${err.message}` });
+      }
     }
   });
 
@@ -35,21 +58,15 @@ export const setupIPCForwardingToBackground = (backgroundWindow) => {
     async (event, incomingData) => {
       const { actualPayload, eventName } = incomingData;
 
-      // Generate unique reply channel for this specific call to avoid race conditions
-      const callId = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      // Unique reply channel per call to prevent race conditions with concurrent calls
+      const callId = `${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(7)}`;
       const replyChannel = `reply-${eventName}-${callId}`;
-
       const startTime = performance.now();
-      console.log(
-        `[IPC-MAIN] Forwarding to background: ${eventName} (call: ${callId})`
-      );
 
       return new Promise((resolve) => {
         if (!isBackgroundReady) {
-          // Buffer this call until background is ready
-          console.log(
-            `[IPC-MAIN] Background not ready yet, buffering call: ${eventName} (${callId})`
-          );
           pendingCalls.push({
             eventName,
             actualPayload,
@@ -61,7 +78,6 @@ export const setupIPCForwardingToBackground = (backgroundWindow) => {
           return;
         }
 
-        // Background is ready, forward immediately
         forwardToBackground(
           backgroundWindow,
           eventName,
@@ -76,7 +92,6 @@ export const setupIPCForwardingToBackground = (backgroundWindow) => {
   );
 };
 
-// Helper function to actually forward to background
 function forwardToBackground(
   backgroundWindow,
   eventName,
@@ -86,90 +101,39 @@ function forwardToBackground(
   resolve,
   startTime = performance.now()
 ) {
-  // Use unique reply channel per call
+  // Safety: clean up listener if background never replies (crash, unhandled error, etc.)
+  const callTimeoutId = setTimeout(() => {
+    ipcMain.removeAllListeners(replyChannel);
+    resolve({ success: false, data: `IPC call timed out: ${eventName}` });
+  }, PER_CALL_TIMEOUT_MS);
+
   ipcMain.once(replyChannel, (responseEvent, responsePayload) => {
-    const replyReceiveTime = performance.now() - startTime;
-    console.log(
-      `[IPC-MAIN] Got reply from background after ${replyReceiveTime.toFixed(
-        2
-      )}ms: ${eventName} (call: ${callId})`
-    );
-
-    const resolveStart = performance.now();
+    clearTimeout(callTimeoutId);
     resolve(responsePayload);
-
-    const resolveTime = performance.now() - resolveStart;
-    const totalTime = performance.now() - startTime;
-    console.log(
-      `[IPC-MAIN] Resolved promise in ${resolveTime.toFixed(
-        2
-      )}ms, total: ${totalTime.toFixed(2)}ms: ${eventName} (call: ${callId})`
-    );
   });
 
-  const sendStart = performance.now();
-  // Send both eventName and replyChannel so background knows where to reply
-  backgroundWindow.webContents.send(eventName, {
-    payload: actualPayload,
-    replyChannel,
-  });
-  const sendTime = performance.now() - sendStart;
-  console.log(
-    `[IPC-MAIN] Sent to background in ${sendTime.toFixed(
-      2
-    )}ms: ${eventName} (call: ${callId})`
-  );
+  try {
+    backgroundWindow.webContents.send(eventName, {
+      payload: actualPayload,
+      replyChannel,
+    });
+  } catch (err) {
+    clearTimeout(callTimeoutId);
+    ipcMain.removeAllListeners(replyChannel);
+    resolve({ success: false, data: `Send failed: ${err.message}` });
+  }
 }
 
 export const setupIPCForwardingToWebApp = (webAppWindow) => {
   ipcMain.handle(
     "forward-event-from-background-to-webapp-and-await-reply",
     async (event, incomingData) => {
-      const { actualPayload, eventName } = incomingData;
-
-      // Generate unique reply channel for this specific call
-      const callId = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
-      const replyChannel = `reply-${eventName}-${callId}`;
-
-      const startTime = performance.now();
-      console.log(
-        `[IPC-MAIN] Forwarding to webapp: ${eventName} (call: ${callId})`
-      );
-
       return new Promise((resolve) => {
-        ipcMain.once(replyChannel, (responseEvent, responsePayload) => {
-          const replyReceiveTime = performance.now() - startTime;
-          console.log(
-            `[IPC-MAIN] Got reply from webapp after ${replyReceiveTime.toFixed(
-              2
-            )}ms: ${eventName} (call: ${callId})`
-          );
-
-          const resolveStart = performance.now();
+        const { actualPayload, eventName } = incomingData;
+        ipcMain.once(`reply-${eventName}`, (responseEvent, responsePayload) => {
           resolve(responsePayload);
-
-          const resolveTime = performance.now() - resolveStart;
-          const totalTime = performance.now() - startTime;
-          console.log(
-            `[IPC-MAIN] Resolved promise in ${resolveTime.toFixed(
-              2
-            )}ms, total: ${totalTime.toFixed(
-              2
-            )}ms: ${eventName} (call: ${callId})`
-          );
         });
-
-        const sendStart = performance.now();
-        webAppWindow.webContents.send(eventName, {
-          payload: actualPayload,
-          replyChannel,
-        });
-        const sendTime = performance.now() - sendStart;
-        console.log(
-          `[IPC-MAIN] Sent to webapp in ${sendTime.toFixed(
-            2
-          )}ms: ${eventName} (call: ${callId})`
-        );
+        webAppWindow.webContents.send(eventName, actualPayload);
       });
     }
   );

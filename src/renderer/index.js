@@ -19,16 +19,13 @@ process.on("unhandledRejection", (reason, _promise) => {
 });
 
 window.addEventListener("error", (event) => {
-  if (event.error) {
+  if(event.error){
     logger.error("[Background Renderer] Window Error:", event.error);
   }
 });
 
 window.addEventListener("unhandledrejection", (event) => {
-  logger.error(
-    "[Background Renderer] Unhandled Promise Rejection:",
-    event.reason
-  );
+  logger.error("[Background Renderer] Unhandled Promise Rejection:", event.reason);
 });
 
 // ACTIONS
@@ -40,8 +37,6 @@ import { initAppManager } from "./actions/apps";
 import "./types";
 import { FsManagerBuilderRPCService } from "./actions/local-sync/fs-manager-builder.rpc-service";
 import { clearStoredLogs } from "./lib/proxy-interface/loggerService";
-
-console.log("[BACKGROUND] Starting initialization...");
 
 // initPrimaryStorageCache();
 initRulesCache();
@@ -62,8 +57,4 @@ clearStoredLogs();
 new FsManagerBuilderRPCService();
 
 // Signal to main process that background is fully initialized and ready to receive IPC calls
-console.log(
-  "[BACKGROUND] All RPC handlers registered, signaling ready state to main process"
-);
 ipcRenderer.send("background-process-ready");
-console.log("[BACKGROUND] Ready signal sent");

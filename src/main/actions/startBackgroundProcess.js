@@ -56,31 +56,29 @@ const startBackgroundProcess = async () => {
     global.backgroundWindow = backgroundWindow;
 
     // Load background code
-    console.log("[MAIN] Starting to load background window...");
     backgroundWindow.loadURL(resolveBackgroundPath("index.html"));
 
     // Open the DevTools in dev mode
     if (
       process.env.NODE_ENV === "development" ||
       process.env.DEBUG_PROD === "true"
-    ) {
-      backgroundWindow.webContents.once("dom-ready", () => {
-        console.log("[MAIN] Background window DOM ready");
+    )
+    {
+      backgroundWindow.webContents.once('dom-ready', () => {
         backgroundWindow.webContents.openDevTools();
-      });
+      })
     }
 
-    // Setup IPC forwarding BEFORE background loads
-    console.log("[MAIN] Setting up IPC forwarding to background...");
+    // Setup IPC forwarding
     setupIPCForwardingToBackground(backgroundWindow);
-    console.log("[MAIN] IPC forwarding set up");
+
+    // Set state
+    global.isBackgroundProcessActive = true;
 
     backgroundWindow.webContents.on("did-finish-load", () => {
-      console.log("[MAIN] Background window finished loading");
-      // Set state AFTER background finishes loading
-      global.isBackgroundProcessActive = true;
       resolve(true);
     });
+
   });
 };
 
