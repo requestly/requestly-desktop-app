@@ -205,10 +205,9 @@ const getWebAppURL = (): string => {
   if (customWebAppURL) {
     return customWebAppURL;
   }
-  return "http://localhost:3000";
-  // return isDevelopment
-  //   ? "http://localhost:3000"
-  //   : "https://app.requestly.io";
+  return isDevelopment
+    ? "http://localhost:3000"
+    : "https://app.requestly.io";
 };
 
 let closingAccepted = false;
