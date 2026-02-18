@@ -507,11 +507,11 @@ export const recreateWebAppWindow = async (newURL: string) => {
       throw new Error("Window is not available");
     }
     
-    customWebAppURL = newURL;
-
     await webAppWindow.loadURL(newURL, {
       extraHeaders: "pragma: no-cache\n",
     });
+    
+    customWebAppURL = newURL;
     
     if (!webAppWindow.isVisible()) {
       webAppWindow.show();
