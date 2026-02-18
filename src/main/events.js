@@ -217,7 +217,7 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
       try {
         parsedUrl = new URL(url);
       } catch (e) {
-        return { success: false, error: "Invalid URL format" };
+        return { success: false, error: e?.message };
       }
 
       const allowedSchemes = ["http:", "https:"];
