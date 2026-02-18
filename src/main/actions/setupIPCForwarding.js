@@ -8,15 +8,32 @@ const pendingCalls = [];
 const BACKGROUND_READY_TIMEOUT_MS = 30_000;
 const PER_CALL_TIMEOUT_MS = 60_000;
 
+// Module-scoped refs so they can be cleaned up on background restart
+let readyTimeoutId = null;
+let onBackgroundReady = null;
+
+const IPC_FORWARD_CHANNEL = "forward-event-from-webapp-to-background-and-await-reply";
+
 export const setupIPCForwardingToBackground = (backgroundWindow) => {
-  // Reset state in case background process was restarted
+  // Clean up previous invocation's timer and listener (background restart scenario)
+  if (readyTimeoutId !== null) {
+    clearTimeout(readyTimeoutId);
+    readyTimeoutId = null;
+  }
+  if (onBackgroundReady !== null) {
+    ipcMain.removeListener("background-process-ready", onBackgroundReady);
+    onBackgroundReady = null;
+  }
+  ipcMain.removeHandler(IPC_FORWARD_CHANNEL);
+
+  // Reset state
   isBackgroundReady = false;
   isBackgroundFailed = false;
   pendingCalls.length = 0;
 
   // Safety net: if background never signals ready, reject all buffered calls
   // and mark as failed so new calls are rejected immediately
-  const readyTimeoutId = setTimeout(() => {
+  readyTimeoutId = setTimeout(() => {
     if (!isBackgroundReady) {
       isBackgroundFailed = true;
       while (pendingCalls.length > 0) {
@@ -29,48 +46,41 @@ export const setupIPCForwardingToBackground = (backgroundWindow) => {
     }
   }, BACKGROUND_READY_TIMEOUT_MS);
 
-  ipcMain.once("background-process-ready", () => {
+  onBackgroundReady = () => {
     clearTimeout(readyTimeoutId);
+    readyTimeoutId = null;
     isBackgroundReady = true;
     isBackgroundFailed = false;
 
     // Flush all buffered calls in order
     while (pendingCalls.length > 0) {
-      const {
-        eventName,
-        actualPayload,
-        replyChannel,
-        callId,
-        resolve,
-        startTime,
-      } = pendingCalls.shift();
+      const { eventName, actualPayload, replyChannel, resolve } =
+        pendingCalls.shift();
       try {
         forwardToBackground(
           backgroundWindow,
           eventName,
           actualPayload,
           replyChannel,
-          callId,
-          resolve,
-          startTime
+          resolve
         );
       } catch (err) {
         resolve({ success: false, data: `Flush error: ${err.message}` });
       }
     }
-  });
+  };
+
+  ipcMain.once("background-process-ready", onBackgroundReady);
 
   ipcMain.handle(
-    "forward-event-from-webapp-to-background-and-await-reply",
+    IPC_FORWARD_CHANNEL,
     async (event, incomingData) => {
       const { actualPayload, eventName } = incomingData;
 
-      // Unique reply channel per call to prevent race conditions with concurrent calls
-      const callId = `${Date.now()}-${Math.random()
-        .toString(36)
-        .substring(7)}`;
+      // Unique reply channel per call to prevent concurrent calls to the same
+      // method from stealing each other's responses via shared ipcMain.once listeners
+      const callId = `${Date.now()}-${Math.random().toString(36).substring(2)}`;
       const replyChannel = `reply-${eventName}-${callId}`;
-      const startTime = performance.now();
 
       return new Promise((resolve) => {
         // If background failed to init, reject immediately instead of buffering forever
@@ -87,9 +97,7 @@ export const setupIPCForwardingToBackground = (backgroundWindow) => {
             eventName,
             actualPayload,
             replyChannel,
-            callId,
             resolve,
-            startTime,
           });
           return;
         }
@@ -99,9 +107,7 @@ export const setupIPCForwardingToBackground = (backgroundWindow) => {
           eventName,
           actualPayload,
           replyChannel,
-          callId,
-          resolve,
-          startTime
+          resolve
         );
       });
     }
@@ -113,9 +119,7 @@ function forwardToBackground(
   eventName,
   actualPayload,
   replyChannel,
-  callId,
-  resolve,
-  startTime = performance.now()
+  resolve
 ) {
   // Safety: clean up listener if background never replies (crash, unhandled error, etc.)
   const callTimeoutId = setTimeout(() => {
