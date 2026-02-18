@@ -2,17 +2,23 @@ import { ipcMain } from "electron";
 
 // --- Background readiness protocol ---
 // Buffer IPC calls until the background process signals it's ready.
-// This eliminates the ~30s Electron IPC queue delay that caused mutex timeouts.
 let isBackgroundReady = false;
+let isBackgroundFailed = false;
 const pendingCalls = [];
 const BACKGROUND_READY_TIMEOUT_MS = 30_000;
 const PER_CALL_TIMEOUT_MS = 60_000;
 
 export const setupIPCForwardingToBackground = (backgroundWindow) => {
+  // Reset state in case background process was restarted
+  isBackgroundReady = false;
+  isBackgroundFailed = false;
+  pendingCalls.length = 0;
+
   // Safety net: if background never signals ready, reject all buffered calls
-  // rather than hanging forever (e.g., background crashes during init)
+  // and mark as failed so new calls are rejected immediately
   const readyTimeoutId = setTimeout(() => {
     if (!isBackgroundReady) {
+      isBackgroundFailed = true;
       while (pendingCalls.length > 0) {
         const { resolve } = pendingCalls.shift();
         resolve({
@@ -26,6 +32,7 @@ export const setupIPCForwardingToBackground = (backgroundWindow) => {
   ipcMain.once("background-process-ready", () => {
     clearTimeout(readyTimeoutId);
     isBackgroundReady = true;
+    isBackgroundFailed = false;
 
     // Flush all buffered calls in order
     while (pendingCalls.length > 0) {
@@ -66,6 +73,15 @@ export const setupIPCForwardingToBackground = (backgroundWindow) => {
       const startTime = performance.now();
 
       return new Promise((resolve) => {
+        // If background failed to init, reject immediately instead of buffering forever
+        if (isBackgroundFailed) {
+          resolve({
+            success: false,
+            data: "Background process is not available",
+          });
+          return;
+        }
+
         if (!isBackgroundReady) {
           pendingCalls.push({
             eventName,
