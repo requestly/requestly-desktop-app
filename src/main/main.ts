@@ -500,7 +500,7 @@ ipcMain.handle("quit-app", (_event) => {
   webAppWindow?.close();
 });
 
-export const recreateWebAppWindow = async (newURL: string) => {
+export const loadWebAppUrl = async (newURL: string) => {
   try {
     
     if (!webAppWindow || webAppWindow.isDestroyed()) {

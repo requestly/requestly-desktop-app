@@ -22,7 +22,7 @@ import { createOrUpdateAxiosInstance } from "./actions/getProxiedAxios";
 // todo: refactor main.ts to only export core entities like webappWindow
 // and then build these utilites elsewhere
 // eslint-disable-next-line import/no-cycle
-import createTrayMenu, { recreateWebAppWindow } from "./main";
+import createTrayMenu, { loadWebAppUrl } from "./main";
 
 const getFileCategory = (fileExtension) => {
   switch (fileExtension) {
@@ -228,7 +228,7 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
         };
       }
 
-      await recreateWebAppWindow(url);
+      await loadWebAppUrl(url);
       
       return { success: true };
     } catch (error) {
