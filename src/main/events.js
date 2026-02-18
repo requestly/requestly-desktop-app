@@ -210,15 +210,24 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
   ipcMain.handle("change-webapp-url", async (event, payload) => {
     try {
       const { url } = payload;
-      
       if (!url || typeof url !== "string") {
         return { success: false, error: "Invalid URL provided" };
       }
+      let parsedUrl;
       try {
-        new URL(url);
+        parsedUrl = new URL(url);
       } catch (e) {
         return { success: false, error: "Invalid URL format" };
       }
+
+      const allowedSchemes = ["http:", "https:"];
+      if (!allowedSchemes.includes(parsedUrl.protocol)) {
+        return { 
+          success: false, 
+          error: `Invalid URL scheme. Only http and https are allowed, got: ${parsedUrl.protocol}` 
+        };
+      }
+
       await recreateWebAppWindow(url);
       
       return { success: true };

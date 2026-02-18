@@ -503,24 +503,17 @@ ipcMain.handle("quit-app", (_event) => {
 
 export const recreateWebAppWindow = async (newURL: string) => {
   try {
-    logger.info("Changing web app URL to: " + newURL);
     
     if (!webAppWindow || webAppWindow.isDestroyed()) {
-      logger.error("webAppWindow is not available");
       throw new Error("Window is not available");
     }
     
-    // Set the custom URL for this session
     customWebAppURL = newURL;
-    
-    // Load the new URL - this will create a fresh renderer process
+
     await webAppWindow.loadURL(newURL, {
       extraHeaders: "pragma: no-cache\n",
     });
     
-    logger.info("New URL loaded successfully");
-    
-    // Show the window if it's hidden
     if (!webAppWindow.isVisible()) {
       webAppWindow.show();
     }
