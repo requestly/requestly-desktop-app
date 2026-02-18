@@ -232,8 +232,7 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
       
       return { success: true };
     } catch (error) {
-      console.error("Error changing webapp URL:", error);
-      return { success: false, error: error.message };
+      return { success: false, error: error?.message ?? "Error changing webapp URL:" };
     }
   });
 

@@ -520,7 +520,6 @@ export const recreateWebAppWindow = async (newURL: string) => {
     webAppWindow.focus();
     
   } catch (error) {
-    logger.error("Error changing web app URL: " + error);
     throw error;
   }
 };
