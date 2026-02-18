@@ -501,27 +501,21 @@ ipcMain.handle("quit-app", (_event) => {
 });
 
 export const loadWebAppUrl = async (newURL: string) => {
-  try {
-    
-    if (!webAppWindow || webAppWindow.isDestroyed()) {
-      throw new Error("Web app window is not available");
-    }
-    
-    await webAppWindow.loadURL(newURL, {
-      extraHeaders: "pragma: no-cache\n",
-    });
-    
-    customWebAppURL = newURL;
-    
-    if (!webAppWindow.isVisible()) {
-      webAppWindow.show();
-    }
-    
-    webAppWindow.focus();
-    
-  } catch (error) {
-    throw error;
+  if (!webAppWindow || webAppWindow.isDestroyed()) {
+    throw new Error("Web app window is not available");
   }
+  
+  await webAppWindow.loadURL(newURL, {
+    extraHeaders: "pragma: no-cache\n",
+  });
+  
+  customWebAppURL = newURL;
+  
+  if (!webAppWindow.isVisible()) {
+    webAppWindow.show();
+  }
+  
+  webAppWindow.focus();
 };
 
 app.on("before-quit", () => {
