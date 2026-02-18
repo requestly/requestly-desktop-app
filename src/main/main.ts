@@ -504,7 +504,7 @@ export const recreateWebAppWindow = async (newURL: string) => {
   try {
     
     if (!webAppWindow || webAppWindow.isDestroyed()) {
-      throw new Error("Window is not available");
+      throw new Error("Web app window is not available");
     }
     
     await webAppWindow.loadURL(newURL, {
