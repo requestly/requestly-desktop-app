@@ -211,23 +211,9 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
     try {
       const { url } = payload;
       if (!url || typeof url !== "string") {
+        new URL(url);
         return { success: false, error: "Invalid URL provided" };
       }
-      let parsedUrl;
-      try {
-        parsedUrl = new URL(url);
-      } catch (e) {
-        return { success: false, error: e?.message };
-      }
-
-      const allowedSchemes = ["http:", "https:"];
-      if (!allowedSchemes.includes(parsedUrl.protocol)) {
-        return { 
-          success: false, 
-          error: `Invalid URL scheme. Only http and https are allowed, got: ${parsedUrl.protocol}` 
-        };
-      }
-
       await loadWebAppUrl(url);
       
       return { success: true };
