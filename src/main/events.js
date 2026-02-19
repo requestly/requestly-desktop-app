@@ -22,7 +22,7 @@ import { createOrUpdateAxiosInstance } from "./actions/getProxiedAxios";
 // todo: refactor main.ts to only export core entities like webappWindow
 // and then build these utilites elsewhere
 // eslint-disable-next-line import/no-cycle
-import createTrayMenu from "./main";
+import createTrayMenu, { loadWebAppUrl } from "./main";
 
 const getFileCategory = (fileExtension) => {
   switch (fileExtension) {
@@ -205,6 +205,21 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
     );
     fs.unlinkSync(pathToCurrentCA);
     webAppWindow?.close();
+  });
+
+  ipcMain.handle("change-webapp-url", async (event, payload) => {
+    try {
+      const { url } = payload;
+      if (!url || typeof url !== "string") {
+        new URL(url);
+        return { success: false, error: "Invalid URL provided" };
+      }
+      await loadWebAppUrl(url);
+      
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error?.message ?? "Error changing webapp URL:" };
+    }
   });
 
   ipcMain.handle("browse-and-load-file", (event, payload) => {

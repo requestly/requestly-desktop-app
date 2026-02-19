@@ -68,6 +68,8 @@ let loadingScreenWindow: BrowserWindow | null = null;
 
 let tray: Tray | null = null;
 
+let customWebAppURL: string | null = null;
+
 const RESOURCES_PATH = app.isPackaged
   ? path.join(process.resourcesPath, "assets")
   : path.join(__dirname, "../../assets");
@@ -199,6 +201,15 @@ export default function createTrayMenu(ip?: string, port?: number) {
   tray.setContextMenu(trayMenu);
 }
 
+const getWebAppURL = (): string => {
+  if (customWebAppURL) {
+    return customWebAppURL;
+  }
+  return isDevelopment
+    ? "http://localhost:3000"
+    : "https://app.requestly.io";
+};
+
 let closingAccepted = false;
 const createWindow = async () => {
   if (isDevelopment) {
@@ -244,9 +255,7 @@ const createWindow = async () => {
   remote.enable(webAppWindow.webContents);
 
   // TODO @sahil: Prod and Local Urls should be supplied by @requestly/requestly-core-npm package.
-  const DESKTOP_APP_URL = isDevelopment
-    ? "http://localhost:3000"
-    : "https://app.requestly.io";
+  const DESKTOP_APP_URL = getWebAppURL();
   webAppWindow.loadURL(DESKTOP_APP_URL, {
     extraHeaders: "pragma: no-cache\n",
   });
@@ -490,6 +499,24 @@ ipcMain.handle("quit-app", (_event) => {
   closingAccepted = true;
   webAppWindow?.close();
 });
+
+export const loadWebAppUrl = async (newURL: string) => {
+  if (!webAppWindow || webAppWindow.isDestroyed()) {
+    throw new Error("Web app window is not available");
+  }
+  
+  await webAppWindow.loadURL(newURL, {
+    extraHeaders: "pragma: no-cache\n",
+  });
+  
+  customWebAppURL = newURL;
+  
+  if (!webAppWindow.isVisible()) {
+    webAppWindow.show();
+  }
+  
+  webAppWindow.focus();
+};
 
 app.on("before-quit", () => {
   // cleanup when quitting has been finalised
