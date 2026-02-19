@@ -2,7 +2,7 @@
 
 ## File Structure
 
-```
+```text
 assets/
 ├── AppIcon.png              # Mac master source (1024x1024) - for icns generation & SetApp
 ├── prep-icons.sh            # Generate icon.icns from AppIcon.png
