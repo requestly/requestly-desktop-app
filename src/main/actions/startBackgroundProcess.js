@@ -88,7 +88,7 @@ const startBackgroundProcess = async () => {
     const originalDestroy = backgroundWindow.destroy.bind(backgroundWindow);
     backgroundWindow.destroy = () => {
       // Allow destruction if we're in quit mode
-      if (global.allowBackgroundWindowDestruction) {
+      if (global.allowBackgroundWindowDestruction && !backgroundWindow.isDestroyed()) {
         originalDestroy();
         return;
       }
