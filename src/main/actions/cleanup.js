@@ -19,11 +19,30 @@ export const getReadyToQuitApp = async  () => {
     cleanup();
   
     if (global.backgroundWindow) {
+      // Set flag to allow background window destruction
+      global.allowBackgroundWindowDestruction = true;
+      
       ipcMain.once("shutdown-success", () => {
-        console.log("shudown sucess");
-        global.backgroundWindow?.close();
+        // When app is actually quitting, use the original destroy
+        if (global.backgroundWindow._originalDestroy) {
+          global.backgroundWindow._originalDestroy();
+        } else {
+          global.backgroundWindow.destroy();
+        }
         resolve()
       });
+      
+      // Timeout fallback in case shutdown-success never comes
+      setTimeout(() => {
+        if (global.backgroundWindow && !global.backgroundWindow.isDestroyed()) {
+          if (global.backgroundWindow._originalDestroy) {
+            global.backgroundWindow._originalDestroy();
+          } else {
+            global.backgroundWindow.destroy();
+          }
+        }
+        resolve();
+      }, 2000);
     } else {
       resolve();
     }

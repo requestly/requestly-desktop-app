@@ -69,11 +69,55 @@ const startBackgroundProcess = async () => {
       })
     }
 
+    // Prevent closing - hide instead of destroying the window
+    const closeHandler = (event) => {
+      event.preventDefault();
+      event.returnValue = false;
+      if (!backgroundWindow.isDestroyed()) {
+        backgroundWindow.hide();
+      }
+      return false;
+    };
+    
+    backgroundWindow.on("close", closeHandler);
+    
+    // Store the close handler so it can't be easily removed
+    backgroundWindow._preventCloseHandler = closeHandler;
+
+    // Override the destroy method to prevent accidental destruction
+    const originalDestroy = backgroundWindow.destroy.bind(backgroundWindow);
+    backgroundWindow.destroy = () => {
+      // Allow destruction if we're in quit mode
+      if (global.allowBackgroundWindowDestruction) {
+        originalDestroy();
+        return;
+      }
+      if (!backgroundWindow.isDestroyed()) {
+        backgroundWindow.hide();
+      }
+    };
+
+    // Store reference to restore destroy if really needed during app quit
+    backgroundWindow._originalDestroy = originalDestroy;
+    
+    // Override removeAllListeners to prevent removal of close handler
+    const originalRemoveAllListeners = backgroundWindow.removeAllListeners.bind(backgroundWindow);
+    backgroundWindow.removeAllListeners = (eventName) => {
+      if (eventName === 'close' || eventName === undefined) {
+        // Re-attach the close handler after removal
+        originalRemoveAllListeners.call(backgroundWindow, eventName);
+        backgroundWindow.on("close", closeHandler);
+        return backgroundWindow;
+      }
+      return originalRemoveAllListeners.call(backgroundWindow, eventName);
+    };
+
     // Setup IPC forwarding
     setupIPCForwardingToBackground(backgroundWindow);
 
     // Set state
     global.isBackgroundProcessActive = true;
+    global.backgroundProcessStarted = true;
 
     backgroundWindow.webContents.on("did-finish-load", () => {
       resolve(true);
