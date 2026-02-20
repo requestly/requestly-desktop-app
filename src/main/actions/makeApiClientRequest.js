@@ -24,7 +24,7 @@ const makeApiClientRequest = async ({ apiRequest }) => {
     });
 
     if (
-      !["GET", "HEAD"].includes(method) &&
+      method !== "HEAD" &&
       apiRequest.contentType === "application/x-www-form-urlencoded"
     ) {
       const formData = new FormData();
