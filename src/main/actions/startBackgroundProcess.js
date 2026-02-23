@@ -64,9 +64,18 @@ const startBackgroundProcess = async () => {
       process.env.DEBUG_PROD === "true"
     )
     {
-      backgroundWindow.webContents.once('dom-ready', () => {
+      // Use 'on' (not 'once') so DevTools opens on every page load/reload
+      backgroundWindow.webContents.on('dom-ready', () => {
         backgroundWindow.webContents.openDevTools();
-      })
+      });
+
+      // Re-open DevTools when the window is shown again after being hidden,
+      // since dom-ready won't fire again if the page is already loaded
+      backgroundWindow.on('show', () => {
+        if (!backgroundWindow.isDestroyed() && !backgroundWindow.webContents.isDevToolsOpened()) {
+          backgroundWindow.webContents.openDevTools();
+        }
+      });
     }
 
     // Prevent closing - hide instead of destroying the window
