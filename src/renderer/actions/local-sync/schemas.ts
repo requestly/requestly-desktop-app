@@ -125,6 +125,7 @@ export const Description = Type.String();
 
 export const BaseRequest = Type.Object({
   url: Type.String(),
+  rank: Type.Optional(Type.String()),
   auth: Auth,
   scripts: Type.Optional(
     Type.Object({
@@ -172,6 +173,7 @@ export const ApiRequest = Type.Union([HttpRequest, GraphQLRequest]);
 
 export const ApiRecord = Type.Object({
   name: Type.String(),
+  rank: Type.Optional(Type.String()),
   request: ApiRequest,
 });
 
