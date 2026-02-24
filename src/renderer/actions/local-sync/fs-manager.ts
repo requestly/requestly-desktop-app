@@ -28,6 +28,7 @@ import {
   getFileNameFromPath,
   getIfFileExists,
   getParentFolderPath,
+  parseExampleContentIntoRecord,
   parseFile,
   parseFileRaw,
   parseFileResultToApi,
@@ -52,6 +53,7 @@ import {
   ApiEntryType,
   RequestContentType,
   ApiMethods,
+  ExampleRecord,
 } from "./schemas";
 import {
   API,
@@ -62,6 +64,7 @@ import {
   EnvironmentVariableValue,
   ErrorCode,
   ErroredRecord,
+  ExampleAPI,
   FileResource,
   FileSystemResult,
   FileTypeEnum,
@@ -76,6 +79,7 @@ import {
   ReadmeRecordFileType,
 } from "./file-types/file-types";
 import { isEmpty } from "lodash";
+import { v4 as uuidv4 } from "uuid";
 import { HandleError } from "./decorators/handle-error.decorator";
 import { FsIgnoreManager } from "./fsIgnore-manager";
 import { fileIndex } from "./file-index";
@@ -678,38 +682,83 @@ export class FsManager {
     const erroredRecords: ErroredRecord[] = [];
     // eslint-disable-next-line
     for (const resource of resourceContainerResult.content) {
-      const entityParsingResult: FileSystemResult<APIEntity> | undefined =
-        await (async () => {
-          if (resource.type === "folder") {
-            return parseFolderToCollection(this.rootPath, resource).then(
-              (result) =>
-                mapSuccessfulFsResult(
-                  result,
-                  (successfulResult) => successfulResult.content
-                )
-            );
-          }
-          return parseFileToApi(this.rootPath, resource).then((result) =>
-            mapSuccessfulFsResult(
-              result,
-              (successfulResult) => successfulResult.content
-            )
-          );
-        })();
+      if (resource.type === "folder") {
+        const entityParsingResult = await parseFolderToCollection(
+          this.rootPath,
+          resource
+        ).then((result) =>
+          mapSuccessfulFsResult(
+            result,
+            (successfulResult) => successfulResult.content
+          )
+        );
 
-      if (entityParsingResult?.type === "error") {
-        erroredRecords.push({
-          name: getFileNameFromPath(entityParsingResult.error.path),
-          path: entityParsingResult.error.path,
-          error: entityParsingResult.error.message,
-          type: entityParsingResult.error.fileType,
+        if (entityParsingResult?.type === "error") {
+          erroredRecords.push({
+            name: getFileNameFromPath(entityParsingResult.error.path),
+            path: entityParsingResult.error.path,
+            error: entityParsingResult.error.message,
+            type: entityParsingResult.error.fileType,
+          });
+          // eslint-disable-next-line
+          continue;
+        }
+
+        if (entityParsingResult) {
+          entities.push(entityParsingResult.content);
+        }
+      } else {
+        const fileResult = await parseFile({
+          resource,
+          fileType: new ApiRecordFileType(),
         });
-        // eslint-disable-next-line
-        continue;
-      }
 
-      if (entityParsingResult) {
-        entities.push(entityParsingResult.content);
+        if (fileResult.type === "error") {
+          erroredRecords.push({
+            name: getFileNameFromPath(fileResult.error.path),
+            path: fileResult.error.path,
+            error: fileResult.error.message,
+            type: fileResult.error.fileType,
+          });
+          // eslint-disable-next-line
+          continue;
+        }
+
+        const apiResult = parseFileResultToApi(
+          this.rootPath,
+          resource,
+          fileResult
+        );
+
+        if (apiResult.type === "error") {
+          erroredRecords.push({
+            name: getFileNameFromPath(apiResult.error.path),
+            path: apiResult.error.path,
+            error: apiResult.error.message,
+            type: apiResult.error.fileType,
+          });
+          // eslint-disable-next-line
+          continue;
+        }
+
+        entities.push(apiResult.content);
+
+        const { content: record } = fileResult;
+        if (record.examples) {
+          const parentRequestId = getIdFromPath(resource.path);
+          for (const [exampleId, exampleContent] of Object.entries(
+            record.examples
+          )) {
+            const exampleResult = parseExampleContentIntoRecord(
+              exampleContent,
+              exampleId,
+              parentRequestId
+            );
+            if (exampleResult.type === "success") {
+              entities.push(exampleResult.content);
+            }
+          }
+        }
       }
     }
 
@@ -1567,5 +1616,170 @@ export class FsManager {
     }
 
     return parseFolderToCollection(this.rootPath, collectionFolder);
+  }
+
+  @HandleError
+  async deleteExampleRequest(
+    parentRequestId: string,
+    exampleId: string
+  ): Promise<FileSystemResult<void>> {
+    const requestFileResource = this.createResource({
+      id: parentRequestId,
+      type: "file",
+    });
+
+    const fileResult = await parseFile({
+      resource: requestFileResource,
+      fileType: new ApiRecordFileType(),
+    });
+
+    if (fileResult.type === "error") {
+      return fileResult;
+    }
+
+    const { content } = fileResult;
+
+    if (!content.examples || !(exampleId in content.examples)) {
+      return {
+        type: "error",
+        error: {
+          code: ErrorCode.UNKNOWN,
+          message: `Example with id ${exampleId} not found in request ${parentRequestId}`,
+          path: requestFileResource.path,
+          fileType: FileTypeEnum.UNKNOWN,
+        },
+      };
+    }
+
+    delete content.examples[exampleId];
+
+    if (Object.keys(content.examples).length === 0) {
+      delete content.examples;
+    }
+
+    const writeResult = await writeContent(
+      requestFileResource,
+      content,
+      new ApiRecordFileType()
+    );
+
+    if (writeResult.type === "error") {
+      return writeResult;
+    }
+
+    return {
+      type: "success",
+    };
+  }
+
+  @HandleError
+  async createExampleRequest(
+    parentRequestId: string,
+    example: Static<typeof ExampleRecord>
+  ): Promise<FileSystemResult<ExampleAPI>> {
+    const requestFileResource = this.createResource({
+      id: parentRequestId,
+      type: "file",
+    });
+
+    const fileResult = await parseFile({
+      resource: requestFileResource,
+      fileType: new ApiRecordFileType(),
+    });
+
+    if (fileResult.type === "error") {
+      return fileResult;
+    }
+
+    const { content } = fileResult;
+
+    const newExampleId = uuidv4();
+    const newExampleRequest: Static<typeof ExampleRecord> = {
+      name: example.name,
+      rank: example.rank,
+      request: example.request,
+      response: example.response,
+    };
+
+    if (!content.examples) {
+      content.examples = {};
+    }
+    content.examples[newExampleId] = newExampleRequest;
+
+    const writeResult = await writeContent(
+      requestFileResource,
+      content,
+      new ApiRecordFileType()
+    );
+
+    if (writeResult.type === "error") {
+      return writeResult;
+    }
+
+    return parseExampleContentIntoRecord(
+      newExampleRequest,
+      newExampleId,
+      parentRequestId
+    );
+  }
+
+  @HandleError
+  async updateExampleRequest(
+    parentRequestId: string,
+    exampleId: string,
+    example: Static<typeof ExampleRecord>
+  ): Promise<FileSystemResult<ExampleAPI>> {
+    const requestFileResource = this.createResource({
+      id: parentRequestId,
+      type: "file",
+    });
+
+    const fileResult = await parseFile({
+      resource: requestFileResource,
+      fileType: new ApiRecordFileType(),
+    });
+
+    if (fileResult.type === "error") {
+      return fileResult;
+    }
+
+    const { content } = fileResult;
+
+    if (!content.examples || !(exampleId in content.examples)) {
+      return {
+        type: "error",
+        error: {
+          code: ErrorCode.UNKNOWN,
+          message: `Example with id ${exampleId} not found in request ${parentRequestId}`,
+          path: requestFileResource.path,
+          fileType: FileTypeEnum.UNKNOWN,
+        },
+      };
+    }
+
+    const updatedExample: Static<typeof ExampleRecord> = {
+      name: example.name,
+      rank: example.rank,
+      request: example.request,
+      response: example.response,
+    };
+
+    content.examples[exampleId] = updatedExample;
+
+    const writeResult = await writeContent(
+      requestFileResource,
+      content,
+      new ApiRecordFileType()
+    );
+
+    if (writeResult.type === "error") {
+      return writeResult;
+    }
+
+    return parseExampleContentIntoRecord(
+      updatedExample,
+      exampleId,
+      parentRequestId
+    );
   }
 }

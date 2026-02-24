@@ -6,6 +6,7 @@ import {
   Environment,
   EnvironmentVariableValue,
   ErrorCode,
+  ExampleAPI,
   FileResource,
   FileSystemResult,
   FileTypeEnum,
@@ -48,6 +49,7 @@ import {
   GlobalConfig,
   ApiRecord,
   AuthType,
+  ExampleRecord,
 } from "./schemas";
 import { Stats } from "node:fs";
 import { FileType } from "./file-types/file-type.interface";
@@ -84,8 +86,6 @@ export async function getFsResourceStats(
   }
 }
 
-
-
 export async function getIfFolderExists(resource: FolderResource) {
   const statsResult = await getFsResourceStats(resource);
   const doesFolderExist =
@@ -109,12 +109,13 @@ async function hasWorkspaceConfigInAncestors(
   while (true) {
     const configPath = appendPath(currentDir, CONFIG_FILE);
 
-    const doesConfigFileExist = await getIfFileExists(createFsResource({
-      rootPath: currentDir,
-      path: configPath,
-      type: "file",
-    }));
-
+    const doesConfigFileExist = await getIfFileExists(
+      createFsResource({
+        rootPath: currentDir,
+        path: configPath,
+        type: "file",
+      })
+    );
 
     if (doesConfigFileExist) {
       return true;
@@ -131,7 +132,9 @@ async function hasWorkspaceConfigInAncestors(
   return false;
 }
 
-export async function checkIsWorkspacePathAvailable(workspacePath: string): Promise<boolean> {
+export async function checkIsWorkspacePathAvailable(
+  workspacePath: string
+): Promise<boolean> {
   const sanitizedWorkspacePath = sanitizePath(workspacePath);
   const hasWorkspaceConfig = await hasWorkspaceConfigInAncestors(
     sanitizedWorkspacePath
@@ -535,14 +538,15 @@ async function getWorkspaceIdFromConfig(
    * For example, on Windows the path is passed with backslashes, while on Unix the path is passed with forward slashes, comparing them directly will fail.
    */
   const workspace = config.workspaces.find(
-    (ws) => ws.path.replace(/[/\\]/g, '/') === workspaceFolderPath?.replace(/[/\\]/g, '/')
+    (ws) =>
+      ws.path.replace(/[/\\]/g, "/") ===
+      workspaceFolderPath?.replace(/[/\\]/g, "/")
   );
   if (!workspace) {
     return null;
   }
   return workspace.id;
 }
-
 
 export async function createGlobalConfigFolder(): Promise<
   FileSystemResult<{ resource: FolderResource }>
@@ -566,7 +570,6 @@ export async function createGlobalConfigFolder(): Promise<
     );
   }
 }
-
 
 export async function addWorkspaceToGlobalConfig(params: {
   name: string;
@@ -608,7 +611,6 @@ export async function addWorkspaceToGlobalConfig(params: {
       workspaces: [newWorkspace],
     };
 
-
     const writeResult = await writeToGlobalConfig(config);
     if (writeResult.type === "error") {
       return writeResult;
@@ -628,8 +630,8 @@ export async function addWorkspaceToGlobalConfig(params: {
         name,
         id: workspaceId,
         path: workspacePath,
-      }
-    }
+      },
+    };
   }
 
   const readResult = await parseFile({
@@ -739,7 +741,6 @@ export async function createWorkspaceFolder(
   });
 }
 
-
 export async function createDefaultWorkspace(): Promise<
   FileSystemResult<{ name: string; id: string; path: string }>
 > {
@@ -749,23 +750,26 @@ export async function createDefaultWorkspace(): Promise<
     LOCAL_WORKSPACES_DIRECTORY_NAME
   );
   try {
-    const rqDirectoryExists = await getIfFolderExists(createFsResource({
-      rootPath: rqDirectoryPath,
-      path: rqDirectoryPath,
-      type: "folder",
-    }));
-
+    const rqDirectoryExists = await getIfFolderExists(
+      createFsResource({
+        rootPath: rqDirectoryPath,
+        path: rqDirectoryPath,
+        type: "folder",
+      })
+    );
 
     const workspaceFolderPath = appendPath(
       rqDirectoryPath,
       DEFAULT_WORKSPACE_NAME
     );
 
-    const doesWorkspaceFolderExists = await getIfFolderExists(createFsResource({
-      rootPath: rqDirectoryPath,
-      path: workspaceFolderPath,
-      type: "folder",
-    }));
+    const doesWorkspaceFolderExists = await getIfFolderExists(
+      createFsResource({
+        rootPath: rqDirectoryPath,
+        path: workspaceFolderPath,
+        type: "folder",
+      })
+    );
 
     if (doesWorkspaceFolderExists) {
       const workspaceId = await getWorkspaceIdFromConfig(workspaceFolderPath);
@@ -831,11 +835,7 @@ export async function createDefaultWorkspace(): Promise<
 
     return createWorkspaceFolder(DEFAULT_WORKSPACE_NAME, rqDirectoryPath);
   } catch (err: any) {
-    return createFileSystemError(
-      err,
-      rqDirectoryPath,
-      FileTypeEnum.UNKNOWN
-    );
+    return createFileSystemError(err, rqDirectoryPath, FileTypeEnum.UNKNOWN);
   }
 }
 
@@ -918,14 +918,14 @@ export async function migrateGlobalConfig(oldConfig: any) {
 
 type WorkspaceValidationResult =
   | {
-    valid: true;
-    ws: Static<typeof GlobalConfig>["workspaces"][number];
-  }
+      valid: true;
+      ws: Static<typeof GlobalConfig>["workspaces"][number];
+    }
   | {
-    valid: false;
-    ws: Static<typeof GlobalConfig>["workspaces"][number];
-    error: { message: string };
-  };
+      valid: false;
+      ws: Static<typeof GlobalConfig>["workspaces"][number];
+      error: { message: string };
+    };
 
 async function validateWorkspace(
   ws: Static<typeof GlobalConfig>["workspaces"][number]
@@ -1416,3 +1416,25 @@ export function getFileNameFromPath(filePath: string) {
   const parts = filePath.split("/");
   return parts[parts.length - 1];
 }
+
+export const parseExampleContentIntoRecord = (
+  content: Static<typeof ExampleRecord>,
+  id: string,
+  parentRequestId: string
+): FileSystemResult<ExampleAPI> => {
+  return {
+    type: "success",
+    content: {
+      id,
+      type: "example_api",
+      collectionId: null,
+      parentRequestId,
+      data: {
+        rank: content.rank,
+        name: content.name,
+        request: content.request,
+        response: content.response ?? null,
+      },
+    },
+  };
+};
