@@ -64,13 +64,10 @@ const startBackgroundProcess = async () => {
       process.env.DEBUG_PROD === "true"
     )
     {
-      // Use 'on' (not 'once') so DevTools opens on every page load/reload
       backgroundWindow.webContents.on('dom-ready', () => {
         backgroundWindow.webContents.openDevTools();
       });
 
-      // Re-open DevTools when the window is shown again after being hidden,
-      // since dom-ready won't fire again if the page is already loaded
       backgroundWindow.on('show', () => {
         if (!backgroundWindow.isDestroyed() && !backgroundWindow.webContents.isDevToolsOpened()) {
           backgroundWindow.webContents.openDevTools();
@@ -78,7 +75,6 @@ const startBackgroundProcess = async () => {
       });
     }
 
-    // Prevent closing - hide instead of destroying the window
     const closeHandler = (event) => {
       event.preventDefault();
       event.returnValue = false;
@@ -90,13 +86,10 @@ const startBackgroundProcess = async () => {
     
     backgroundWindow.on("close", closeHandler);
     
-    // Store the close handler so it can't be easily removed
     backgroundWindow._preventCloseHandler = closeHandler;
 
-    // Override the destroy method to prevent accidental destruction
     const originalDestroy = backgroundWindow.destroy.bind(backgroundWindow);
     backgroundWindow.destroy = () => {
-      // Allow destruction if we're in quit mode
       if (global.allowBackgroundWindowDestruction && !backgroundWindow.isDestroyed()) {
         originalDestroy();
         return;
@@ -106,14 +99,13 @@ const startBackgroundProcess = async () => {
       }
     };
 
-    // Store reference to restore destroy if really needed during app quit
     backgroundWindow._originalDestroy = originalDestroy;
     
-    // Override removeAllListeners to prevent removal of close handler
     const originalRemoveAllListeners = backgroundWindow.removeAllListeners.bind(backgroundWindow);
     backgroundWindow.removeAllListeners = (eventName) => {
+    // There is no eventName as 'close' we added undefined as fallback
+    // if someone tries to removeAllListeners without eventName or with 'close' eventName, 
       if (eventName === 'close' || eventName === undefined) {
-        // Re-attach the close handler after removal
         originalRemoveAllListeners.call(backgroundWindow, eventName);
         backgroundWindow.on("close", closeHandler);
         return backgroundWindow;

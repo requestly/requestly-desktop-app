@@ -19,7 +19,6 @@ export const getReadyToQuitApp = async  () => {
     cleanup();
   
     if (global.backgroundWindow) {
-      // Set flag to allow background window destruction
       global.allowBackgroundWindowDestruction = true;
 
       let timeoutHandle;
@@ -30,7 +29,6 @@ export const getReadyToQuitApp = async  () => {
           global.backgroundWindow &&
           !global.backgroundWindow.isDestroyed()
         ) {
-          // When app is actually quitting, use the original destroy
           if (global.backgroundWindow._originalDestroy) {
             global.backgroundWindow._originalDestroy();
           } else {
@@ -40,7 +38,6 @@ export const getReadyToQuitApp = async  () => {
         resolve();
       });
       
-      // Timeout fallback in case shutdown-success never comes
       timeoutHandle = setTimeout(() => {
         if (global.backgroundWindow && !global.backgroundWindow.isDestroyed()) {
           if (global.backgroundWindow._originalDestroy) {
