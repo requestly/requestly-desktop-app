@@ -1,5 +1,5 @@
 import { Static, TSchema } from "@sinclair/typebox";
-import { Value } from "@sinclair/typebox/value";
+import { Value, ValueError } from "@sinclair/typebox/value";
 import {
   ContentParseResult,
   ErrorCode,
@@ -9,6 +9,7 @@ import {
   FsResource,
 } from "./types";
 import { fileIndex } from "./file-index";
+import { captureException } from "@sentry/browser";
 
 export class FsResourceCreationError extends Error {
   path: string;
@@ -82,6 +83,48 @@ export function createFsResource<T extends FsResource["type"]>(params: {
   }
 }
 
+export type ValidationErrorEntry = { path: string; message: string };
+
+/**
+ * Collects all error messages from TypeBox validation errors
+ */
+
+function collectVerboseErrors(TypeboxError: Iterable<ValueError>): ValidationErrorEntry[] {
+  const messages: ValidationErrorEntry[] = [];
+
+  for (const nestedError of TypeboxError) {
+    const path = nestedError.path !== undefined && nestedError.path !== "" ? nestedError.path : "";
+    messages.push({ path, message: nestedError.message });
+
+    if (nestedError.errors && nestedError.errors.length > 0) {
+      nestedError.errors.forEach((subIterator) => {
+        const subErrors = Array.from(subIterator);
+        if (subErrors.length > 0) {
+          const nestedMessages = collectVerboseErrors(subErrors);
+          messages.push(...nestedMessages);
+        }
+      });
+    }
+  }
+
+  return messages;
+}
+
+function formatValidationErrors(validator: TSchema, content: any): {
+  error: any;
+  heading: ValidationErrorEntry[];
+  additionalErrors: ValidationErrorEntry[];
+} {
+  const allErrors = [...Value.Errors(validator, content)];
+  const nestedErrorMessages = collectVerboseErrors(allErrors);
+
+  return {
+    error: allErrors[0],
+    heading: nestedErrorMessages,
+    additionalErrors: nestedErrorMessages.slice(1),
+  };
+}
+
 export function parseRaw<T extends TSchema>(
   content: any,
   validator: T
@@ -97,7 +140,14 @@ export function parseRaw<T extends TSchema>(
       content: parsedContent,
     } as ContentParseResult<Static<T>>; // Casting because TS was not able to infer from fn result type
   } catch {
-    const error = [...Value.Errors(validator, content)][0];
+    const { error, heading, additionalErrors } = formatValidationErrors(validator, content);
+
+    const headingMessage =
+      heading.length > 0
+        ? (heading[0].path ? `[${heading[0].path}] ` : "") + heading[0].message
+        : "Validation failed";
+    captureException(headingMessage, { extra: { additionalErrors, allErrors: heading } });
+    
     return {
       type: "error",
       error: {
@@ -221,6 +271,12 @@ export function createFileSystemError(
     : isNotFoundError(error)
     ? ErrorCode.NotFound
     : ErrorCode.UNKNOWN;
+
+  captureException(error, {
+    tags: {
+      fileType
+    }
+  });
   return {
     type: "error",
     error: {
