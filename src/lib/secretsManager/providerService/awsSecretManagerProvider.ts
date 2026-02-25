@@ -146,24 +146,19 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
     return Promise.all(refs.map((ref) => this.getSecret(ref)));
   }
 
-  async setSecret(
-    _ref: AwsSecretReference,
-    _value: string | Record<string, any>
-  ): Promise<void> {
+  async setSecret(): Promise<void> {
     throw new Error("Method not implemented.");
   }
 
-  async setSecrets(
-    _entries: Array<{ ref: AwsSecretReference; value: string | Record<string, any> }>
-  ): Promise<void> {
+  async setSecrets(): Promise<void> {
     throw new Error("Method not implemented.");
   }
 
-  async removeSecret(_ref: AwsSecretReference): Promise<void> {
+  async removeSecret(): Promise<void> {
     throw new Error("Method not implemented.");
   }
 
-  async removeSecrets(_refs: AwsSecretReference[]): Promise<void> {
+  async removeSecrets(): Promise<void> {
     throw new Error("Method not implemented.");
   }
 

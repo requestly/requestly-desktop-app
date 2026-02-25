@@ -2,17 +2,15 @@ import { SecretProviderConfig, SecretProviderType } from "../types";
 import { AbstractSecretsManagerStorage } from "../encryptedStorage/AbstractSecretsManagerStorage";
 import { AbstractSecretProvider } from "../providerService/AbstractSecretProvider";
 
-/**
- * Abstract registry for managing secret providers.
- * 
- * The registry stores provider configurations and maintains instances of providers.
- * Providers are stored with type erasure but maintain their full type safety
- * when accessed through type-aware methods.
- */
+export type ProviderChangeCallback = (
+  configs: Omit<SecretProviderConfig, "config">[]
+) => void;
+
 export abstract class AbstractProviderRegistry {
   protected store: AbstractSecretsManagerStorage;
 
-  protected providers: Map<string, AbstractSecretProvider<SecretProviderType>> = new Map();
+  protected providers: Map<string, AbstractSecretProvider<SecretProviderType>> =
+    new Map();
 
   constructor(store: AbstractSecretsManagerStorage) {
     this.store = store;
@@ -28,7 +26,11 @@ export abstract class AbstractProviderRegistry {
 
   abstract deleteProviderConfig(_id: string): Promise<void>;
 
-  abstract getProvider(_providerId: string): AbstractSecretProvider<SecretProviderType> | null;
+  abstract onProvidersChange(callback: ProviderChangeCallback): () => void;
+
+  abstract getProvider(
+    _providerId: string
+  ): AbstractSecretProvider<SecretProviderType> | null;
 
   /**
    * Type-safe method to get a provider with a specific type.
