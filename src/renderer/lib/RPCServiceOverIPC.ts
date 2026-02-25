@@ -1,3 +1,4 @@
+import { captureException } from "@sentry/browser";
 import { ipcRenderer } from "electron";
 
 /**
@@ -59,6 +60,7 @@ export class RPCServiceOverIPC {
         //   error,
         //   Date.now()
         // );
+        captureException(error);
         ipcRenderer.send(`reply-${channelName}`, {
           success: false,
           data: error.message,

@@ -10,6 +10,7 @@
     "pretty": true,
     "sourceMap": true,
     "baseUrl": "./src",
+    "skipLibCheck": true,
     /* Additional Checks */
     "noUnusedParameters": true,
     "noImplicitReturns": true,
@@ -24,5 +25,11 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },
-  "exclude": ["test", "release/build", "release/app/dist", ".erb/dll"]
+  "exclude": [
+    "test",
+    "release/build",
+    "release/app/dist",
+    ".erb/dll",
+    "node_modules"
+  ]
 }

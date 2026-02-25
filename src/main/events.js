@@ -2,7 +2,7 @@ import path from "path";
 import { unescape } from "querystring";
 import fs from "fs";
 import os from "os";
-import { app, dialog, ipcMain } from "electron";
+import { app, dialog, ipcMain, shell } from "electron";
 /** ACTIONS */
 import startBackgroundProcess from "./actions/startBackgroundProcess";
 import { getState, setState } from "./actions/stateManagement";
@@ -22,7 +22,7 @@ import { createOrUpdateAxiosInstance } from "./actions/getProxiedAxios";
 // todo: refactor main.ts to only export core entities like webappWindow
 // and then build these utilites elsewhere
 // eslint-disable-next-line import/no-cycle
-import createTrayMenu from "./main";
+import createTrayMenu, { loadWebAppUrl } from "./main";
 import { SecretsManagerEncryptedStorage } from "../lib/secretsManager/encryptedStorage/SecretsManagerEncryptedStorage";
 import { FileBasedProviderRegistry } from "../lib/secretsManager/providerRegistry/FileBasedProviderRegistry";
 import {
@@ -213,6 +213,24 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
     webAppWindow?.close();
   });
 
+  ipcMain.handle("change-webapp-url", async (event, payload) => {
+    try {
+      const { url } = payload;
+      if (!url || typeof url !== "string") {
+        new URL(url);
+        return { success: false, error: "Invalid URL provided" };
+      }
+      await loadWebAppUrl(url);
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error?.message ?? "Error changing webapp URL:",
+      };
+    }
+  });
+
   ipcMain.handle("browse-and-load-file", (event, payload) => {
     console.log("browse-and-load-file payload", payload);
     const category = payload?.category || "unknown";
@@ -359,6 +377,11 @@ export const registerMainProcessCommonEvents = () => {
     };
     const folderDialogPromise = await dialog.showOpenDialog(dialogOptions);
     return folderDialogPromise;
+  });
+
+  ipcMain.handle("open-path-in-file-explorer", async (event, payload = {}) => {
+    const { resourcePath } = payload;
+    shell.openPath(resourcePath);
   });
 
   ipcMain.handle(
