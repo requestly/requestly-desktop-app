@@ -14,7 +14,7 @@ export type HashicorpVaultProviderConfig = ProviderConfig<
 >;
 
 export interface VaultSecretReference extends SecretReference<SecretProviderType.HASHICORP_VAULT> {
-  path: string;
+  identifier: string;
   version?: number;
 }
 
@@ -23,7 +23,7 @@ export interface VaultSecretValue {
   providerId: string;
   secretReference: VaultSecretReference;
   fetchedAt: number;
-  path: string;
+  identifier: string;
   data: Record<string, any>;
   metadata?: {
     version: number;
@@ -47,7 +47,7 @@ export class HashicorpVaultProvider extends AbstractSecretProvider<SecretProvide
   }
 
   protected getCacheKey(ref: VaultSecretReference): string {
-    return `path:${ref.path};version:${ref.version ?? "latest"}`;
+    return `name:${ref.identifier};version:${ref.version ?? "latest"}`;
   }
 
   async testConnection(): Promise<boolean> {

@@ -17,16 +17,7 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   private async initProvidersFromStorage(): Promise<void> {
     const configs = await this.getAllProviderConfigs();
     configs.forEach((config) => {
-      try {
-        this.providers.set(config.id, createProviderInstance(config));
-      } catch (error) {
-        // TODO error to be propagated
-        console.log(
-          "!!!debug",
-          `Failed to initialize provider for config id: ${config.id}`,
-          error
-        );
-      }
+      this.providers.set(config.id, createProviderInstance(config)); // TODO: check if this needs error handling
     });
   }
 
@@ -36,12 +27,7 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   }
 
   async getProviderConfig(id: string): Promise<SecretProviderConfig | null> {
-    try {
-      return await this.store.get(id);
-    } catch (error) {
-      console.error(`Failed to load provider config for id: ${id}`, error);
-      return null;
-    }
+    return this.store.get(id);
   }
 
   async setProviderConfig(config: SecretProviderConfig): Promise<void> {
@@ -55,7 +41,9 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
     this.providers.delete(id);
   }
 
-  getProvider(providerId: string): AbstractSecretProvider<SecretProviderType> | null {
+  getProvider(
+    providerId: string
+  ): AbstractSecretProvider<SecretProviderType> | null {
     return this.providers.get(providerId) ?? null;
   }
 
@@ -88,16 +76,8 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
     }
 
     for (const [id, config] of Object.entries(data)) {
-      try {
-        // recreate provider instance
-        this.providers.set(id, createProviderInstance(config));
-      } catch (error) {
-        console.log(
-          "!!!debug",
-          `Failed to sync provider for config id: ${id}`,
-          error
-        );
-      }
+      // recreate provider instance
+      this.providers.set(id, createProviderInstance(config));
     }
   }
 
@@ -106,7 +86,7 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   ): void {
     this.changeCallbacks.forEach((callback) => {
       const configsMetadata = Object.values(data).map((config) => {
-        const { config: _, ...metadata } = config;
+        const { credentials: _, ...metadata } = config;
         return metadata;
       });
       callback(configsMetadata);

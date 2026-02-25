@@ -23,12 +23,18 @@ import { createOrUpdateAxiosInstance } from "./actions/getProxiedAxios";
 // and then build these utilites elsewhere
 // eslint-disable-next-line import/no-cycle
 import createTrayMenu, { loadWebAppUrl } from "./main";
-import { SecretsManagerEncryptedStorage } from "../lib/secretsManager/encryptedStorage/SecretsManagerEncryptedStorage";
-import { FileBasedProviderRegistry } from "../lib/secretsManager/providerRegistry/FileBasedProviderRegistry";
 import {
-  getSecretsManager,
-  SecretsManager,
-} from "../lib/secretsManager/secretsManager";
+  getSecretProviderConfig,
+  getSecretValue,
+  getSecretValues,
+  initSecretsManager,
+  listSecretProviders,
+  refreshSecrets,
+  removeSecretProviderConfig,
+  setSecretProviderConfig,
+  subscribeToProvidersChange,
+  testSecretProviderConnection,
+} from "../lib/secretsManager";
 
 const getFileCategory = (fileExtension) => {
   switch (fileExtension) {
@@ -294,60 +300,65 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
     webAppWindow?.send("helper-server-hit");
   });
 
-  let secretsManager = null;
-
-  ipcMain.handle("init-secretsManager", async () => {
-    const secretsStorage = new SecretsManagerEncryptedStorage("providers");
-    const registry = new FileBasedProviderRegistry(secretsStorage);
-
-    await SecretsManager.initialize(registry);
-    secretsManager = getSecretsManager();
-    return true;
+  ipcMain.handle("secretsManager:init", () => {
+    return initSecretsManager();
   });
 
-  ipcMain.handle(
-    "secretsManager:addProviderConfig",
-    async (event, { config }) => {
-      await secretsManager.setProviderConfig(config);
-    }
-  );
-
-  ipcMain.handle("secretsManager:getProviderConfig", async (event, { id }) => {
-    const providerConfig = await secretsManager.getProviderConfig(id);
-    console.log("!!!debug", "getConfig", providerConfig);
-    return providerConfig;
-  });
-
-  ipcMain.handle(
-    "secretsManager:removeProviderConfig",
-    async (event, { id }) => {
-      await secretsManager.removeProviderConfig(id);
-    }
-  );
-
-  ipcMain.handle(
-    "secretsManager:testConnection",
-    async (event, { providerId }) => {
-      const providerConnection = await secretsManager.testProviderConnection(
-        providerId
+  ipcMain.handle("secretsManager:subscribeToProvidersChange", () => {
+    subscribeToProvidersChange((providers) => {
+      webAppWindow?.webContents.send(
+        "secretsManager:providersChanged",
+        providers
       );
+    });
+  });
 
-      return providerConnection;
+  ipcMain.handle(
+    "secretsManager:setSecretProviderConfig",
+    (event, { config }) => {
+      return setSecretProviderConfig(config);
     }
   );
 
   ipcMain.handle(
-    "secretsManager:resolveSecret",
-    async (event, { providerId, ref }) => {
-      console.log("!!!debug", "resolve", {
-        providerId,
-        ref,
-      });
-      const secretValue = await secretsManager.getSecret(providerId, ref);
-      console.log("!!!debug", "resolveSecret value", secretValue);
-      return secretValue;
+    "secretsManager:getSecretProviderConfig",
+    (event, { providerId }) => {
+      return getSecretProviderConfig(providerId);
     }
   );
+
+  ipcMain.handle(
+    "secretsManager:removeSecretProviderConfig",
+    (event, { providerId }) => {
+      return removeSecretProviderConfig(providerId);
+    }
+  );
+
+  ipcMain.handle(
+    "secretsManager:testProviderConnection",
+    (event, { providerId }) => {
+      return testSecretProviderConnection(providerId);
+    }
+  );
+
+  ipcMain.handle(
+    "secretsManager:getSecretValue",
+    (event, { providerId, secretReference }) => {
+      return getSecretValue(providerId, secretReference);
+    }
+  );
+
+  ipcMain.handle("secretsManager:getSecretValues", (event, { secrets }) => {
+    return getSecretValues(secrets);
+  });
+
+  ipcMain.handle("secretsManager:refreshSecrets", (event, { providerId }) => {
+    return refreshSecrets(providerId);
+  });
+
+  ipcMain.handle("secretsManager:listSecretProviders", () => {
+    return listSecretProviders();
+  });
 };
 
 export const registerMainProcessCommonEvents = () => {

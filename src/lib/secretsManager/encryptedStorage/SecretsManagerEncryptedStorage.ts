@@ -22,7 +22,8 @@ export class SecretsManagerEncryptedStorage extends AbstractSecretsManagerStorag
   }
 
   async getAll(): Promise<SecretProviderConfig[]> {
-    const allData = this.encryptedStore.getAll<SecretProviderConfig>();
+    const allData =
+      this.encryptedStore.getAll<Record<string, SecretProviderConfig>>();
     return Object.values(allData);
   }
 
