@@ -1,4 +1,4 @@
-import { captureException } from "@sentry/browser";
+import * as Sentry from "@sentry/browser";
 import { ipcRenderer } from "electron";
 
 /**
@@ -20,7 +20,6 @@ export class RPCServiceOverIPC {
   }
 
   generateChannelNameForMethod(method: Function) {
-    console.log("DBG-1: method name", method.name);
     return `${this.RPC_CHANNEL_PREFIX}${method.name}`;
   }
 
@@ -29,38 +28,94 @@ export class RPCServiceOverIPC {
     method: (..._args: any[]) => Promise<any>
   ) {
     const channelName = `${this.RPC_CHANNEL_PREFIX}${exposedMethodName}`;
-    // console.log("DBG-1: exposing channel", channelName, Date.now());
-    ipcRenderer.on(channelName, async (_event, args) => {
-      // console.log(
-      //   "DBG-1: received event on channel",
-      //   channelName,
-      //   _event,
-      //   args,
-      //   Date.now()
-      // );
-      try {
-        const result = await method(...args);
 
-        // console.log(
-        //   "DBG-2: result in method",
-        //   result,
-        //   channelName,
-        //   _event,
-        //   args,
-        //   exposedMethodName,
-        //   Date.now()
-        // );
+    ipcRenderer.on(channelName, async (_event, args) => {
+      console.log(`[Background RPC] ${channelName} - Raw args:`, args);
+      console.log(
+        `[Background RPC] ${channelName} - Args is array?`,
+        Array.isArray(args)
+      );
+      console.log(
+        `[Background RPC] ${channelName} - Args length:`,
+        args?.length
+      );
+
+      // Extract trace context from last argument (added by traceIPC.invokeEventInBG)
+      const lastArg = args[args.length - 1];
+      console.log(`[Background RPC] ${channelName} - Last arg:`, lastArg);
+
+      const hasTraceContext =
+        lastArg && typeof lastArg === "object" && lastArg._traceContext;
+      const traceContext = hasTraceContext ? lastArg._traceContext : null;
+      const cleanArgs = hasTraceContext ? args.slice(0, -1) : args;
+
+      console.log(
+        `[Background RPC] ${channelName} - Trace context:`,
+        traceContext ? "present" : "missing",
+        traceContext
+      );
+
+      try {
+        let result;
+
+        if (traceContext) {
+          console.log(
+            `[Background RPC] ${channelName} - Starting traced execution`
+          );
+          console.log(
+            `[Background RPC] sentry-trace:`,
+            traceContext["sentry-trace"]
+          );
+          console.log(`[Background RPC] baggage:`, traceContext.baggage);
+          // Continue distributed trace from React
+          result = await Sentry.continueTrace(
+            {
+              sentryTrace: traceContext["sentry-trace"],
+              baggage: traceContext.baggage,
+            },
+            async () => {
+              return await Sentry.startSpan(
+                {
+                  name: channelName,
+                  op: "Electron-background.rpc",
+                  attributes: {
+                    "rpc.method": exposedMethodName,
+                  },
+                },
+                async () => {
+                  return await method(...cleanArgs);
+                }
+              );
+            }
+          );
+        } else {
+          // No trace context, execute normally
+          result = await method(...cleanArgs);
+        }
+
         ipcRenderer.send(`reply-${channelName}`, {
           success: true,
           data: result,
         });
       } catch (error: any) {
-        // console.log(
-        //   `DBG-2: reply-${channelName} error in method`,
-        //   error,
-        //   Date.now()
-        // );
-        captureException(error);
+        console.error(`[Background RPC] Error in ${channelName}:`, error);
+
+        // Capture exception in Sentry with context
+        Sentry.captureException(error, {
+          tags: {
+            process: "electron-background",
+            component: "rpc-handler",
+            rpc_method: exposedMethodName,
+          },
+          contexts: {
+            rpc: {
+              channel: channelName,
+              method: exposedMethodName,
+              args: cleanArgs,
+            },
+          },
+        });
+
         ipcRenderer.send(`reply-${channelName}`, {
           success: false,
           data: error.message,

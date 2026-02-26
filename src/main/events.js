@@ -11,6 +11,7 @@ import logNetworkRequestV2 from "./actions/logNetworkRequestV2";
 import getCurrentNetworkLogs from "./actions/getCurrentNetworkLogs";
 import * as PrimaryStorageService from "./actions/initPrimaryStorage";
 import makeApiClientRequest from "./actions/makeApiClientRequest";
+import { withTracing } from "./actions/tracingHelpers";
 import storageService from "../lib/storage";
 import {
   deleteNetworkRecording,
@@ -190,9 +191,14 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
     }
   });
 
-  ipcMain.handle("get-api-response", async (event, payload) => {
-    return makeApiClientRequest(payload);
-  });
+  ipcMain.handle(
+    "get-api-response",
+    withTracing("get-api-response", async (event, payload) => {
+      // throw new Error("Testing distributed tracing - intentional error");
+      throw new Error("Intentional Tracing Error");
+      return makeApiClientRequest(payload);
+    })
+  );
 
   /* HACKY: Forces regeneration by deleting old cert and closes app */
   ipcMain.handle("renew-ssl-certificates", async () => {
@@ -215,10 +221,12 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
         return { success: false, error: "Invalid URL provided" };
       }
       await loadWebAppUrl(url);
-      
       return { success: true };
     } catch (error) {
-      return { success: false, error: error?.message ?? "Error changing webapp URL:" };
+      return {
+        success: false,
+        error: error?.message ?? "Error changing webapp URL:",
+      };
     }
   });
 
