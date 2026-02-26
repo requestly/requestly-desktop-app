@@ -11,7 +11,7 @@ import logNetworkRequestV2 from "./actions/logNetworkRequestV2";
 import getCurrentNetworkLogs from "./actions/getCurrentNetworkLogs";
 import * as PrimaryStorageService from "./actions/initPrimaryStorage";
 import makeApiClientRequest from "./actions/makeApiClientRequest";
-import { withTracing } from "./actions/tracingHelpers";
+import { withTracing } from "./actions/tracingPropogation";
 import storageService from "../lib/storage";
 import {
   deleteNetworkRecording,
@@ -194,8 +194,7 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
   ipcMain.handle(
     "get-api-response",
     withTracing("get-api-response", async (event, payload) => {
-      // throw new Error("Testing distributed tracing - intentional error");
-      throw new Error("Intentional Tracing Error");
+      // throw new Error("Intentional Tracing Error");
       return makeApiClientRequest(payload);
     })
   );
