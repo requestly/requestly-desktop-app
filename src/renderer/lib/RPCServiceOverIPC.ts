@@ -1,5 +1,9 @@
-import { captureException } from "@sentry/browser";
+import * as Sentry from "@sentry/browser";
 import { ipcRenderer } from "electron";
+import {
+  extractTraceContextFromArgs,
+  executeWithTracing,
+} from "./tracingRendererUtils";
 
 /**
  * Used to create a RPC like service in the Background process.
@@ -20,7 +24,6 @@ export class RPCServiceOverIPC {
   }
 
   generateChannelNameForMethod(method: Function) {
-    console.log("DBG-1: method name", method.name);
     return `${this.RPC_CHANNEL_PREFIX}${method.name}`;
   }
 
@@ -29,38 +32,46 @@ export class RPCServiceOverIPC {
     method: (..._args: any[]) => Promise<any>
   ) {
     const channelName = `${this.RPC_CHANNEL_PREFIX}${exposedMethodName}`;
-    // console.log("DBG-1: exposing channel", channelName, Date.now());
-    ipcRenderer.on(channelName, async (_event, args) => {
-      // console.log(
-      //   "DBG-1: received event on channel",
-      //   channelName,
-      //   _event,
-      //   args,
-      //   Date.now()
-      // );
-      try {
-        const result = await method(...args);
 
-        // console.log(
-        //   "DBG-2: result in method",
-        //   result,
-        //   channelName,
-        //   _event,
-        //   args,
-        //   exposedMethodName,
-        //   Date.now()
-        // );
+    ipcRenderer.on(channelName, async (_event, args) => {
+      const { traceContext, cleanArgs } = extractTraceContextFromArgs(args);
+
+      try {
+        const result = await executeWithTracing(
+          {
+            traceContext,
+            spanName: channelName,
+            op: "Electron-background.rpc",
+            attributes: {
+              "rpc.method": exposedMethodName,
+              "ipc.process": "background",
+            },
+            Sentry,
+          },
+          async () => method(...cleanArgs)
+        );
+
         ipcRenderer.send(`reply-${channelName}`, {
           success: true,
           data: result,
         });
       } catch (error: any) {
-        // console.log(
-        //   `DBG-2: reply-${channelName} error in method`,
-        //   error,
-        //   Date.now()
-        // );
-        captureException(error);
+        // Capture exception in Sentry with context
+        Sentry.captureException(error, {
+          tags: {
+            process: "electron-background",
+            component: "rpc-handler",
+            rpc_method: exposedMethodName,
+          },
+          contexts: {
+            rpc: {
+              channel: channelName,
+              method: exposedMethodName,
+              args: cleanArgs,
+            },
+          },
+        });
+
         ipcRenderer.send(`reply-${channelName}`, {
           success: false,
           data: error.message,
