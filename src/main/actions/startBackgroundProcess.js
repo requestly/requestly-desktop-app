@@ -68,6 +68,14 @@ const startBackgroundProcess = async () => {
         backgroundWindow.webContents.openDevTools();
       })
     }
+    
+    backgroundWindow.on('close', (event) => {
+      if (!global.isQuitting) {
+        event.preventDefault();
+        backgroundWindow.hide();
+      }
+      return false;
+    });
 
     // Setup IPC forwarding
     setupIPCForwardingToBackground(backgroundWindow);

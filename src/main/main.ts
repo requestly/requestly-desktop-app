@@ -335,7 +335,7 @@ const createWindow = async () => {
         globalAny.backgroundWindow.show();
 
         // eslint-disable-next-line
-        globalAny.backgroundWindow.webContents.toggleDevTools();
+        globalAny.backgroundWindow.webContents.openDevTools();
       }
     } catch (error) {
       console.error(error);
