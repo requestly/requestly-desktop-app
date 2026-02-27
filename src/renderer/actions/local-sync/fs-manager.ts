@@ -1643,10 +1643,10 @@ export class FsManager {
       return {
         type: "error",
         error: {
-          code: ErrorCode.UNKNOWN,
+          code: ErrorCode.NotFound,
           message: `Example with id ${exampleId} not found in request ${parentRequestId}`,
           path: requestFileResource.path,
-          fileType: FileTypeEnum.UNKNOWN,
+          fileType: FileTypeEnum.API,
         },
       };
     }
@@ -1749,10 +1749,10 @@ export class FsManager {
       return {
         type: "error",
         error: {
-          code: ErrorCode.UNKNOWN,
+          code: ErrorCode.NotFound,
           message: `Example with id ${exampleId} not found in request ${parentRequestId}`,
           path: requestFileResource.path,
-          fileType: FileTypeEnum.UNKNOWN,
+          fileType: FileTypeEnum.API,
         },
       };
     }
