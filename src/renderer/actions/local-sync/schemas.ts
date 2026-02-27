@@ -135,6 +135,16 @@ export const BaseRequest = Type.Object({
   ),
 });
 
+export const ResponseObject = Type.Object({
+  body: Type.String(),
+  headers: Type.Array(KeyValuePair),
+  method: Type.Enum(ApiMethods),
+  status: Type.Number(),
+  statusText: Type.Optional(Type.String()),
+  time: Type.Optional(Type.Number()),
+  redirectedUrl: Type.Optional(Type.String()),
+});
+
 export const PathVariable = Type.Object({
   id: Type.Number(),
   key: Type.String(),
@@ -171,10 +181,18 @@ export const GraphQLRequest = Type.Intersect([
 
 export const ApiRequest = Type.Union([HttpRequest, GraphQLRequest]);
 
+export const ExampleRecord = Type.Object({
+  rank: Type.Optional(Type.String()),
+  name: Type.String(),
+  request: ApiRequest,
+  response: Type.Union([ResponseObject, Type.Null()]),
+});
+
 export const ApiRecord = Type.Object({
   name: Type.String(),
   rank: Type.Optional(Type.String()),
   request: ApiRequest,
+  examples: Type.Optional(Type.Record(Type.String(), ExampleRecord)),
 });
 
 export const Variables = Type.Record(
