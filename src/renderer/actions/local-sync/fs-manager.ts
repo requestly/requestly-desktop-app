@@ -1259,14 +1259,14 @@ export class FsManager {
 
   @HandleError
   async writeRawRecord(
-    id: string,
+    path: string,
     rawRecord: string,
     rawfileType: string
   ): Promise<FileSystemResult<unknown>> {
-    const fileResource = this.createResource({
-      id,
+    const fileResource = {
+      path: path,
       type: "file",
-    });
+    } as FileResource;
     const fileType = parseFileType(rawfileType);
     const parsedRecord = fileType.parse(rawRecord);
     if (parsedRecord.type === "error") {
