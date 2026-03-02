@@ -1456,11 +1456,11 @@ export class FsManager {
   }
 
   @HandleError
-  async getRawFileData(id: string): Promise<FileSystemResult<string>> {
-    const fileResource = this.createResource({
-      id,
+  async getRawFileData(path: string): Promise<FileSystemResult<string>> {
+    const fileResource = {
+      path: path,
       type: "file",
-    });
+    } as FileResource;
     const parsedRecordResult = await parseFileRaw({
       resource: fileResource,
     });
