@@ -6,6 +6,7 @@ import {
   EnvironmentVariableType,
   ApiEntryType,
   ApiRequest,
+  ResponseObject,
 } from "./schemas";
 import { type FsService } from "./fs/fs.service";
 
@@ -52,9 +53,9 @@ export type ContentParseError = { message: string };
 export type ContentParseResult<T> =
   | ContentfulSuccess<T>
   | {
-    type: "error";
-    error: ContentParseError;
-  };
+      type: "error";
+      error: ContentParseError;
+    };
 
 export type FolderResource = {
   type: "folder";
@@ -89,6 +90,19 @@ export type API = {
   };
 };
 
+export type ExampleAPI = {
+  id: string;
+  type: "example_api";
+  collectionId: null;
+  parentRequestId: string;
+  data: {
+    name: string;
+    rank?: string;
+    request: Static<typeof ApiRequest>;
+    response: Static<typeof ResponseObject> | null;
+  };
+};
+
 type VariableValueType = string | number | boolean;
 
 export type EnvironmentVariableValue = {
@@ -116,7 +130,7 @@ export type Environment = {
   variables?: Variable;
 };
 
-export type APIEntity = Collection | API | Environment;
+export type APIEntity = Collection | API | Environment | ExampleAPI;
 
 export type CollectionRecord = {
   type: "collection";

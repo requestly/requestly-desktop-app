@@ -150,6 +150,20 @@ export class FsManagerRPCService extends RPCServiceOverIPC {
       "createCollectionFromCompleteRecord",
       this.fsManager.createCollectionFromCompleteRecord.bind(this.fsManager)
     );
+    this.exposeMethodOverIPC(
+      "createExampleRequest",
+      this.fsManager.createExampleRequest.bind(this.fsManager)
+    );
+
+    this.exposeMethodOverIPC(
+      "updateExampleRequest",
+      this.fsManager.updateExampleRequest.bind(this.fsManager)
+    );
+
+    this.exposeMethodOverIPC(
+      "deleteExampleRequest",
+      this.fsManager.deleteExampleRequest.bind(this.fsManager)
+    );
 
     // hack
     await waitForInit();
