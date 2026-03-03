@@ -23,10 +23,7 @@ const makeApiClientRequest = async ({ apiRequest }) => {
       headers[key] = value;
     });
 
-    if (
-      !["GET", "HEAD"].includes(method) &&
-      apiRequest.contentType === "application/x-www-form-urlencoded"
-    ) {
+    if (apiRequest.contentType === "application/x-www-form-urlencoded") {
       const formData = new FormData();
       body?.forEach(({ key, value }) => {
         formData.append(key, value);
