@@ -699,6 +699,7 @@ export class FsManager {
 
       if (entityParsingResult?.type === "error") {
         erroredRecords.push({
+          id: getIdFromPath(resource.path),
           name: getFileNameFromPath(entityParsingResult.error.path),
           path: entityParsingResult.error.path,
           error: entityParsingResult.error.message,
@@ -748,6 +749,7 @@ export class FsManager {
         });
         if (parsedResult.type === "error") {
           erroredRecords.push({
+            id: getIdFromPath(resource.path),
             name: getNameOfResource(resource),
             path: parsedResult.error.path,
             error: parsedResult.error.message,
@@ -1259,14 +1261,14 @@ export class FsManager {
 
   @HandleError
   async writeRawRecord(
-    path: string,
+    id: string,
     rawRecord: string,
     rawfileType: string
   ): Promise<FileSystemResult<unknown>> {
-    const fileResource = {
-      path: path,
+    const fileResource = this.createResource({
+      id,
       type: "file",
-    } as FileResource;
+    });
     const fileType = parseFileType(rawfileType);
     const parsedRecord = fileType.parse(rawRecord);
     if (parsedRecord.type === "error") {
@@ -1456,11 +1458,11 @@ export class FsManager {
   }
 
   @HandleError
-  async getRawFileData(path: string): Promise<FileSystemResult<string>> {
-    const fileResource = {
-      path: path,
+  async getRawFileData(id: string): Promise<FileSystemResult<string>> {
+    const fileResource = this.createResource({
+      id,
       type: "file",
-    } as FileResource;
+    });
     const parsedRecordResult = await parseFileRaw({
       resource: fileResource,
     });
