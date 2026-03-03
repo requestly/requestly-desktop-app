@@ -13,6 +13,7 @@ import {
   SecretsErrorCode,
   SecretsResultPromise,
 } from "./errors";
+import { createProviderInstance } from "./providerService/providerFactory";
 
 const getSecretsManager = (): SecretsManager => {
   if (!SecretsManager.isInitialized()) {
@@ -109,4 +110,20 @@ export const listSecretProviders = async (): SecretsResultPromise<
   SecretProviderMetadata[]
 > => {
   return getSecretsManager().listProviders();
+};
+
+export const testSecretProviderConnectionWithConfig = async (
+  config: SecretProviderConfig
+): SecretsResultPromise<boolean> => {
+  try {
+    const provider = createProviderInstance(config);
+    const isConnected = await provider.testConnection();
+    return { type: "success", data: isConnected ?? false };
+  } catch (error) {
+    return createSecretsError(
+      SecretsErrorCode.AUTH_FAILED,
+      error instanceof Error ? error.message : "Connection test failed",
+      { providerId: config.id, cause: error as Error }
+    );
+  }
 };

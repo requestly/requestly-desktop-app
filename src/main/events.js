@@ -34,6 +34,7 @@ import {
   setSecretProviderConfig,
   subscribeToProvidersChange,
   testSecretProviderConnection,
+  testSecretProviderConnectionWithConfig,
 } from "../lib/secretsManager";
 
 const getFileCategory = (fileExtension) => {
@@ -338,6 +339,13 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
     "secretsManager:testProviderConnection",
     (event, { providerId }) => {
       return testSecretProviderConnection(providerId);
+    }
+  );
+
+  ipcMain.handle(
+    "secretsManager:testProviderConnectionWithConfig",
+    (event, { config }) => {
+      return testSecretProviderConnectionWithConfig(config);
     }
   );
 
