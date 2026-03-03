@@ -699,6 +699,7 @@ export class FsManager {
 
       if (entityParsingResult?.type === "error") {
         erroredRecords.push({
+          id: getIdFromPath(resource.path),
           name: getFileNameFromPath(entityParsingResult.error.path),
           path: entityParsingResult.error.path,
           error: entityParsingResult.error.message,
@@ -748,6 +749,7 @@ export class FsManager {
         });
         if (parsedResult.type === "error") {
           erroredRecords.push({
+            id: getIdFromPath(resource.path),
             name: getNameOfResource(resource),
             path: parsedResult.error.path,
             error: parsedResult.error.message,
