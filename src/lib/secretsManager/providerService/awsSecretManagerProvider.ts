@@ -67,24 +67,16 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
       return false;
     }
 
-    try {
-      const listSecretsCommand = new ListSecretsCommand({ MaxResults: 1 });
-      const res = await this.client.send(listSecretsCommand);
-      console.log("!!!debug", "aws result", res);
 
-      if (res.$metadata.httpStatusCode !== 200) {
-        return false;
-      }
+    const listSecretsCommand = new ListSecretsCommand({ MaxResults: 1 });
+    const res = await this.client.send(listSecretsCommand);
+    console.log("!!!debug", "aws result", res);
 
-      return true;
-    } catch (err) {
-      console.error(
-        "!!!debug",
-        "aws secrets manager test connection error",
-        err
-      );
+    if (res.$metadata.httpStatusCode !== 200) {
       return false;
     }
+
+    return true;
   }
 
   async getSecret(ref: AwsSecretReference): Promise<AwsSecretValue | null> {
@@ -93,7 +85,9 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
     }
 
     const cacheKey = this.getCacheKey(ref);
-    const cachedSecret = this.getCachedSecret(cacheKey) as AwsSecretValue | null;
+    const cachedSecret = this.getCachedSecret(
+      cacheKey
+    ) as AwsSecretValue | null;
 
     if (cachedSecret) {
       console.log("!!!debug", "returning from cache", cachedSecret);
@@ -108,13 +102,7 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
     const secretResponse = await this.client.send(getSecretCommand);
 
     if (secretResponse.$metadata.httpStatusCode !== 200) {
-      console.error("!!!debug", "Failed to fetch secret", secretResponse);
-      return null;
-    }
-
-    if (!secretResponse.SecretString) {
-      console.error("!!!debug", "SecretString is empty", secretResponse);
-      return null;
+      throw new Error("Failed to fetch secret from AWS Secrets Manager.");
     }
 
     const awsSecret: AwsSecretValue = {
@@ -127,8 +115,6 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
       ARN: secretResponse.ARN,
       versionId: secretResponse.VersionId,
     };
-
-    console.log("!!!debug", "returning after fetching", awsSecret);
 
     this.setCacheEntry(cacheKey, awsSecret);
 
