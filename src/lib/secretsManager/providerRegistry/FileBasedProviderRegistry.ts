@@ -17,27 +17,26 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   private async initProvidersFromStorage(): Promise<void> {
     const configs = await this.getAllProviderConfigs();
     configs.forEach((config) => {
-      this.providers.set(config.id, createProviderInstance(config)); // TODO: check if this needs error handling
+      this.providers.set(config.id, createProviderInstance(config, this.store));
     });
   }
 
   async getAllProviderConfigs(): Promise<SecretProviderConfig[]> {
-    const allConfigs = this.store.getAll();
-    return allConfigs;
+    return this.store.getAllProviderConfigs();
   }
 
   async getProviderConfig(id: string): Promise<SecretProviderConfig | null> {
-    return this.store.get(id);
+    return this.store.getProviderConfig(id);
   }
 
   async setProviderConfig(config: SecretProviderConfig): Promise<void> {
-    const provider = createProviderInstance(config);
-    await this.store.set(config.id, config);
+    const provider = createProviderInstance(config, this.store);
+    await this.store.setProviderConfig(config.id, config);
     this.providers.set(config.id, provider);
   }
 
   async deleteProviderConfig(id: string): Promise<void> {
-    await this.store.delete(id);
+    await this.store.deleteProviderConfig(id);
     this.providers.delete(id);
   }
 
@@ -56,9 +55,9 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   }
 
   private setupStorageListener(): void {
-    this.store.onStorageChange((data) => {
-      this.syncProvidersFromStorageData(data);
-      this.notifyChangeCallbacks(data);
+    this.store.onProvidersChange((providers) => {
+      this.syncProvidersFromStorageData(providers);
+      this.notifyChangeCallbacks(providers);
     });
   }
 
@@ -76,8 +75,7 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
     }
 
     for (const [id, config] of Object.entries(data)) {
-      // recreate provider instance
-      this.providers.set(id, createProviderInstance(config));
+      this.providers.set(id, createProviderInstance(config, this.store));
     }
   }
 

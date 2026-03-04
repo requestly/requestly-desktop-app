@@ -2,11 +2,10 @@ import { SecretProviderType } from "../baseTypes";
 import {
   CredentialsForProvider,
   ReferenceForProvider,
+  SecretValue,
   ValueForProvider,
 } from "../types";
-
-const DEFAULT_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
-const DEFAULT_MAX_CACHE_SIZE = 100;
+import { AbstractSecretsManagerStorage } from "../encryptedStorage/AbstractSecretsManagerStorage";
 
 /**
  * Generic abstract base class for secret providers.
@@ -14,11 +13,7 @@ const DEFAULT_MAX_CACHE_SIZE = 100;
  * @template T - The provider type
  */
 export abstract class AbstractSecretProvider<T extends SecretProviderType> {
-  protected cache: Map<string, ValueForProvider<T>> = new Map();
-
-  protected cacheTtlMs: number = DEFAULT_CACHE_TTL_MS;
-
-  protected maxCacheSize: number = DEFAULT_MAX_CACHE_SIZE;
+  protected store: AbstractSecretsManagerStorage;
 
   abstract readonly type: T;
 
@@ -26,7 +21,15 @@ export abstract class AbstractSecretProvider<T extends SecretProviderType> {
 
   protected abstract config: CredentialsForProvider<T>;
 
-  protected abstract getCacheKey(_ref: ReferenceForProvider<T>): string;
+  /**
+   * Returns the key used to persist/retrieve this secret in the store.
+   * Must be unique across all secrets for this provider.
+   */
+  protected abstract getStorageKey(_ref: ReferenceForProvider<T>): string;
+
+  constructor(store: AbstractSecretsManagerStorage) {
+    this.store = store;
+  }
 
   abstract testConnection(): Promise<boolean>;
 
@@ -38,15 +41,11 @@ export abstract class AbstractSecretProvider<T extends SecretProviderType> {
     _refs: ReferenceForProvider<T>[]
   ): Promise<(ValueForProvider<T> | null)[]>;
 
-  abstract setSecret(
-    _ref: ReferenceForProvider<T>,
-    _value: string | Record<string, any>
-  ): Promise<void>;
+  abstract setSecret(_value: ValueForProvider<T>): Promise<void>;
 
   abstract setSecrets(
     _entries: Array<{
-      ref: ReferenceForProvider<T>;
-      value: string | Record<string, any>;
+      value: ValueForProvider<T>;
     }>
   ): Promise<void>;
 
@@ -66,46 +65,32 @@ export abstract class AbstractSecretProvider<T extends SecretProviderType> {
     return false;
   }
 
-  protected invalidateCache(): void {
-    this.cache.clear();
+  protected async getPersistedSecret(
+    key: string
+  ): Promise<ValueForProvider<T> | null> {
+    return this.store.getSecretValue(
+      key
+    ) as Promise<ValueForProvider<T> | null>;
   }
 
-  protected getCachedSecret(key: string): ValueForProvider<T> | null {
-    const cached = this.cache.get(key);
-    if (cached && cached.fetchedAt + this.cacheTtlMs > Date.now()) {
-      return cached;
-    }
-    return null;
+  protected async persistSecret(
+    key: string,
+    value: ValueForProvider<T>
+  ): Promise<void> {
+    return this.store.setSecretValue(key, value);
   }
 
-  protected setCacheEntry(key: string, value: ValueForProvider<T>): void {
-    if (this.maxCacheSize <= 0) {
-      return;
-    }
-
-    this.evictExpiredEntries();
-
-    while (this.cache.size >= this.maxCacheSize) {
-      const oldestKey = this.cache.keys().next().value;
-      if (!oldestKey) {
-        break;
-      }
-      this.cache.delete(oldestKey);
-    }
-
-    this.cache.set(key, value);
+  protected async persistSecrets(
+    entries: Record<string, ValueForProvider<T>>
+  ): Promise<void> {
+    return this.store.setSecretValues(entries as Record<string, SecretValue>);
   }
 
-  protected evictExpiredEntries(): void {
-    const now = Date.now();
-    const keysToDelete: string[] = [];
+  protected async deletePersistedSecret(key: string): Promise<void> {
+    return this.store.deleteSecretValue(key);
+  }
 
-    this.cache.forEach((value, key) => {
-      if (value.fetchedAt + this.cacheTtlMs <= now) {
-        keysToDelete.push(key);
-      }
-    });
-
-    keysToDelete.forEach((key) => this.cache.delete(key));
+  protected async deletePersistedSecrets(keys: string[]): Promise<void> {
+    return this.store.deleteSecretValues(keys);
   }
 }

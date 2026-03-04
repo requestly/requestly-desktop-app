@@ -1,4 +1,9 @@
 import { SecretsManagerEncryptedStorage } from "./encryptedStorage/SecretsManagerEncryptedStorage";
+import {
+  AbstractSecretsManagerStorage,
+  ProviderStorageChangeCallback,
+  SecretStorageChangeCallback,
+} from "./encryptedStorage/AbstractSecretsManagerStorage";
 import { FileBasedProviderRegistry } from "./providerRegistry/FileBasedProviderRegistry";
 import { ProviderChangeCallback } from "./providerRegistry/AbstractProviderRegistry";
 import { SecretsManager } from "./secretsManager";
@@ -15,6 +20,33 @@ import {
 } from "./errors";
 import { createProviderInstance } from "./providerService/providerFactory";
 
+export class NoopSecretsManagerStorage extends AbstractSecretsManagerStorage {
+  async setProviderConfig(): Promise<void> {}
+  async setSecretValue(): Promise<void> {}
+  async setSecretValues(): Promise<void> {}
+  async deleteSecretValues(): Promise<void> {}
+  async getProviderConfig(): Promise<null> {
+    return null;
+  }
+  async getSecretValue(): Promise<null> {
+    return null;
+  }
+  async getAllProviderConfigs(): Promise<[]> {
+    return [];
+  }
+  async getAllSecretValues(): Promise<[]> {
+    return [];
+  }
+  async deleteProviderConfig(): Promise<void> {}
+  async deleteSecretValue(): Promise<void> {}
+  onProvidersChange(_callback: ProviderStorageChangeCallback): () => void {
+    return () => {};
+  }
+  onSecretsChange(_callback: SecretStorageChangeCallback): () => void {
+    return () => {};
+  }
+}
+
 const getSecretsManager = (): SecretsManager => {
   if (!SecretsManager.isInitialized()) {
     return null as any;
@@ -22,13 +54,12 @@ const getSecretsManager = (): SecretsManager => {
   return SecretsManager.getInstance();
 };
 
-const PROVIDERS_DIRECTORY = "providers";
-
-export const initSecretsManager = async (): SecretsResultPromise<void> => {
+export const initSecretsManager = async (
+  userId: string
+): SecretsResultPromise<void> => {
   try {
-    const secretsStorage = new SecretsManagerEncryptedStorage(
-      PROVIDERS_DIRECTORY
-    );
+    const storeName = `sm-${userId}`;
+    const secretsStorage = new SecretsManagerEncryptedStorage(storeName);
     const registry = new FileBasedProviderRegistry(secretsStorage);
 
     await SecretsManager.initialize(registry);
@@ -112,11 +143,27 @@ export const listSecretProviders = async (): SecretsResultPromise<
   return getSecretsManager().listProviders();
 };
 
+export const removeSecretValue = async (
+  providerId: string,
+  ref: SecretReference
+): SecretsResultPromise<void> => {
+  return getSecretsManager().removeSecret(providerId, ref);
+};
+
+export const removeSecretValues = async (
+  secrets: Array<{ providerId: string; ref: SecretReference }>
+): SecretsResultPromise<void> => {
+  return getSecretsManager().removeSecrets(secrets);
+};
+
 export const testSecretProviderConnectionWithConfig = async (
   config: SecretProviderConfig
 ): SecretsResultPromise<boolean> => {
   try {
-    const provider = createProviderInstance(config);
+    const provider = createProviderInstance(
+      config,
+      new NoopSecretsManagerStorage()
+    );
     const isConnected = await provider.testConnection();
     return { type: "success", data: isConnected ?? false };
   } catch (error) {

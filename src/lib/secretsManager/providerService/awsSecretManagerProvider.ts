@@ -1,5 +1,10 @@
-import { SecretProviderType, ProviderConfig, SecretReference } from "../baseTypes";
+import {
+  SecretProviderType,
+  ProviderConfig,
+  SecretReference,
+} from "../baseTypes";
 import { AbstractSecretProvider } from "./AbstractSecretProvider";
+import { AbstractSecretsManagerStorage } from "../encryptedStorage/AbstractSecretsManagerStorage";
 import {
   GetSecretValueCommand,
   GetSecretValueCommandOutput,
@@ -19,7 +24,8 @@ export type AWSSecretProviderConfig = ProviderConfig<
   AWSSecretsManagerCredentials
 >;
 
-export interface AwsSecretReference extends SecretReference<SecretProviderType.AWS_SECRETS_MANAGER> {
+export interface AwsSecretReference
+  extends SecretReference<SecretProviderType.AWS_SECRETS_MANAGER> {
   identifier: string;
   version?: string;
 }
@@ -44,8 +50,11 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
 
   private client: SecretsManagerClient;
 
-  constructor(providerConfig: AWSSecretProviderConfig) {
-    super();
+  constructor(
+    providerConfig: AWSSecretProviderConfig,
+    store: AbstractSecretsManagerStorage
+  ) {
+    super(store);
     this.id = providerConfig.id;
     this.config = providerConfig.credentials;
     this.client = new SecretsManagerClient({
@@ -58,8 +67,10 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
     });
   }
 
-  protected getCacheKey(ref: AwsSecretReference): string {
-    return `name:${ref.identifier};version:${ref.version ?? "latest"}`;
+  protected getStorageKey(ref: AwsSecretReference): string {
+    return `${this.id}:name:${ref.identifier};version:${
+      ref.version ?? "latest"
+    }`;
   }
 
   async testConnection(): Promise<boolean> {
@@ -67,10 +78,8 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
       return false;
     }
 
-
     const listSecretsCommand = new ListSecretsCommand({ MaxResults: 1 });
     const res = await this.client.send(listSecretsCommand);
-    console.log("!!!debug", "aws result", res);
 
     if (res.$metadata.httpStatusCode !== 200) {
       return false;
@@ -84,14 +93,11 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
       throw new Error("AWS Secrets Manager client is not initialized.");
     }
 
-    const cacheKey = this.getCacheKey(ref);
-    const cachedSecret = this.getCachedSecret(
-      cacheKey
-    ) as AwsSecretValue | null;
+    const storageKey = this.getStorageKey(ref);
+    const persisted = await this.getPersistedSecret(storageKey);
 
-    if (cachedSecret) {
-      console.log("!!!debug", "returning from cache", cachedSecret);
-      return cachedSecret;
+    if (persisted) {
+      return persisted as AwsSecretValue;
     }
 
     const getSecretCommand = new GetSecretValueCommand({
@@ -116,7 +122,7 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
       versionId: secretResponse.VersionId,
     };
 
-    this.setCacheEntry(cacheKey, awsSecret);
+    await this.persistSecret(storageKey, awsSecret);
 
     return awsSecret;
   }
@@ -132,30 +138,39 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
     return Promise.all(refs.map((ref) => this.getSecret(ref)));
   }
 
-  async setSecret(): Promise<void> {
-    throw new Error("Method not implemented.");
+  async setSecret(value: AwsSecretValue): Promise<void> {
+    await this.persistSecret(this.getStorageKey(value.secretReference), value);
   }
 
-  async setSecrets(): Promise<void> {
-    throw new Error("Method not implemented.");
+  async setSecrets(entries: Array<{ value: AwsSecretValue }>): Promise<void> {
+    const toSet: Record<string, AwsSecretValue> = {};
+    for (const entry of entries) {
+      toSet[this.getStorageKey(entry.value.secretReference)] = entry.value;
+    }
+    await this.persistSecrets(toSet);
   }
 
-  async removeSecret(): Promise<void> {
-    throw new Error("Method not implemented.");
+  async removeSecret(ref: AwsSecretReference): Promise<void> {
+    await this.deletePersistedSecret(this.getStorageKey(ref));
   }
 
-  async removeSecrets(): Promise<void> {
-    throw new Error("Method not implemented.");
+  async removeSecrets(refs: AwsSecretReference[]): Promise<void> {
+    await this.deletePersistedSecrets(
+      refs.map((ref) => this.getStorageKey(ref))
+    );
   }
 
   async refreshSecrets(): Promise<(AwsSecretValue | null)[]> {
-    const allSecretRefs = Array.from(this.cache.values()).map(
-      (secret) => secret.secretReference
+    const allSecrets = await this.store.getAllSecretValues();
+    const providerSecrets = allSecrets.filter(
+      (s) => s.providerId === this.id
+    ) as AwsSecretValue[];
+
+    await this.deletePersistedSecrets(
+      providerSecrets.map((s) => this.getStorageKey(s.secretReference))
     );
 
-    this.invalidateCache();
-
-    return this.getSecrets(allSecretRefs);
+    return this.getSecrets(providerSecrets.map((s) => s.secretReference));
   }
 
   static validateConfig(config: AWSSecretsManagerCredentials): boolean {

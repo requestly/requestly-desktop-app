@@ -31,6 +31,8 @@ import {
   listSecretProviders,
   refreshSecrets,
   removeSecretProviderConfig,
+  removeSecretValue,
+  removeSecretValues,
   setSecretProviderConfig,
   subscribeToProvidersChange,
   testSecretProviderConnection,
@@ -301,8 +303,8 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
     webAppWindow?.send("helper-server-hit");
   });
 
-  ipcMain.handle("secretsManager:init", () => {
-    return initSecretsManager();
+  ipcMain.handle("secretsManager:init", (event, { userId }) => {
+    return initSecretsManager(userId);
   });
 
   ipcMain.handle("secretsManager:subscribeToProvidersChange", () => {
@@ -366,6 +368,17 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
 
   ipcMain.handle("secretsManager:listSecretProviders", () => {
     return listSecretProviders();
+  });
+
+  ipcMain.handle(
+    "secretsManager:removeSecretValue",
+    (event, { providerId, secretReference }) => {
+      return removeSecretValue(providerId, secretReference);
+    }
+  );
+
+  ipcMain.handle("secretsManager:removeSecretValues", (event, { secrets }) => {
+    return removeSecretValues(secrets);
   });
 };
 

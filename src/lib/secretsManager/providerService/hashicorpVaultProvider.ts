@@ -1,3 +1,4 @@
+import { NoopSecretsManagerStorage } from "..";
 import { SecretProviderType, ProviderConfig, SecretReference } from "../baseTypes";
 import { AbstractSecretProvider } from "./AbstractSecretProvider";
 
@@ -41,13 +42,14 @@ export class HashicorpVaultProvider extends AbstractSecretProvider<SecretProvide
   protected config: HashicorpVaultCredentials;
 
   constructor(providerConfig: HashicorpVaultProviderConfig) {
-    super();
+    super(new NoopSecretsManagerStorage());
     this.id = providerConfig.id;
     this.config = providerConfig.credentials;
   }
 
-  protected getCacheKey(ref: VaultSecretReference): string {
-    return `name:${ref.identifier};version:${ref.version ?? "latest"}`;
+  protected getStorageKey(ref: VaultSecretReference): string {
+    // NO-OP
+    return ref.identifier;
   }
 
   async testConnection(): Promise<boolean> {
@@ -63,14 +65,13 @@ export class HashicorpVaultProvider extends AbstractSecretProvider<SecretProvide
   }
 
   async setSecret(
-    _ref: VaultSecretReference,
-    _value: string | Record<string, any>
+    _value: VaultSecretValue
   ): Promise<void> {
     throw new Error("Method not implemented.");
   }
 
   async setSecrets(
-    _entries: Array<{ ref: VaultSecretReference; value: string | Record<string, any> }>
+    _entries: Array<{ value: string | Record<string, any> }>
   ): Promise<void> {
     throw new Error("Method not implemented.");
   }
