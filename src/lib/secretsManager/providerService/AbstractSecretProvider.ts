@@ -33,11 +33,11 @@ export abstract class AbstractSecretProvider<T extends SecretProviderType> {
 
   abstract testConnection(): Promise<boolean>;
 
-  abstract getSecret(
+  abstract getSecretValue(
     _ref: ReferenceForProvider<T>
   ): Promise<ValueForProvider<T> | null>;
 
-  abstract getSecrets(
+  abstract getSecretValues(
     _refs: ReferenceForProvider<T>[]
   ): Promise<(ValueForProvider<T> | null)[]>;
 
@@ -53,7 +53,7 @@ export abstract class AbstractSecretProvider<T extends SecretProviderType> {
 
   abstract removeSecrets(_refs: ReferenceForProvider<T>[]): Promise<void>;
 
-  abstract refreshSecrets(): Promise<(ValueForProvider<T> | null)[]>;
+  abstract listAllSecrets(): Promise<(ValueForProvider<T>)[]>;
 
   static validateConfig(config: any): boolean {
     // Base implementation rejects all configs as a fail-safe.
@@ -63,34 +63,5 @@ export abstract class AbstractSecretProvider<T extends SecretProviderType> {
     }
 
     return false;
-  }
-
-  protected async getPersistedSecret(
-    key: string
-  ): Promise<ValueForProvider<T> | null> {
-    return this.store.getSecretValue(
-      key
-    ) as Promise<ValueForProvider<T> | null>;
-  }
-
-  protected async persistSecret(
-    key: string,
-    value: ValueForProvider<T>
-  ): Promise<void> {
-    return this.store.setSecretValue(key, value);
-  }
-
-  protected async persistSecrets(
-    entries: Record<string, ValueForProvider<T>>
-  ): Promise<void> {
-    return this.store.setSecretValues(entries as Record<string, SecretValue>);
-  }
-
-  protected async deletePersistedSecret(key: string): Promise<void> {
-    return this.store.deleteSecretValue(key);
-  }
-
-  protected async deletePersistedSecrets(keys: string[]): Promise<void> {
-    return this.store.deleteSecretValues(keys);
   }
 }

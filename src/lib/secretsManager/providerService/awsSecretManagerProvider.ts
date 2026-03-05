@@ -68,9 +68,7 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
   }
 
   protected getStorageKey(ref: AwsSecretReference): string {
-    return `${this.id}:name:${ref.identifier};version:${
-      ref.version ?? "latest"
-    }`;
+    return `${this.id}:${ref.id}`;
   }
 
   async testConnection(): Promise<boolean> {
@@ -88,16 +86,9 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
     return true;
   }
 
-  async getSecret(ref: AwsSecretReference): Promise<AwsSecretValue | null> {
+  async getSecretValue(ref: AwsSecretReference): Promise<AwsSecretValue | null> {
     if (!this.client) {
       throw new Error("AWS Secrets Manager client is not initialized.");
-    }
-
-    const storageKey = this.getStorageKey(ref);
-    const persisted = await this.getPersistedSecret(storageKey);
-
-    if (persisted) {
-      return persisted as AwsSecretValue;
     }
 
     const getSecretCommand = new GetSecretValueCommand({
@@ -122,12 +113,10 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
       versionId: secretResponse.VersionId,
     };
 
-    await this.persistSecret(storageKey, awsSecret);
-
     return awsSecret;
   }
 
-  async getSecrets(
+  async getSecretValues(
     refs: AwsSecretReference[]
   ): Promise<(AwsSecretValue | null)[]> {
     if (!this.client) {
@@ -135,42 +124,48 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
     }
 
     // Not using BatchGetSecretValueCommand as it would require additional permissions
-    return Promise.all(refs.map((ref) => this.getSecret(ref)));
+    // TODO@nafees: check for null values and verify if error thrown - handle partial failures appropriately
+    const secretValues = await Promise.all(refs.map((ref) => this.getSecretValue(ref)));
+    return secretValues;
   }
 
+  // upserts a secret in the store
   async setSecret(value: AwsSecretValue): Promise<void> {
-    await this.persistSecret(this.getStorageKey(value.secretReference), value);
+    await this.store.setSecretValue(this.getStorageKey(value.secretReference), value);
   }
 
+  // removes and sets all the secrets for the provider
   async setSecrets(entries: Array<{ value: AwsSecretValue }>): Promise<void> {
+    const allSecrets = await this.listAllSecrets();
+
+    const toRemove = allSecrets.map((s) => this.getStorageKey(s.secretReference));
+
+    await this.store.deleteSecretValues(toRemove);
+
     const toSet: Record<string, AwsSecretValue> = {};
     for (const entry of entries) {
       toSet[this.getStorageKey(entry.value.secretReference)] = entry.value;
     }
-    await this.persistSecrets(toSet);
+    await this.store.setSecretValues(toSet);
   }
 
   async removeSecret(ref: AwsSecretReference): Promise<void> {
-    await this.deletePersistedSecret(this.getStorageKey(ref));
+    await this.store.deleteSecretValue(this.getStorageKey(ref));
   }
 
   async removeSecrets(refs: AwsSecretReference[]): Promise<void> {
-    await this.deletePersistedSecrets(
+    await this.store.deleteSecretValues(
       refs.map((ref) => this.getStorageKey(ref))
     );
   }
 
-  async refreshSecrets(): Promise<(AwsSecretValue | null)[]> {
+  async listAllSecrets(): Promise<(AwsSecretValue)[]> {
     const allSecrets = await this.store.getAllSecretValues();
     const providerSecrets = allSecrets.filter(
       (s) => s.providerId === this.id
     ) as AwsSecretValue[];
 
-    await this.deletePersistedSecrets(
-      providerSecrets.map((s) => this.getStorageKey(s.secretReference))
-    );
-
-    return this.getSecrets(providerSecrets.map((s) => s.secretReference));
+    return providerSecrets;
   }
 
   static validateConfig(config: AWSSecretsManagerCredentials): boolean {

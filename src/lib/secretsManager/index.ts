@@ -21,10 +21,10 @@ import {
 import { createProviderInstance } from "./providerService/providerFactory";
 
 export class NoopSecretsManagerStorage extends AbstractSecretsManagerStorage {
-  async setProviderConfig(): Promise<void> {}
-  async setSecretValue(): Promise<void> {}
-  async setSecretValues(): Promise<void> {}
-  async deleteSecretValues(): Promise<void> {}
+  async setProviderConfig(): Promise<void> { }
+  async setSecretValue(): Promise<void> { }
+  async setSecretValues(): Promise<void> { }
+  async deleteSecretValues(): Promise<void> { }
   async getProviderConfig(): Promise<null> {
     return null;
   }
@@ -37,13 +37,13 @@ export class NoopSecretsManagerStorage extends AbstractSecretsManagerStorage {
   async getAllSecretValues(): Promise<[]> {
     return [];
   }
-  async deleteProviderConfig(): Promise<void> {}
-  async deleteSecretValue(): Promise<void> {}
+  async deleteProviderConfig(): Promise<void> { }
+  async deleteSecretValue(): Promise<void> { }
   onProvidersChange(_callback: ProviderStorageChangeCallback): () => void {
-    return () => {};
+    return () => { };
   }
   onSecretsChange(_callback: SecretStorageChangeCallback): () => void {
-    return () => {};
+    return () => { };
   }
 }
 
@@ -131,10 +131,11 @@ export const getSecretValues = async (
   return getSecretsManager().getSecrets(secrets);
 };
 
-export const refreshSecrets = async (
-  providerId: string
+export const fetchAndSaveSecrets = async (
+  providerId: string,
+  secretRefs: SecretReference[]
 ): SecretsResultPromise<(SecretValue | null)[]> => {
-  return getSecretsManager().refreshSecrets(providerId);
+  return getSecretsManager().fetchAndSaveSecrets(providerId, secretRefs);
 };
 
 export const listSecretProviders = async (): SecretsResultPromise<
@@ -173,4 +174,11 @@ export const testSecretProviderConnectionWithConfig = async (
       { providerId: config.id, cause: error as Error }
     );
   }
+};
+
+
+export const listSecrets = async (
+  providerId: string
+): SecretsResultPromise<SecretValue[]> => {
+  return getSecretsManager().listSecrets(providerId);
 };

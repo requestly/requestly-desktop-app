@@ -1,4 +1,5 @@
 import {
+  AwsSecretValue,
   SecretProviderConfig,
   SecretProviderMetadata,
   SecretReference,
@@ -162,7 +163,7 @@ export class SecretsManager {
           { providerId }
         );
       }
-      const secretValue = await provider.getSecret(ref);
+      const secretValue = await provider.getSecretValue(ref);
       return { type: "success", data: secretValue };
     } catch (error) {
       return createSecretsError(
@@ -201,7 +202,7 @@ export class SecretsManager {
           );
         }
 
-        const secretValues = await provider.getSecrets(refs);
+        const secretValues = await provider.getSecretValues(refs);
         results.push(
           ...secretValues.filter((sv): sv is SecretValue => sv !== null)
         );
@@ -282,8 +283,9 @@ export class SecretsManager {
     return { type: "success" };
   }
 
-  async refreshSecrets(
-    providerId: string
+  async fetchAndSaveSecrets(
+    providerId: string,
+    secretRefs: SecretReference[]
   ): SecretsResultPromise<(SecretValue | null)[]> {
     try {
       const provider = this.registry.getProvider(providerId);
@@ -296,7 +298,11 @@ export class SecretsManager {
         );
       }
 
-      const secrets = await provider.refreshSecrets();
+      const secrets = await provider.getSecretValues(secretRefs)
+
+      // TODO@nafees: Handle null values
+      // @ts-ignore
+      await provider.setSecrets(secrets.map((s) => ({ value: s })));
 
       return { type: "success", data: secrets };
     } catch (error) {
@@ -328,5 +334,26 @@ export class SecretsManager {
 
   onProvidersChange(callback: ProviderChangeCallback): () => void {
     return this.registry.onProvidersChange(callback);
+  }
+
+  async listSecrets(providerId: string): SecretsResultPromise<SecretValue[]> {
+    try {
+      const provider = this.registry.getProvider(providerId);
+      if (!provider) {
+        return createSecretsError(
+          SecretsErrorCode.PROVIDER_NOT_FOUND,
+          `Provider with id ${providerId} not found`,
+          { providerId }
+        );
+      }
+      const secrets = await provider.listAllSecrets();
+      return { type: "success", data: secrets };
+    } catch (error) {
+      return createSecretsError(
+        SecretsErrorCode.STORAGE_READ_FAILED,
+        error instanceof Error ? error.message : "Failed to list secrets",
+        { providerId, cause: error as Error }
+      );
+    }
   }
 }

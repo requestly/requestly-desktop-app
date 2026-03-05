@@ -48,19 +48,18 @@ export class HashicorpVaultProvider extends AbstractSecretProvider<SecretProvide
   }
 
   protected getStorageKey(ref: VaultSecretReference): string {
-    // NO-OP
-    return ref.identifier;
+    return `${this.id}:${ref.id}`;
   }
 
   async testConnection(): Promise<boolean> {
     throw new Error("Method not implemented.");
   }
 
-  async getSecret(_ref: VaultSecretReference): Promise<VaultSecretValue | null> {
+  async getSecretValue(_ref: VaultSecretReference): Promise<VaultSecretValue | null> {
     throw new Error("Method not implemented.");
   }
 
-  async getSecrets(_refs: VaultSecretReference[]): Promise<(VaultSecretValue | null)[]> {
+  async getSecretValues(_refs: VaultSecretReference[]): Promise<(VaultSecretValue | null)[]> {
     throw new Error("Method not implemented.");
   }
 
@@ -84,7 +83,7 @@ export class HashicorpVaultProvider extends AbstractSecretProvider<SecretProvide
     throw new Error("Method not implemented.");
   }
 
-  async refreshSecrets(): Promise<(VaultSecretValue | null)[]> {
+  async listAllSecrets(): Promise<(VaultSecretValue)[]> {
     throw new Error("Method not implemented.");
   }
 

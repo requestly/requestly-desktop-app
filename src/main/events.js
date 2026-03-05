@@ -24,12 +24,13 @@ import { createOrUpdateAxiosInstance } from "./actions/getProxiedAxios";
 // eslint-disable-next-line import/no-cycle
 import createTrayMenu, { loadWebAppUrl } from "./main";
 import {
+  fetchAndSaveSecrets,
   getSecretProviderConfig,
   getSecretValue,
   getSecretValues,
   initSecretsManager,
   listSecretProviders,
-  refreshSecrets,
+  listSecrets,
   removeSecretProviderConfig,
   removeSecretValue,
   removeSecretValues,
@@ -362,8 +363,8 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
     return getSecretValues(secrets);
   });
 
-  ipcMain.handle("secretsManager:refreshSecrets", (event, { providerId }) => {
-    return refreshSecrets(providerId);
+  ipcMain.handle("secretsManager:fetchAndSaveSecrets", (event, { providerId, secretRefs }) => {
+    return fetchAndSaveSecrets(providerId, secretRefs);
   });
 
   ipcMain.handle("secretsManager:listSecretProviders", () => {
@@ -379,6 +380,10 @@ export const registerMainProcessEventsForWebAppWindow = (webAppWindow) => {
 
   ipcMain.handle("secretsManager:removeSecretValues", (event, { secrets }) => {
     return removeSecretValues(secrets);
+  });
+
+  ipcMain.handle("secretsManager:listSecrets", (event, { providerId }) => {
+    return listSecrets(providerId);
   });
 };
 
