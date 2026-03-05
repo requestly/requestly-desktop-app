@@ -62,6 +62,16 @@ const KeyValuePair = Type.Object({
   dataType: Type.Optional(Type.Enum(KeyValueDataType)),
 });
 
+const ResponseHeader = Type.Object({
+  key: Type.String(),
+  value: Type.String(),
+  id: Type.Optional(Type.Number()),
+  isEnabled: Type.Optional(Type.Boolean()),
+  type: Type.Optional(Type.String()),
+  description: Type.Optional(Type.String()),
+  dataType: Type.Optional(Type.Enum(KeyValueDataType)),
+});
+
 const formData = Type.Object({
   id: Type.Number(),
   key: Type.String(),
@@ -137,8 +147,8 @@ export const BaseRequest = Type.Object({
 
 export const ResponseObject = Type.Object({
   body: Type.String(),
-  headers: Type.Array(KeyValuePair),
-  method: Type.Enum(ApiMethods),
+  headers: Type.Array(ResponseHeader),
+  method: Type.Optional(Type.Enum(ApiMethods)),
   status: Type.Number(),
   statusText: Type.Optional(Type.String()),
   time: Type.Optional(Type.Number()),
