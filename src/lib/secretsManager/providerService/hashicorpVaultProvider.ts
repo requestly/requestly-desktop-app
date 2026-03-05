@@ -59,7 +59,7 @@ export class HashicorpVaultProvider extends AbstractSecretProvider<SecretProvide
     throw new Error("Method not implemented.");
   }
 
-  async getSecretValues(_refs: VaultSecretReference[]): Promise<(VaultSecretValue | null)[]> {
+  async getSecretValues(_refs: VaultSecretReference[]): Promise<{ results: (VaultSecretValue | null)[]; errors: Array<{ ref: VaultSecretReference; message: string }> }> {
     throw new Error("Method not implemented.");
   }
 

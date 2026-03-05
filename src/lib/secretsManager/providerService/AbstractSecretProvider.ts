@@ -7,6 +7,11 @@ import {
 } from "../types";
 import { AbstractSecretsManagerStorage } from "../encryptedStorage/AbstractSecretsManagerStorage";
 
+export interface GetSecretValuesResult<T extends SecretProviderType> {
+  results: (ValueForProvider<T> | null)[];
+  errors: Array<{ ref: ReferenceForProvider<T>; message: string }>;
+}
+
 /**
  * Generic abstract base class for secret providers.
  *
@@ -39,7 +44,7 @@ export abstract class AbstractSecretProvider<T extends SecretProviderType> {
 
   abstract getSecretValues(
     _refs: ReferenceForProvider<T>[]
-  ): Promise<(ValueForProvider<T> | null)[]>;
+  ): Promise<GetSecretValuesResult<T>>;
 
   abstract setSecret(_value: ValueForProvider<T>): Promise<void>;
 

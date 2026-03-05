@@ -2,6 +2,7 @@ import {
   AwsSecretValue,
   SecretProviderConfig,
   SecretProviderMetadata,
+  SecretProviderType,
   SecretReference,
   SecretValue,
 } from "./types";
@@ -13,6 +14,8 @@ import {
   SecretsResultPromise,
   createSecretsError,
   SecretsErrorCode,
+  SecretFetchError,
+  FetchSecretsResultData,
 } from "./errors";
 
 export class SecretsManager {
@@ -202,7 +205,7 @@ export class SecretsManager {
           );
         }
 
-        const secretValues = await provider.getSecretValues(refs);
+        const { results: secretValues } = await provider.getSecretValues(refs);
         results.push(
           ...secretValues.filter((sv): sv is SecretValue => sv !== null)
         );
@@ -286,7 +289,7 @@ export class SecretsManager {
   async fetchAndSaveSecrets(
     providerId: string,
     secretRefs: SecretReference[]
-  ): SecretsResultPromise<(SecretValue | null)[]> {
+  ): SecretsResultPromise<FetchSecretsResultData> {
     try {
       const provider = this.registry.getProvider(providerId);
 
@@ -298,13 +301,28 @@ export class SecretsManager {
         );
       }
 
-      const secrets = await provider.getSecretValues(secretRefs)
+      const { results, errors: fetchErrors } = await provider.getSecretValues(secretRefs);
 
-      // TODO@nafees: Handle null values
-      // @ts-ignore
-      await provider.setSecrets(secrets.map((s) => ({ value: s })));
+      const perSecretErrors: SecretFetchError[] = fetchErrors.map((e) => ({
+        secretRefId: e.ref.id,
+        message: e.message,
+      }));
 
-      return { type: "success", data: secrets };
+      const successSecrets: SecretValue[] = [];
+      for (const s of results) {
+        if (!s) continue;
+        const hasEmptyValue =
+          (s.type === SecretProviderType.AWS_SECRETS_MANAGER && !s.value);
+        if (hasEmptyValue) {
+          perSecretErrors.push({ secretRefId: s.secretReference.id, message: "Secret value is empty" });
+          continue;
+        }
+        successSecrets.push(s);
+      }
+
+      await provider.setSecrets(successSecrets.map((s) => ({ value: s })));
+
+      return { type: "success", data: { secrets: successSecrets, errors: perSecretErrors } };
     } catch (error) {
       return createSecretsError(
         SecretsErrorCode.SECRET_FETCH_FAILED,

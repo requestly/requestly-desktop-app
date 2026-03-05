@@ -17,6 +17,7 @@ import {
   createSecretsError,
   SecretsErrorCode,
   SecretsResultPromise,
+  FetchSecretsResultData,
 } from "./errors";
 import { createProviderInstance } from "./providerService/providerFactory";
 
@@ -134,7 +135,7 @@ export const getSecretValues = async (
 export const fetchAndSaveSecrets = async (
   providerId: string,
   secretRefs: SecretReference[]
-): SecretsResultPromise<(SecretValue | null)[]> => {
+): SecretsResultPromise<FetchSecretsResultData> => {
   return getSecretsManager().fetchAndSaveSecrets(providerId, secretRefs);
 };
 

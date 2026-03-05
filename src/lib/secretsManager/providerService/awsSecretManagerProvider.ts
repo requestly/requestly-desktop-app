@@ -118,15 +118,29 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
 
   async getSecretValues(
     refs: AwsSecretReference[]
-  ): Promise<(AwsSecretValue | null)[]> {
+  ): Promise<{ results: (AwsSecretValue | null)[]; errors: Array<{ ref: AwsSecretReference; message: string }> }> {
     if (!this.client) {
       throw new Error("AWS Secrets Manager client is not initialized.");
     }
 
-    // Not using BatchGetSecretValueCommand as it would require additional permissions
-    // TODO@nafees: check for null values and verify if error thrown - handle partial failures appropriately
-    const secretValues = await Promise.all(refs.map((ref) => this.getSecretValue(ref)));
-    return secretValues;
+    const settled = await Promise.allSettled(refs.map((ref) => this.getSecretValue(ref)));
+    const results: (AwsSecretValue | null)[] = [];
+    const errors: Array<{ ref: AwsSecretReference; message: string }> = [];
+
+    for (let i = 0; i < settled.length; i++) {
+      const r = settled[i];
+      if (r.status === "fulfilled") {
+        results.push(r.value);
+      } else {
+        results.push(null);
+        errors.push({
+          ref: refs[i],
+          message: r.reason instanceof Error ? r.reason.message : String(r.reason),
+        });
+      }
+    }
+
+    return { results, errors };
   }
 
   // upserts a secret in the store
