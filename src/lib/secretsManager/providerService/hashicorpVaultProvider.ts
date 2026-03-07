@@ -1,3 +1,4 @@
+import { NoopSecretsManagerStorage } from "..";
 import { SecretProviderType, ProviderConfig, SecretReference } from "../baseTypes";
 import { AbstractSecretProvider } from "./AbstractSecretProvider";
 
@@ -41,36 +42,35 @@ export class HashicorpVaultProvider extends AbstractSecretProvider<SecretProvide
   protected config: HashicorpVaultCredentials;
 
   constructor(providerConfig: HashicorpVaultProviderConfig) {
-    super();
+    super(new NoopSecretsManagerStorage());
     this.id = providerConfig.id;
     this.config = providerConfig.credentials;
   }
 
-  protected getCacheKey(ref: VaultSecretReference): string {
-    return `name:${ref.identifier};version:${ref.version ?? "latest"}`;
+  protected getStorageKey(ref: VaultSecretReference): string {
+    return `${this.id}:${ref.id}`;
   }
 
   async testConnection(): Promise<boolean> {
     throw new Error("Method not implemented.");
   }
 
-  async getSecret(_ref: VaultSecretReference): Promise<VaultSecretValue | null> {
+  async getSecretValue(_ref: VaultSecretReference): Promise<VaultSecretValue | null> {
     throw new Error("Method not implemented.");
   }
 
-  async getSecrets(_refs: VaultSecretReference[]): Promise<(VaultSecretValue | null)[]> {
+  async getSecretValues(_refs: VaultSecretReference[]): Promise<{ results: (VaultSecretValue | null)[]; errors: Array<{ ref: VaultSecretReference; message: string }> }> {
     throw new Error("Method not implemented.");
   }
 
   async setSecret(
-    _ref: VaultSecretReference,
-    _value: string | Record<string, any>
+    _value: VaultSecretValue
   ): Promise<void> {
     throw new Error("Method not implemented.");
   }
 
   async setSecrets(
-    _entries: Array<{ ref: VaultSecretReference; value: string | Record<string, any> }>
+    _entries: Array<{ value: string | Record<string, any> }>
   ): Promise<void> {
     throw new Error("Method not implemented.");
   }
@@ -83,7 +83,7 @@ export class HashicorpVaultProvider extends AbstractSecretProvider<SecretProvide
     throw new Error("Method not implemented.");
   }
 
-  async refreshSecrets(): Promise<(VaultSecretValue | null)[]> {
+  async listAllSecrets(): Promise<(VaultSecretValue)[]> {
     throw new Error("Method not implemented.");
   }
 
