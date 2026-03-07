@@ -63,6 +63,7 @@ export const initSecretsManager = async (
     const secretsStorage = new SecretsManagerEncryptedStorage(storeName);
     const registry = new FileBasedProviderRegistry(secretsStorage);
 
+    SecretsManager.reset();
     await SecretsManager.initialize(registry);
 
     return {
