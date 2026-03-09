@@ -1,7 +1,8 @@
-import { SecretReference } from "./types";
+import { SecretReference, SecretValue } from "./types";
 
 export enum SecretsErrorCode {
   SAFE_STORAGE_ENCRYPTION_NOT_AVAILABLE = "safe_storage_encryption_not_available",
+  INVALID_USER_ID = "invalid_user_id",
 
   PROVIDER_NOT_FOUND = "provider_not_found",
 
@@ -37,6 +38,16 @@ export type SecretsSuccess<T> = T extends void
 export type SecretsResult<T> = SecretsSuccess<T> | SecretsManagerError;
 
 export type SecretsResultPromise<T> = Promise<SecretsResult<T>>;
+
+export interface SecretFetchError {
+  secretRefId: string;
+  message: string;
+}
+
+export interface FetchSecretsResultData {
+  secrets: SecretValue[];
+  errors: SecretFetchError[];
+}
 
 export function createSecretsError(
   code: SecretsErrorCode,

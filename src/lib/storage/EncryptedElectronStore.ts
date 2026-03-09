@@ -99,6 +99,14 @@ export class EncryptedElectronStore {
     });
   }
 
+  onKeyChange<T>(subKey: string, callback: (_data: T) => void): () => void {
+    return this.store.onDidChange(`data.${subKey}` as keyof EncryptedStoreSchema, (newValue) => {
+      if (newValue !== undefined) {
+        callback(newValue as T);
+      }
+    });
+  }
+
   getStore(): Store<EncryptedStoreSchema> {
     return this.store;
   }
