@@ -2,6 +2,7 @@ import { SecretReference, SecretValue } from "./types";
 
 export enum SecretsErrorCode {
   SAFE_STORAGE_ENCRYPTION_NOT_AVAILABLE = "safe_storage_encryption_not_available",
+  INVALID_USER_ID = "invalid_user_id",
 
   PROVIDER_NOT_FOUND = "provider_not_found",
 

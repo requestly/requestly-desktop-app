@@ -59,6 +59,12 @@ export const initSecretsManager = async (
   userId: string
 ): SecretsResultPromise<void> => {
   try {
+    if(!userId){
+      return createSecretsError(
+        SecretsErrorCode.INVALID_USER_ID,
+        "Invalid user ID provided for SecretsManager initialization."
+      );
+    }
     const storeName = `sm-${userId}`;
     const secretsStorage = new SecretsManagerEncryptedStorage(
       storeName,
