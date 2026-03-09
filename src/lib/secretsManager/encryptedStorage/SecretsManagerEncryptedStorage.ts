@@ -9,9 +9,10 @@ import { SecretProviderConfig, SecretReference, SecretValue } from "../types";
 export class SecretsManagerEncryptedStorage extends AbstractSecretsManagerStorage {
   private encryptedStore: EncryptedElectronStore;
 
-  constructor(storeName: string) {
+  constructor(storeName: string, userId: string) {
     super();
     this.encryptedStore = new EncryptedElectronStore(storeName);
+    this.encryptedStore.set("userId", userId);
   }
 
   async setProviderConfig(
