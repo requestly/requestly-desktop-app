@@ -86,7 +86,9 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
     return true;
   }
 
-  async getSecretValue(ref: AwsSecretReference): Promise<AwsSecretValue | null> {
+  async getSecretValue(
+    ref: AwsSecretReference
+  ): Promise<AwsSecretValue | null> {
     if (!this.client) {
       throw new Error("AWS Secrets Manager client is not initialized.");
     }
@@ -116,14 +118,17 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
     return awsSecret;
   }
 
-  async getSecretValues(
-    refs: AwsSecretReference[]
-  ): Promise<{ results: (AwsSecretValue | null)[]; errors: Array<{ ref: AwsSecretReference; message: string }> }> {
+  async getSecretValues(refs: AwsSecretReference[]): Promise<{
+    results: (AwsSecretValue | null)[];
+    errors: Array<{ ref: AwsSecretReference; message: string }>;
+  }> {
     if (!this.client) {
       throw new Error("AWS Secrets Manager client is not initialized.");
     }
 
-    const settled = await Promise.allSettled(refs.map((ref) => this.getSecretValue(ref)));
+    const settled = await Promise.allSettled(
+      refs.map((ref) => this.getSecretValue(ref))
+    );
     const results: (AwsSecretValue | null)[] = [];
     const errors: Array<{ ref: AwsSecretReference; message: string }> = [];
 
@@ -135,7 +140,8 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
         results.push(null);
         errors.push({
           ref: refs[i],
-          message: r.reason instanceof Error ? r.reason.message : String(r.reason),
+          message:
+            r.reason instanceof Error ? r.reason.message : String(r.reason),
         });
       }
     }
@@ -145,22 +151,28 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
 
   // upserts a secret in the store
   async setSecret(value: AwsSecretValue): Promise<void> {
-    await this.store.setSecretValue(this.getStorageKey(value.secretReference), value);
+    await this.store.setSecretValue(
+      this.getStorageKey(value.secretReference),
+      value
+    );
   }
 
   // removes and sets all the secrets for the provider
   async setSecrets(entries: Array<{ value: AwsSecretValue }>): Promise<void> {
-    const allSecrets = await this.listAllSecrets();
-
-    const toRemove = allSecrets.map((s) => this.getStorageKey(s.secretReference));
-
-    await this.store.deleteSecretValues(toRemove);
-
     const toSet: Record<string, AwsSecretValue> = {};
     for (const entry of entries) {
       toSet[this.getStorageKey(entry.value.secretReference)] = entry.value;
     }
+
+    const allSecrets = await this.listAllSecrets();
+    const newKeys = new Set(Object.keys(toSet));
+
+    const toRemove = allSecrets
+      .map((s) => this.getStorageKey(s.secretReference))
+      .filter((key) => !newKeys.has(key));
+
     await this.store.setSecretValues(toSet);
+    await this.store.deleteSecretValues(toRemove);
   }
 
   async removeSecret(ref: AwsSecretReference): Promise<void> {
@@ -173,7 +185,7 @@ export class AWSSecretsManagerProvider extends AbstractSecretProvider<SecretProv
     );
   }
 
-  async listAllSecrets(): Promise<(AwsSecretValue)[]> {
+  async listAllSecrets(): Promise<AwsSecretValue[]> {
     const allSecrets = await this.store.getAllSecretValues();
     const providerSecrets = allSecrets.filter(
       (s) => s.providerId === this.id
