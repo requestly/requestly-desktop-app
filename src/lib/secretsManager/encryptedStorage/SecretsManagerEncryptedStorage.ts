@@ -1,4 +1,7 @@
-import { AbstractSecretsManagerStorage } from "./AbstractSecretsManagerStorage";
+import {
+  AbstractSecretsManagerStorage,
+  StorageChangeCallback,
+} from "./AbstractSecretsManagerStorage";
 import { EncryptedElectronStore } from "../../storage/EncryptedElectronStore";
 import { SecretProviderConfig } from "../types";
 
@@ -25,5 +28,9 @@ export class SecretsManagerEncryptedStorage extends AbstractSecretsManagerStorag
 
   async delete(key: string): Promise<void> {
     return this.encryptedStore.delete(key);
+  }
+
+  onStorageChange(callback: StorageChangeCallback): () => void {
+    return this.encryptedStore.onChange<SecretProviderConfig>(callback);
   }
 }
