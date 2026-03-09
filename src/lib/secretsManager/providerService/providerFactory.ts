@@ -1,14 +1,15 @@
 import { SecretProviderConfig, SecretProviderType } from "../types";
+import { AbstractSecretsManagerStorage } from "../encryptedStorage/AbstractSecretsManagerStorage";
 import { AWSSecretsManagerProvider } from "./awsSecretManagerProvider";
 import { AbstractSecretProvider } from "./AbstractSecretProvider";
 
 export function createProviderInstance(
-  config: SecretProviderConfig
+  config: SecretProviderConfig,
+  store: AbstractSecretsManagerStorage
 ): AbstractSecretProvider<SecretProviderType> {
   switch (config.type) {
     case SecretProviderType.AWS_SECRETS_MANAGER: {
-      // TypeScript knows config is AWSSecretProviderConfig here
-      return new AWSSecretsManagerProvider(config);
+      return new AWSSecretsManagerProvider(config, store);
     }
 
     default: {

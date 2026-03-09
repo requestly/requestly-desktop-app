@@ -17,45 +17,32 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   private async initProvidersFromStorage(): Promise<void> {
     const configs = await this.getAllProviderConfigs();
     configs.forEach((config) => {
-      try {
-        this.providers.set(config.id, createProviderInstance(config));
-      } catch (error) {
-        // TODO error to be propagated
-        console.log(
-          "!!!debug",
-          `Failed to initialize provider for config id: ${config.id}`,
-          error
-        );
-      }
+      this.providers.set(config.id, createProviderInstance(config, this.store));
     });
   }
 
   async getAllProviderConfigs(): Promise<SecretProviderConfig[]> {
-    const allConfigs = this.store.getAll();
-    return allConfigs;
+    return this.store.getAllProviderConfigs();
   }
 
   async getProviderConfig(id: string): Promise<SecretProviderConfig | null> {
-    try {
-      return await this.store.get(id);
-    } catch (error) {
-      console.error(`Failed to load provider config for id: ${id}`, error);
-      return null;
-    }
+    return this.store.getProviderConfig(id);
   }
 
   async setProviderConfig(config: SecretProviderConfig): Promise<void> {
-    const provider = createProviderInstance(config);
-    await this.store.set(config.id, config);
+    const provider = createProviderInstance(config, this.store);
+    await this.store.setProviderConfig(config.id, config);
     this.providers.set(config.id, provider);
   }
 
   async deleteProviderConfig(id: string): Promise<void> {
-    await this.store.delete(id);
+    await this.store.deleteProviderConfig(id);
     this.providers.delete(id);
   }
 
-  getProvider(providerId: string): AbstractSecretProvider<SecretProviderType> | null {
+  getProvider(
+    providerId: string
+  ): AbstractSecretProvider<SecretProviderType> | null {
     return this.providers.get(providerId) ?? null;
   }
 
@@ -68,9 +55,9 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   }
 
   private setupStorageListener(): void {
-    this.store.onStorageChange((data) => {
-      this.syncProvidersFromStorageData(data);
-      this.notifyChangeCallbacks(data);
+    this.store.onProvidersChange((providers) => {
+      this.syncProvidersFromStorageData(providers);
+      this.notifyChangeCallbacks(providers);
     });
   }
 
@@ -88,16 +75,7 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
     }
 
     for (const [id, config] of Object.entries(data)) {
-      try {
-        // recreate provider instance
-        this.providers.set(id, createProviderInstance(config));
-      } catch (error) {
-        console.log(
-          "!!!debug",
-          `Failed to sync provider for config id: ${id}`,
-          error
-        );
-      }
+      this.providers.set(id, createProviderInstance(config, this.store));
     }
   }
 
@@ -106,7 +84,7 @@ export class FileBasedProviderRegistry extends AbstractProviderRegistry {
   ): void {
     this.changeCallbacks.forEach((callback) => {
       const configsMetadata = Object.values(data).map((config) => {
-        const { config: _, ...metadata } = config;
+        const { credentials: _, ...metadata } = config;
         return metadata;
       });
       callback(configsMetadata);

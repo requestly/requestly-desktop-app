@@ -20,9 +20,11 @@ export class EncryptedElectronStore {
 
   constructor(storeName: string) {
     if (!safeStorage.isEncryptionAvailable()) {
-      throw new Error(
+      const error = new Error(
         "Encryption is not available on this system. Please ensure your operating system's secure storage is properly configured."
       );
+      error.name = "SafeStorageEncryptionNotAvailable";
+      throw error;
     }
 
     const storeOptions: Store.Options<EncryptedStoreSchema> = {
@@ -93,6 +95,14 @@ export class EncryptedElectronStore {
     return this.store.onDidChange("data", (newValue) => {
       if (newValue) {
         callback(newValue);
+      }
+    });
+  }
+
+  onKeyChange<T>(subKey: string, callback: (_data: T) => void): () => void {
+    return this.store.onDidChange(`data.${subKey}` as keyof EncryptedStoreSchema, (newValue) => {
+      if (newValue !== undefined) {
+        callback(newValue as T);
       }
     });
   }

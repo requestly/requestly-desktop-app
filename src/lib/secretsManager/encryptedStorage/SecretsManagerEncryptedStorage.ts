@@ -1,36 +1,96 @@
 import {
   AbstractSecretsManagerStorage,
-  StorageChangeCallback,
+  ProviderStorageChangeCallback,
+  SecretStorageChangeCallback,
 } from "./AbstractSecretsManagerStorage";
 import { EncryptedElectronStore } from "../../storage/EncryptedElectronStore";
-import { SecretProviderConfig } from "../types";
+import { SecretProviderConfig, SecretReference, SecretValue } from "../types";
 
 export class SecretsManagerEncryptedStorage extends AbstractSecretsManagerStorage {
   private encryptedStore: EncryptedElectronStore;
 
-  constructor(storeName: string) {
+  constructor(storeName: string, userId: string) {
     super();
     this.encryptedStore = new EncryptedElectronStore(storeName);
+    this.encryptedStore.set("userId", userId);
   }
 
-  async set(key: string, data: SecretProviderConfig): Promise<void> {
-    return this.encryptedStore.set<SecretProviderConfig>(key, data);
+  async setProviderConfig(
+    providerId: string,
+    data: SecretProviderConfig
+  ): Promise<void> {
+    return this.encryptedStore.set<SecretProviderConfig>(
+      `providers.${providerId}`,
+      data
+    );
   }
 
-  async get(key: string): Promise<SecretProviderConfig | null> {
-    return this.encryptedStore.get<SecretProviderConfig>(key);
+  async setSecretValue(secretId: string, data: SecretValue): Promise<void> {
+    return this.encryptedStore.set<SecretValue>(`secrets.${secretId}`, data);
   }
 
-  async getAll(): Promise<SecretProviderConfig[]> {
-    const allData = this.encryptedStore.getAll<SecretProviderConfig>();
-    return Object.values(allData);
+  async setSecretValues(entries: Record<string, SecretValue>): Promise<void> {
+    const current =
+      this.encryptedStore.get<Record<string, SecretValue>>("secrets") ?? {};
+    this.encryptedStore.set<Record<string, SecretValue>>("secrets", {
+      ...current,
+      ...entries,
+    });
   }
 
-  async delete(key: string): Promise<void> {
-    return this.encryptedStore.delete(key);
+  async getProviderConfig(
+    providerId: string
+  ): Promise<SecretProviderConfig | null> {
+    return this.encryptedStore.get<SecretProviderConfig>(
+      `providers.${providerId}`
+    );
   }
 
-  onStorageChange(callback: StorageChangeCallback): () => void {
-    return this.encryptedStore.onChange<SecretProviderConfig>(callback);
+  async getSecretValue(secretId: string): Promise<SecretValue | null> {
+    return this.encryptedStore.get<SecretValue>(`secrets.${secretId}`);
+  }
+
+  async getAllProviderConfigs(): Promise<SecretProviderConfig[]> {
+    const allProviders =
+      this.encryptedStore.get<Record<string, SecretProviderConfig>>(
+        `providers`
+      );
+    return Object.values(allProviders ?? {});
+  }
+
+  async getAllSecretValues(): Promise<SecretValue[]> {
+    const allSecrets =
+      this.encryptedStore.get<Record<string, SecretValue>>(`secrets`);
+    return Object.values(allSecrets ?? {});
+  }
+
+  async deleteProviderConfig(providerId: string): Promise<void> {
+    return this.encryptedStore.delete(`providers.${providerId}`);
+  }
+
+  async deleteSecretValue(secretId: string): Promise<void> {
+    return this.encryptedStore.delete(`secrets.${secretId}`);
+  }
+
+  async deleteSecretValues(keys: string[]): Promise<void> {
+    const current =
+      this.encryptedStore.get<Record<string, SecretValue>>("secrets") ?? {};
+    for (const key of keys) {
+      delete current[key];
+    }
+    this.encryptedStore.set<Record<string, SecretValue>>("secrets", current);
+  }
+
+  onProvidersChange(callback: ProviderStorageChangeCallback): () => void {
+    return this.encryptedStore.onKeyChange<
+      Record<string, SecretProviderConfig>
+    >("providers", callback);
+  }
+
+  onSecretsChange(callback: SecretStorageChangeCallback): () => void {
+    return this.encryptedStore.onKeyChange<Record<string, SecretValue>>(
+      "secrets",
+      callback
+    );
   }
 }
