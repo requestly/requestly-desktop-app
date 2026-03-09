@@ -2,7 +2,6 @@ import { SecretProviderType } from "../baseTypes";
 import {
   CredentialsForProvider,
   ReferenceForProvider,
-  SecretValue,
   ValueForProvider,
 } from "../types";
 import { AbstractSecretsManagerStorage } from "../encryptedStorage/AbstractSecretsManagerStorage";
