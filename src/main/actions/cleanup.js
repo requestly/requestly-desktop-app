@@ -16,6 +16,7 @@ const cleanup = () => {
 
 export const getReadyToQuitApp = async  () => {
   return new Promise((resolve) => {
+    global.isQuitting = true;
     cleanup();
   
     if (global.backgroundWindow) {

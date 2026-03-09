@@ -400,7 +400,8 @@ export function isNewEntityName(name: string, baseString: string): boolean {
   const escapedBase = baseString.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   
   // Pattern: exact match OR base string followed by one or more digits
-  const pattern = new RegExp(`^${escapedBase}(\\d+)?$`);
+  // Case-insensitive to align with case-insensitive filesystems (macOS/Windows)
+  const pattern = new RegExp(`^${escapedBase}(\\d+)?$`, 'i');
   
   return pattern.test(name);
 }
@@ -414,17 +415,23 @@ export function isNewEntityName(name: string, baseString: string): boolean {
  * @returns The next available name variant (e.g., 'Untitled1', 'Untitled2')
  */
 export function getAlternateName(baseName: string, existingNames: Set<string>): string {
-  if(!existingNames.has(baseName)) {
+  // Treat existing names in a case-insensitive way to avoid clashes on
+  // case-insensitive filesystems while preserving the original casing
+  const lowerExisting = new Set(Array.from(existingNames).map((n) => n.toLowerCase()));
+  const baseLower = baseName.toLowerCase();
+
+  if (!lowerExisting.has(baseLower)) {
     return baseName;
   }
+
   let counter = 1;
   let candidateName = `${baseName}${counter}`;
-  
-  while (existingNames.has(candidateName)) {
+
+  while (lowerExisting.has(candidateName.toLowerCase())) {
     counter++;
     candidateName = `${baseName}${counter}`;
   }
-  
+
   return candidateName;
 }
 
