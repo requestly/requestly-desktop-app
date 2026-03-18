@@ -90,13 +90,27 @@ function createAxiosInstance(
         ca: readFileSync(config.rootCertPath),
       }),
     });
+
+    // Interceptor to disable SSL securely when Proxy is enabled
+    instance.interceptors.request.use((requestConfig: any) => {
+      if (requestConfig.sslVerificationDisabled) {
+        requestConfig.httpsAgent = new PatchedHttpsProxyAgent({
+          host: config.ip,
+          port: config.port,
+          ca: readFileSync(config.rootCertPath),
+          rejectUnauthorized: false,
+        });
+      }
+      return requestConfig;
+    });
+
   } else {
     instance = axios.create({
       proxy: false,
     });
 
-    instance.interceptors.request.use(async (requestConfig) => {
-      const { url: requestUrl } = requestConfig;
+    instance.interceptors.request.use(async (requestConfig: any) => {
+      const { url: requestUrl, sslVerificationDisabled } = requestConfig;
 
       if (!requestUrl) {
         return requestConfig;
@@ -115,7 +129,12 @@ function createAxiosInstance(
 
         const lookup = await createLocalhostLookup(port);
         requestConfig.httpAgent = new http.Agent({ lookup });
-        requestConfig.httpsAgent = new https.Agent({ lookup });
+        
+        // Preserve SSL bypass flag alongside localhost lookup logic
+        requestConfig.httpsAgent = new https.Agent({ 
+          lookup,
+          rejectUnauthorized: !sslVerificationDisabled
+        });
 
         // Node.js skips DNS lookup for raw IP literals, so the custom lookup
         // above has no effect. Rewrite the URL to the concrete working IP.
@@ -127,6 +146,9 @@ function createAxiosInstance(
             requestConfig.url = requestUrl.replace(hostname, targetIp);
           }
         }
+      } else if (sslVerificationDisabled) {
+        // Handle standard web requests where SSL is bypassed
+        requestConfig.httpsAgent = new https.Agent({ rejectUnauthorized: false });
       }
 
       return requestConfig;
@@ -164,7 +186,7 @@ export const createOrUpdateAxiosInstance = (
 };
 
 /* 
-  [Intentional] add cookies by default. In line with emulating browser behaviour.
+[Intentional] add cookies by default. In line with emulating browser behaviour.
   A better name could be excludeCredentials=false .
   did this because a flag called `withCredentials` has now been released for extension
 */
