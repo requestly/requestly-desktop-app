@@ -90,24 +90,8 @@ function createAxiosInstance(
         ca: readFileSync(config.rootCertPath),
       }),
     });
-
-    // Interceptor to disable SSL securely when Proxy is enabled
-    instance.interceptors.request.use((requestConfig: any) => {
-      if (requestConfig.sslVerificationDisabled) {
-        requestConfig.httpsAgent = new PatchedHttpsProxyAgent({
-          host: config.ip,
-          port: config.port,
-          ca: readFileSync(config.rootCertPath),
-          rejectUnauthorized: false,
-        });
-      }
-      return requestConfig;
-    });
-
   } else {
-    instance = axios.create({
-      proxy: false,
-    });
+    instance = axios.create({ proxy: false });
 
     instance.interceptors.request.use(async (requestConfig: any) => {
       const { url: requestUrl, sslVerificationDisabled } = requestConfig;
@@ -118,23 +102,22 @@ function createAxiosInstance(
 
       const url = new URL(requestUrl);
       const { hostname, port: urlPort, protocol } = url;
+      const port = urlPort ? parseInt(urlPort, 10) : (protocol === "https:" ? 443 : 80);
 
-      const isLocalhost = hostname === "localhost"
+      const isLocalhost = hostname === "localhost" 
         || hostname === LOCAL_IPV4
         || hostname === `[${LOCAL_IPV6}]`
         || hostname === LOCAL_UNSPECIFIED;
 
       if (isLocalhost) {
-        const port = urlPort ? parseInt(urlPort, 10) : protocol === "https:" ? 443 : 80;
-
         const lookup = await createLocalhostLookup(port);
-        requestConfig.httpAgent = new http.Agent({ lookup });
-        
-        // Preserve SSL bypass flag alongside localhost lookup logic
-        requestConfig.httpsAgent = new https.Agent({ 
+        const agentOptions = {
           lookup,
-          rejectUnauthorized: !sslVerificationDisabled
-        });
+          rejectUnauthorized: sslVerificationDisabled !== true,
+        };
+
+        requestConfig.httpAgent = new http.Agent({ lookup });
+        requestConfig.httpsAgent = new https.Agent(agentOptions);
 
         // Node.js skips DNS lookup for raw IP literals, so the custom lookup
         // above has no effect. Rewrite the URL to the concrete working IP.
@@ -147,7 +130,7 @@ function createAxiosInstance(
           }
         }
       } else if (sslVerificationDisabled) {
-        // Handle standard web requests where SSL is bypassed
+          // Handle standard web requests where SSL is bypassed
         requestConfig.httpsAgent = new https.Agent({ rejectUnauthorized: false });
       }
 
