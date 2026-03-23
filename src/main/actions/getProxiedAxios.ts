@@ -113,7 +113,7 @@ function createAxiosInstance(
         const lookup = await createLocalhostLookup(port);
         const agentOptions = {
           lookup,
-          rejectUnauthorized: sslVerificationDisabled !== true,
+          rejectUnauthorized: sslVerificationDisabled !== true, // false = skip SSL verification, true = enforce certificate validation
         };
 
         requestConfig.httpAgent = new http.Agent({ lookup });
