@@ -133,10 +133,17 @@ export class FsManager {
       type: "file",
     });
     const rawConfig = readFileSync(configFile.path);
+    
+    // If config file doesn't exist, return a default config
     if (rawConfig.type === "error") {
-      throw new Error(
-        `Could not load config from ${CONFIG_FILE}. ${rawConfig.error.message}`
+      console.log(
+        `Could not load config from ${CONFIG_FILE}. ${rawConfig.error.message} Using default configuration.`
       );
+      const defaultConfig: Static<typeof Config> = {
+        version: WORKSPACE_CONFIG_FILE_VERSION,
+        exclude: [],
+      };
+      return defaultConfig;
     }
     const parsedConfig = parseJsonContent(rawConfig.content, Config);
     if (parsedConfig.type === "error") {
