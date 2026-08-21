@@ -9,6 +9,7 @@ import {
   addCookiesToRequest,
   storeCookiesFromResponse,
 } from "./cookiesHelpers";
+import { assertRedirectTargetAllowed, guardedLookup } from "./ssrfGuard";
 
 const LOCAL_IPV4 = "127.0.0.1";
 const LOCAL_IPV6 = "::1";
@@ -127,7 +128,14 @@ function createAxiosInstance(
             requestConfig.url = requestUrl.replace(hostname, targetIp);
           }
         }
+      } else {
+        // RQ-3116: non-loopback gets a lookup that refuses metadata/link-local.
+        // Loopback skips it — allowed destination, already pinned above.
+        requestConfig.httpAgent = new http.Agent({ lookup: guardedLookup });
+        requestConfig.httpsAgent = new https.Agent({ lookup: guardedLookup });
       }
+
+      requestConfig.beforeRedirect = assertRedirectTargetAllowed;
 
       return requestConfig;
     });

@@ -1,4 +1,5 @@
 import getProxiedAxios from "./getProxiedAxios";
+import { assertRequestTargetAllowed } from "./ssrfGuard";
 import AdvancedFormData from "form-data";
 
 const fs = require("fs");
@@ -69,6 +70,10 @@ const makeApiClientRequest = async ({ apiRequest }) => {
         ...headers,
       };
     }
+
+    // RQ-3116: refuse a metadata destination named directly in the URL; ones that
+    // merely resolve to it are caught by guardedLookup on the agent.
+    assertRequestTargetAllowed(url);
 
     const requestStartTime = performance.now();
     const axios = getProxiedAxios(apiRequest.includeCredentials);
