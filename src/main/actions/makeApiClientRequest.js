@@ -1,4 +1,5 @@
 import getProxiedAxios from "./getProxiedAxios";
+import { assertRequestTargetAllowed } from "./ssrfGuard";
 import AdvancedFormData from "form-data";
 
 const fs = require("fs");
@@ -69,6 +70,11 @@ const makeApiClientRequest = async ({ apiRequest }) => {
         ...headers,
       };
     }
+
+    // RQ-3116: refuse a metadata/link-local destination named directly in the URL
+    // before a socket is opened. Hostnames that merely RESOLVE to one are caught by
+    // the guarded DNS lookup on the agent (see ssrfGuard.guardedLookup).
+    assertRequestTargetAllowed(url);
 
     const requestStartTime = performance.now();
     const axios = getProxiedAxios(apiRequest.includeCredentials);

@@ -9,6 +9,7 @@ import {
   addCookiesToRequest,
   storeCookiesFromResponse,
 } from "./cookiesHelpers";
+import { assertRedirectTargetAllowed, guardedLookup } from "./ssrfGuard";
 
 const LOCAL_IPV4 = "127.0.0.1";
 const LOCAL_IPV6 = "::1";
@@ -127,7 +128,20 @@ function createAxiosInstance(
             requestConfig.url = requestUrl.replace(hostname, targetIp);
           }
         }
+      } else {
+        // RQ-3116: everything that is not loopback gets a DNS lookup that refuses
+        // cloud-metadata / link-local addresses. Validating at connect time rather
+        // than pre-flight means every redirect hop is covered (follow-redirects
+        // reuses the agent) and there is no resolve-then-connect window.
+        // Loopback skips this deliberately: it is an allowed destination for an API
+        // client, and the branch above already pins it to a concrete local IP.
+        requestConfig.httpAgent = new http.Agent({ lookup: guardedLookup });
+        requestConfig.httpsAgent = new https.Agent({ lookup: guardedLookup });
       }
+
+      // Cheap synchronous check on each redirect target's literal host; the
+      // guarded lookup above covers whatever it resolves to.
+      requestConfig.beforeRedirect = assertRedirectTargetAllowed;
 
       return requestConfig;
     });
