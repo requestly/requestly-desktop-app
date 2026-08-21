@@ -71,9 +71,8 @@ const makeApiClientRequest = async ({ apiRequest }) => {
       };
     }
 
-    // RQ-3116: refuse a metadata/link-local destination named directly in the URL
-    // before a socket is opened. Hostnames that merely RESOLVE to one are caught by
-    // the guarded DNS lookup on the agent (see ssrfGuard.guardedLookup).
+    // RQ-3116: refuse a metadata destination named directly in the URL; ones that
+    // merely resolve to it are caught by guardedLookup on the agent.
     assertRequestTargetAllowed(url);
 
     const requestStartTime = performance.now();
